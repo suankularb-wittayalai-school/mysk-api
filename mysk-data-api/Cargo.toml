@@ -19,3 +19,4 @@ sqlx = { version = "0.6.3", default-features = false, features = ["postgres", "u
 serde= "1.0.164"
 serde_json = "1.0.64"
 chrono = { version = "0.4.19", features = ["serde"] }
+mysk-lib= { path = "../mysk-lib" }
