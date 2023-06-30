@@ -31,6 +31,12 @@ impl HealthCheckResponse {
     }
 }
 
+#[utoipa::path(
+    responses(
+        (status=200, body=HealthCheckResponse, description="The server is healthy"),
+        (status=500, body=String, description="The server is not healthy")
+    )
+)]
 #[get("/health-check")]
 pub async fn health_check(data: web::Data<AppState>) -> impl Responder {
     let pool = &data.db;

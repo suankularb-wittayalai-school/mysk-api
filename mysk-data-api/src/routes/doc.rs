@@ -1,7 +1,10 @@
+use mysk_lib::models::common::response::ResponseType;
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
 };
+
+use super::health::{HealthCheckResponse, __path_health_check};
 
 struct SecurityAddon;
 
@@ -32,7 +35,8 @@ impl Modify for SecurityAddon {
         title = "MySK Data API",
         description = "API to interact with school data"
     ),
-    // components(schemas()),
+    paths(health_check),
+    components(schemas(HealthCheckResponse)),
     modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;
