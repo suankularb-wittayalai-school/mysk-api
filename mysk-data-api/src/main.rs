@@ -57,6 +57,7 @@ async fn main() -> std::io::Result<()> {
             .allowed_headers(vec![
                 header::CONTENT_TYPE,
                 header::AUTHORIZATION,
+                header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 header::ACCEPT,
             ])
             .supports_credentials();
