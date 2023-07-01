@@ -35,7 +35,9 @@ impl HealthCheckResponse {
     responses(
         (status=200, body=HealthCheckResponse, description="The server is healthy"),
         (status=500, body=String, description="The server is not healthy")
-    )
+    ),
+    path="/health-check",
+    tag="Global"
 )]
 #[get("/health-check")]
 pub async fn health_check(data: web::Data<AppState>) -> impl Responder {

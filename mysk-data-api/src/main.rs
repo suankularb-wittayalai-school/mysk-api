@@ -59,6 +59,8 @@ async fn main() -> std::io::Result<()> {
                 header::AUTHORIZATION,
                 header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 header::ACCEPT,
+                // Custom headers
+                header::HeaderName::from_lowercase(b"x-api-key").unwrap(),
             ])
             .supports_credentials();
         App::new()
@@ -66,6 +68,7 @@ async fn main() -> std::io::Result<()> {
                 db: pool.clone(),
                 jwt_secret: jwt_secret.clone(),
             }))
+            // .service(web::scope("/api/v1").configure(routes::config))
             .configure(routes::config)
             .wrap(cors)
             .wrap(Logger::default())

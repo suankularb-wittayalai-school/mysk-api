@@ -7,6 +7,8 @@ use chrono::{DateTime, Utc};
 use utoipa::ToSchema;
 
 use serde::{Deserialize, Serialize};
+
+// use super::requests::PaginationConfig;
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct ErrorType<T> {
     pub id: String,
@@ -55,6 +57,7 @@ pub struct PaginationType {
     size: u32,
     total: u32,
 }
+
 impl std::fmt::Display for PaginationType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -68,14 +71,32 @@ impl std::fmt::Display for PaginationType {
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct MetadataType {
     timestamp: DateTime<Utc>,
-    pagination: PaginationType,
+    pagination: Option<PaginationType>,
+}
+
+impl MetadataType {
+    pub fn new(pagination: Option<PaginationType>) -> Self {
+        MetadataType {
+            timestamp: Utc::now(),
+            pagination,
+        }
+    }
+}
+
+impl Default for MetadataType {
+    fn default() -> Self {
+        MetadataType {
+            timestamp: Utc::now(),
+            pagination: None,
+        }
+    }
 }
 
 impl std::fmt::Display for MetadataType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
-            "{{ timestamp: {}, pagination: {} }}",
+            "{{ timestamp: {}, pagination: {:?} }}",
             self.timestamp, self.pagination
         )
     }
@@ -86,7 +107,7 @@ pub struct ResponseType<T> {
     api_version: String,
     data: Option<T>,
     error: Option<String>, // Always None
-    meta: Option<MetadataType>,
+    meta: MetadataType,
 }
 
 impl<T> ResponseType<T> {
@@ -97,7 +118,7 @@ impl<T> ResponseType<T> {
             api_version: version,
             data: Some(data),
             error: None,
-            meta,
+            meta: meta.unwrap_or_default(),
         }
     }
 }

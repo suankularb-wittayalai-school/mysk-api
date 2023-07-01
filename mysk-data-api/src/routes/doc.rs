@@ -1,4 +1,3 @@
-use mysk_lib::models::common::response::ResponseType;
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
