@@ -8,7 +8,7 @@ pub struct MultiLangString {
     pub th: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct FlexibleMultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,

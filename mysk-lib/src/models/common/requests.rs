@@ -11,7 +11,7 @@ pub enum FetchLevel {
     Detailed,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FilterConfig<T> {
     pub data: Option<T>,
     pub q: Option<String>,
@@ -23,13 +23,13 @@ pub struct SortingConfig<T> {
     pub ascending: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct PaginationConfig {
     pub p: u32,
     pub size: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct RequestType<T, Queryable, Sortable> {
     pub data: Option<T>,
     pub pagination: Option<PaginationConfig>,
