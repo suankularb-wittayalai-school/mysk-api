@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::Error;
+use sqlx::{pool, Error};
 use uuid::Uuid;
 
 use super::requests::FetchLevel;
@@ -29,6 +29,18 @@ pub trait GetById {
         pool: &sqlx::PgPool,
         ids: Vec<sqlx::types::Uuid>,
     ) -> Result<Vec<Self>, Error>
+    where
+        Self: Sized;
+}
+
+#[async_trait]
+pub trait CombineFromTable<T> {
+    async fn combine_from_table(
+        pool: &pool::Pool<sqlx::Postgres>,
+        table: T,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Self, Error>
     where
         Self: Sized;
 }
