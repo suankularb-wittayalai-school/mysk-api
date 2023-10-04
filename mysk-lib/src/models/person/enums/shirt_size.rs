@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
+
 use sqlx::Type;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
