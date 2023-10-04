@@ -15,7 +15,7 @@ serde_qs = "0.12.0"
 utoipa = { version = "3", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3", features = ["actix-web"] }
 # openssl={ version = "0.10", features = ["v110"] }
-sqlx = { version = "0.6.3", default-features = false, features = [
+sqlx = { version = "0.7.2", default-features = false, features = [
     "postgres",
     "uuid",
     "chrono",

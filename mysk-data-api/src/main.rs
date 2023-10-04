@@ -9,7 +9,7 @@ use std::env;
 mod routes;
 
 pub struct AppState {
-    db: Pool<Postgres>,
+    db: sqlx::PgPool,
     jwt_secret: String,
 }
 

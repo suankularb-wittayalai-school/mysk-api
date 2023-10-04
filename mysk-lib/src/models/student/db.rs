@@ -34,7 +34,7 @@ pub struct DbStudent {
 
 impl BaseQuery for DbStudent {
     fn base_query() -> &'static str {
-        r#"r#"SELECT students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size AS "shirt_size: _", blood_group AS "blood_group: _", sex AS "sex: _", student_id, user_id FROM students INNER JOIN people ON students.person_id = people.id"#
+        r#"SELECT students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, student_id, user_id FROM students INNER JOIN people ON students.person_id = people.id"#
     }
 }
 

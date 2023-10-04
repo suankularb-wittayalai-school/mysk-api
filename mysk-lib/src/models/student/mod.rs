@@ -1,5 +1,5 @@
-use serde::Deserialize;
-use sqlx::pool;
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 
 use self::{
     db::DbStudent,
@@ -17,10 +17,19 @@ pub enum Student {
     CompactStudent(Box<CompactStudent>),
 }
 
+impl Serialize for Student {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::IdOnly(student) => student.serialize(serializer),
+            Self::CompactStudent(student) => student.serialize(serializer),
+        }
+    }
+}
+
 #[async_trait::async_trait]
 impl CombineFromTable<DbStudent> for Student {
     async fn combine_from_table(
-        pool: &pool::Pool<sqlx::Postgres>,
+        pool: &PgPool,
         table: DbStudent,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
