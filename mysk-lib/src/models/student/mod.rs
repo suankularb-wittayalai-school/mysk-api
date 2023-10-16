@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize, Serializer};
 use sqlx::pool;
 
 use self::{
@@ -27,7 +27,7 @@ pub enum Student {
 
 #[async_trait::async_trait]
 impl TopLevelFromTable<DbStudent> for Student {
-    async fn combine_from_table(
+    async fn from_table(
         pool: &pool::Pool<sqlx::Postgres>,
         table: DbStudent,
         fetch_level: Option<&FetchLevel>,
@@ -45,6 +45,17 @@ impl TopLevelFromTable<DbStudent> for Student {
             None => Ok(Self::Default(Box::new(
                 DefaultStudent::from_table(pool, table, descendant_fetch_level).await?,
             ))),
+        }
+    }
+}
+
+impl Serialize for Student {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Student::IdOnly(student) => student.serialize(serializer),
+            Student::Compact(student) => student.serialize(serializer),
+            Student::Default(student) => student.serialize(serializer),
+            Student::Detailed(student) => student.serialize(serializer),
         }
     }
 }

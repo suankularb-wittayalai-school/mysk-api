@@ -36,7 +36,7 @@ pub trait GetById {
 
 #[async_trait]
 pub trait TopLevelFromTable<T> {
-    async fn combine_from_table(
+    async fn from_table(
         pool: &pool::Pool<sqlx::Postgres>,
         table: T,
         fetch_level: Option<&FetchLevel>,
