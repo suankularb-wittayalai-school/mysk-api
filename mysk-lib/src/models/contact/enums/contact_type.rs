@@ -13,6 +13,7 @@ pub enum ContactType {
     Line,
     Instagram,
     Website,
+    Discord,
     Other,
 }
 
@@ -27,6 +28,7 @@ impl Display for CT {
             CT::Line => write!(f, "line"),
             CT::Instagram => write!(f, "instagram"),
             CT::Website => write!(f, "website"),
+            CT::Discord => write!(f, "discord"),
             CT::Other => write!(f, "other"),
         }
     }
@@ -60,6 +62,7 @@ impl<'r> sqlx::Decode<'r, sqlx::Postgres> for CT {
             "line" => Ok(CT::Line),
             "instagram" => Ok(CT::Instagram),
             "website" => Ok(CT::Website),
+            "discord" => Ok(CT::Discord),
             "other" => Ok(CT::Other),
 
             _ => Err(Box::new(sqlx::Error::Decode("Unknown contact type".into()))),

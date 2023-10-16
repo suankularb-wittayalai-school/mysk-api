@@ -37,7 +37,7 @@ impl GetById for DbContact {
 
     async fn get_by_ids(pool: &sqlx::PgPool, ids: Vec<Uuid>) -> Result<Vec<Self>, sqlx::Error> {
         sqlx::query_as::<_, DbContact>(
-            format!("{} WHERE students.id = ANY($1)", Self::base_query()).as_str(),
+            format!("{} WHERE id = ANY($1)", Self::base_query()).as_str(),
         )
         .bind(ids)
         .fetch_all(pool)
