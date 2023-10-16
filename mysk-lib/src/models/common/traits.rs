@@ -56,4 +56,13 @@ pub trait TopLevelGetById {
     ) -> Result<Self, Error>
     where
         Self: Sized;
+
+    async fn get_by_ids(
+        pool: &pool::Pool<sqlx::Postgres>,
+        ids: Vec<Uuid>,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Vec<Self>, Error>
+    where
+        Self: Sized;
 }

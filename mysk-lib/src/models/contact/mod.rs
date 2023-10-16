@@ -3,15 +3,18 @@ pub mod enums;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use self::{db::DbContact, enums::contact_type::ContactType};
 
 use super::common::{
-    requests::FetchLevel, string::FlexibleMultiLangString, traits::TopLevelFromTable,
+    requests::FetchLevel,
+    string::FlexibleMultiLangString,
+    traits::{GetById, TopLevelFromTable, TopLevelGetById},
 };
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Contact {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -55,5 +58,37 @@ impl TopLevelFromTable<DbContact> for Contact {
             include_teachers: table.include_teachers,
             include_parents: table.include_parents,
         })
+    }
+}
+
+#[async_trait]
+impl TopLevelGetById for Contact {
+    async fn get_by_id(
+        pool: &sqlx::PgPool,
+        id: Uuid,
+        _fetch_level: Option<&FetchLevel>,
+        _descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Self, sqlx::Error> {
+        let contact = DbContact::get_by_id(pool, id).await?;
+
+        Ok(Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await?)
+    }
+
+    async fn get_by_ids(
+        pool: &sqlx::PgPool,
+        ids: Vec<Uuid>,
+        _fetch_level: Option<&FetchLevel>,
+        _descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Vec<Self>, sqlx::Error> {
+        let contacts = DbContact::get_by_ids(pool, ids).await?;
+
+        let mut result = vec![];
+
+        for contact in contacts {
+            result
+                .push(Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await?)
+        }
+
+        Ok(result)
     }
 }

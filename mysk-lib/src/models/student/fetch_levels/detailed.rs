@@ -5,7 +5,12 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::{
-    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+    common::{
+        requests::FetchLevel,
+        string::MultiLangString,
+        traits::{FetchLevelVariant, TopLevelGetById},
+    },
+    contact::Contact,
     person::enums::{blood_group::BloodGroup, sex::Sex},
     student::db::DbStudent,
 };
@@ -23,7 +28,7 @@ pub struct DetailedStudent {
     pub profile_url: Option<String>,
     pub birthdate: Option<NaiveDate>,
     pub sex: Sex,
-    pub contacts: Vec<String>,     // TODO: Add contact model
+    pub contacts: Vec<Contact>,
     pub classroom: Option<String>, // TODO: Add classroom model
     pub class_no: Option<i64>,
     pub user: Option<String>, // TODO: Add user model
@@ -40,6 +45,7 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
         table: DbStudent,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self, sqlx::Error> {
+        let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
         Ok(Self {
             id: table.id,
             prefix: MultiLangString::new(table.prefix_th, table.prefix_en),
@@ -55,10 +61,16 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
             profile_url: table.profile,
             birthdate: table.birthdate,
             sex: table.sex,
-            contacts: vec![], // TODO: Add contact model
-            classroom: None,  // TODO: Add classroom model
-            class_no: None,   // TODO: Add class_no model
-            user: None,       // TODO: Add user model
+            contacts: Contact::get_by_ids(
+                pool,
+                contact_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
+            classroom: None, // TODO: Add classroom model
+            class_no: None,  // TODO: Add class_no model
+            user: None,      // TODO: Add user model
 
             citizen_id: table.citizen_id,
             blood_group: table.blood_group,
