@@ -23,7 +23,7 @@ pub struct DetailedStudent {
     pub profile_url: Option<String>,
     pub birthdate: Option<NaiveDate>,
     pub sex: Sex,
-    pub contact: Option<String>,   // TODO: Add contact model
+    pub contacts: Vec<String>,     // TODO: Add contact model
     pub classroom: Option<String>, // TODO: Add classroom model
     pub class_no: Option<i64>,
     pub user: Option<String>, // TODO: Add user model
@@ -55,10 +55,10 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
             profile_url: table.profile,
             birthdate: table.birthdate,
             sex: table.sex,
-            contact: None,   // TODO: Add contact model
-            classroom: None, // TODO: Add classroom model
-            class_no: None,  // TODO: Add class_no model
-            user: None,      // TODO: Add user model
+            contacts: vec![], // TODO: Add contact model
+            classroom: None,  // TODO: Add classroom model
+            class_no: None,   // TODO: Add class_no model
+            user: None,       // TODO: Add user model
 
             citizen_id: table.citizen_id,
             blood_group: table.blood_group,

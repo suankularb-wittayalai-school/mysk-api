@@ -3,7 +3,10 @@ use sqlx::pool;
 
 use self::{
     db::DbStudent,
-    fetch_levels::{compact::CompactStudent, default::DefaultStudent, id_only::IdOnlyStudent},
+    fetch_levels::{
+        compact::CompactStudent, default::DefaultStudent, detailed::DetailedStudent,
+        id_only::IdOnlyStudent,
+    },
 };
 
 use super::common::{
@@ -19,6 +22,7 @@ pub enum Student {
     IdOnly(IdOnlyStudent),
     Compact(Box<CompactStudent>),
     Default(Box<DefaultStudent>),
+    Detailed(Box<DetailedStudent>),
 }
 
 #[async_trait::async_trait]
@@ -35,9 +39,8 @@ impl TopLevelFromTable<DbStudent> for Student {
             Some(FetchLevel::Default) => Ok(Self::Default(Box::new(
                 DefaultStudent::from_table(pool, table, descendant_fetch_level).await?,
             ))),
-            // TODO
-            Some(_) => Ok(Self::Default(Box::new(
-                DefaultStudent::from_table(pool, table, descendant_fetch_level).await?,
+            Some(FetchLevel::Detailed) => Ok(Self::Detailed(Box::new(
+                DetailedStudent::from_table(pool, table, descendant_fetch_level).await?,
             ))),
             None => Ok(Self::Default(Box::new(
                 DefaultStudent::from_table(pool, table, descendant_fetch_level).await?,
