@@ -25,7 +25,7 @@ async fn main() -> std::io::Result<()> {
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     let pool = match PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(15)
         .connect(&database_url)
         .await
     {

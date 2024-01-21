@@ -38,3 +38,59 @@ impl GetById for DbClassroom {
         .await
     }
 }
+
+impl DbClassroom {
+    pub async fn get_classroom_advisors(
+        pool: &sqlx::PgPool,
+        classroom_id: Uuid,
+    ) -> Result<Vec<Uuid>, sqlx::Error> {
+        query!(
+            r#"SELECT teacher_id FROM classroom_advisors WHERE classroom_id = $1"#,
+            classroom_id
+        )
+        .fetch_all(pool)
+        .await
+        .map(|advisors| {
+            advisors
+                .into_iter()
+                .map(|advisor| advisor.teacher_id)
+                .collect()
+        })
+    }
+
+    pub async fn get_classroom_students(
+        pool: &sqlx::PgPool,
+        classroom_id: Uuid,
+    ) -> Result<Vec<Uuid>, sqlx::Error> {
+        query!(
+            r#"SELECT student_id FROM classroom_students WHERE classroom_id = $1"#,
+            classroom_id
+        )
+        .fetch_all(pool)
+        .await
+        .map(|students| {
+            students
+                .into_iter()
+                .map(|student| student.student_id)
+                .collect()
+        })
+    }
+
+    pub async fn get_classroom_contacts(
+        pool: &sqlx::PgPool,
+        classroom_id: Uuid,
+    ) -> Result<Vec<Uuid>, sqlx::Error> {
+        query!(
+            r#"SELECT contact_id FROM classroom_contacts WHERE classroom_id = $1"#,
+            classroom_id
+        )
+        .fetch_all(pool)
+        .await
+        .map(|contacts| {
+            contacts
+                .into_iter()
+                .map(|contact| contact.contact_id)
+                .collect()
+        })
+    }
+}
