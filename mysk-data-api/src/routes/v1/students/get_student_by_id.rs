@@ -15,7 +15,7 @@ use sqlx::types::Uuid;
 
 use crate::AppState;
 
-// TODO: remove this
+// TODO: change this to a real type
 #[derive(Debug, serde::Deserialize)]
 pub struct Placeholder;
 
