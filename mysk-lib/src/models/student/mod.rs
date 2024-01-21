@@ -27,15 +27,6 @@ pub enum Student {
     Detailed(Box<DetailedStudent>),
 }
 
-impl Serialize for Student {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Self::IdOnly(student) => student.serialize(serializer),
-            Self::CompactStudent(student) => student.serialize(serializer),
-        }
-    }
-}
-
 #[async_trait::async_trait]
 impl TopLevelFromTable<DbStudent> for Student {
     async fn from_table(

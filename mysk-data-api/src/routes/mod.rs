@@ -12,7 +12,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     v1::config(cfg.service(web::scope("/v1")));
 
     cfg.service(health::health_check);
-    cfg.service(test::test);
+    // cfg.service(test::test);
     cfg.service(
         SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()),
     );
