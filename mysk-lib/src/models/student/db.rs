@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
+use sqlx::query;
 use uuid::Uuid;
 
 use crate::models::{
@@ -60,5 +61,19 @@ impl GetById for DbStudent {
         .bind(ids)
         .fetch_all(pool)
         .await
+    }
+}
+
+impl DbStudent {
+    pub async fn get_student_contacts(
+        pool: &sqlx::PgPool,
+        student_id: Uuid,
+    ) -> Result<Vec<Uuid>, sqlx::Error> {
+        let res = query!(
+            r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN students ON people.id = students.person_id WHERE students.id = $1"#,
+            student_id
+        ).fetch_all(pool).await?;
+
+        Ok(res.iter().map(|r| r.id).collect())
     }
 }
