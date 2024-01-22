@@ -79,10 +79,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
                 ),
                 None => None,
             },
-            class_no: match classroom {
-                Some(classroom) => Some(classroom.class_no),
-                None => None,
-            },
+            class_no: classroom.map(|classroom| classroom.class_no),
             user: None, // TODO: Add user model
         })
     }

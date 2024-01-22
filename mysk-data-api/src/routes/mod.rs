@@ -9,7 +9,8 @@ pub(crate) mod v1;
 use doc::ApiDoc;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    v1::config(cfg.service(web::scope("/v1")));
+    // web::scope("/v1").configure(v1::config);
+    cfg.service(web::scope("/v1").configure(v1::config));
 
     cfg.service(health::health_check);
     // cfg.service(test::test);
