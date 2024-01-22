@@ -47,10 +47,20 @@ impl TopLevelFromTable<DbClassroom> for Classroom {
             Some(FetchLevel::IdOnly) => Ok(Self::IdOnly(Box::new(table.into()))),
             Some(FetchLevel::Compact) => Ok(Self::Compact(Box::new(CompactClassroom::from(table)))),
             Some(FetchLevel::Default) => Ok(Self::Default(Box::new(
-                DefaultClassroom::from_table(pool, table, descendant_fetch_level).await?,
+                Box::pin(DefaultClassroom::from_table(
+                    pool,
+                    table,
+                    descendant_fetch_level,
+                ))
+                .await?,
             ))),
             Some(FetchLevel::Detailed) => Ok(Self::Detailed(Box::new(
-                DefaultClassroom::from_table(pool, table, descendant_fetch_level).await?,
+                Box::pin(DefaultClassroom::from_table(
+                    pool,
+                    table,
+                    descendant_fetch_level,
+                ))
+                .await?,
             ))),
             None => Ok(Self::IdOnly(Box::new(table.into()))),
         }

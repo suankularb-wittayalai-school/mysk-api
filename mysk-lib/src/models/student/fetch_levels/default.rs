@@ -5,6 +5,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::{
+    classroom::Classroom,
     common::{
         requests::FetchLevel,
         string::MultiLangString,
@@ -28,7 +29,7 @@ pub struct DefaultStudent {
     pub birthdate: Option<NaiveDate>,
     pub sex: Sex,
     pub contacts: Vec<Contact>,
-    pub classroom: Option<String>, // TODO: Add classroom model
+    pub classroom: Option<Classroom>,
     pub class_no: Option<i64>,
     pub user: Option<String>, // TODO: Add user model
 }
@@ -41,6 +42,8 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self, sqlx::Error> {
         let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
+
+        let classroom = DbStudent::get_student_classroom(pool, table.id).await?;
 
         Ok(Self {
             id: table.id,
@@ -64,9 +67,23 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
                 Some(&FetchLevel::IdOnly),
             )
             .await?,
-            classroom: None, // TODO: Add classroom model
-            class_no: None,  // TODO: Add class_no model
-            user: None,      // TODO: Add user model
+            classroom: match &classroom {
+                Some(classroom) => Some(
+                    Classroom::get_by_id(
+                        pool,
+                        classroom.id,
+                        descendant_fetch_level,
+                        Some(&FetchLevel::IdOnly),
+                    )
+                    .await?,
+                ),
+                None => None,
+            },
+            class_no: match classroom {
+                Some(classroom) => Some(classroom.class_no),
+                None => None,
+            },
+            user: None, // TODO: Add user model
         })
     }
 }
