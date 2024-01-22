@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use uuid::Uuid;
 
@@ -27,7 +26,6 @@ pub struct Person {
     pub shirt_size: Option<ShirtSize>,
 }
 
-#[async_trait]
 impl GetById for Person {
     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(

@@ -1,5 +1,4 @@
-use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::query;
 use uuid::Uuid;
 
@@ -20,7 +19,6 @@ impl BaseQuery for DbClassroom {
     }
 }
 
-#[async_trait]
 impl GetById for DbClassroom {
     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
         sqlx::query_as::<_, DbClassroom>(format!("{} WHERE id = $1", Self::base_query()).as_str())

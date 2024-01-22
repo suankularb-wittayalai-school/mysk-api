@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
@@ -25,7 +24,6 @@ impl BaseQuery for DbContact {
     }
 }
 
-#[async_trait]
 impl GetById for DbContact {
     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
         sqlx::query_as::<_, DbContact>(format!("{} WHERE id = $1", Self::base_query()).as_str())

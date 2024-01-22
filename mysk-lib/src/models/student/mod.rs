@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::pool;
 use uuid::Uuid;
@@ -21,13 +20,12 @@ pub mod fetch_levels;
 
 #[derive(Clone, Debug, Deserialize)]
 pub enum Student {
-    IdOnly(IdOnlyStudent),
+    IdOnly(Box<IdOnlyStudent>),
     Compact(Box<CompactStudent>),
     Default(Box<DefaultStudent>),
     Detailed(Box<DetailedStudent>),
 }
 
-#[async_trait::async_trait]
 impl TopLevelFromTable<DbStudent> for Student {
     async fn from_table(
         pool: &pool::Pool<sqlx::Postgres>,
@@ -36,7 +34,7 @@ impl TopLevelFromTable<DbStudent> for Student {
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self, sqlx::Error> {
         match fetch_level {
-            Some(FetchLevel::IdOnly) => Ok(Self::IdOnly(table.into())),
+            Some(FetchLevel::IdOnly) => Ok(Self::IdOnly(Box::new(table.into()))),
             Some(FetchLevel::Compact) => Ok(Self::Compact(Box::new(CompactStudent::from(table)))),
             Some(FetchLevel::Default) => Ok(Self::Default(Box::new(
                 DefaultStudent::from_table(pool, table, descendant_fetch_level).await?,
@@ -44,9 +42,7 @@ impl TopLevelFromTable<DbStudent> for Student {
             Some(FetchLevel::Detailed) => Ok(Self::Detailed(Box::new(
                 DetailedStudent::from_table(pool, table, descendant_fetch_level).await?,
             ))),
-            None => Ok(Self::Default(Box::new(
-                DefaultStudent::from_table(pool, table, descendant_fetch_level).await?,
-            ))),
+            None => Ok(Self::IdOnly(Box::new(table.into()))),
         }
     }
 }
@@ -62,7 +58,6 @@ impl Serialize for Student {
     }
 }
 
-#[async_trait]
 impl TopLevelGetById for Student {
     async fn get_by_id(
         pool: &sqlx::PgPool,

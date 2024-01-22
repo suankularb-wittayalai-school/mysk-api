@@ -1,10 +1,8 @@
-use async_trait::async_trait;
 use sqlx::{pool, Error, PgPool};
 use uuid::Uuid;
 
 use super::requests::FetchLevel;
 
-#[async_trait]
 pub trait FetchLevelVariant<T> {
     async fn from_table(
         pool: &PgPool,
@@ -20,7 +18,6 @@ pub trait BaseQuery {
 }
 
 // only for struct with id: Uuid and implements BaseQuery
-#[async_trait]
 pub trait GetById {
     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, Error>
     where
@@ -34,7 +31,6 @@ pub trait GetById {
         Self: Sized;
 }
 
-#[async_trait]
 pub trait TopLevelFromTable<T> {
     async fn from_table(
         pool: &pool::Pool<sqlx::Postgres>,
@@ -46,7 +42,6 @@ pub trait TopLevelFromTable<T> {
         Self: Sized;
 }
 
-#[async_trait]
 pub trait TopLevelGetById {
     async fn get_by_id(
         pool: &pool::Pool<sqlx::Postgres>,

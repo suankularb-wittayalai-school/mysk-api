@@ -1,4 +1,4 @@
-use async_trait::async_trait;
+// use async_trait::async_trait;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -38,7 +38,6 @@ pub struct DetailedStudent {
     pub blood_group: Option<BloodGroup>,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbStudent> for DetailedStudent {
     async fn from_table(
         pool: &PgPool,

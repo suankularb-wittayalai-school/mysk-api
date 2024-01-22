@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::query;
 use uuid::Uuid;
@@ -39,7 +38,6 @@ impl BaseQuery for DbStudent {
     }
 }
 
-#[async_trait]
 impl GetById for DbStudent {
     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
         // sqlx::query_as!(DbStudent, r#"SELECT students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size AS "shirt_size: _", blood_group AS "blood_group: _", sex AS "sex: _", student_id, user_id FROM students INNER JOIN people ON students.person_id = people.id WHERE students.id = $1"#, id)

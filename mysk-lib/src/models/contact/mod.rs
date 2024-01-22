@@ -1,7 +1,6 @@
 pub mod db;
 pub mod enums;
 
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -26,7 +25,6 @@ pub struct Contact {
     pub include_parents: Option<bool>,
 }
 
-#[async_trait]
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
         _pool: &sqlx::PgPool,
@@ -61,7 +59,6 @@ impl TopLevelFromTable<DbContact> for Contact {
     }
 }
 
-#[async_trait]
 impl TopLevelGetById for Contact {
     async fn get_by_id(
         pool: &sqlx::PgPool,
@@ -71,7 +68,7 @@ impl TopLevelGetById for Contact {
     ) -> Result<Self, sqlx::Error> {
         let contact = DbContact::get_by_id(pool, id).await?;
 
-        Ok(Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await?)
+        Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await
     }
 
     async fn get_by_ids(
