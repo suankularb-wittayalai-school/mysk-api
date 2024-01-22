@@ -9,7 +9,7 @@ use crate::models::{
     common::{
         requests::FetchLevel,
         string::MultiLangString,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, GetById, TopLevelGetById},
     },
     contact::Contact,
     person::enums::{blood_group::BloodGroup, sex::Sex},
