@@ -67,7 +67,7 @@ impl TopLevelGetById for Student {
     ) -> Result<Self, sqlx::Error> {
         let student = DbStudent::get_by_id(pool, id).await?;
 
-        Ok(Self::from_table(pool, student, _fetch_level, _descendant_fetch_level).await?)
+        Self::from_table(pool, student, _fetch_level, _descendant_fetch_level).await
     }
 
     async fn get_by_ids(
