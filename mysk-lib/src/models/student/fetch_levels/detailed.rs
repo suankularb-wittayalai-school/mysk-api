@@ -14,6 +14,7 @@ use crate::models::{
     contact::Contact,
     person::enums::{blood_group::BloodGroup, sex::Sex},
     student::db::DbStudent,
+    user::User,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,7 +33,7 @@ pub struct DetailedStudent {
     pub contacts: Vec<Contact>,
     pub classroom: Option<Classroom>,
     pub class_no: Option<i64>,
-    pub user: Option<String>, // TODO: Add user model
+    pub user: Option<User>,
 
     pub citizen_id: Option<String>,
     // pub passport_id: Option<String>,
@@ -48,6 +49,12 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
         let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
 
         let classroom = DbStudent::get_student_classroom(pool, table.id).await?;
+
+        let user = match table.user_id {
+            Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
+            None => None,
+        };
+
         Ok(Self {
             id: table.id,
             prefix: MultiLangString::new(table.prefix_th, table.prefix_en),
@@ -83,7 +90,7 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
                 None => None,
             },
             class_no: classroom.map(|c| c.class_no),
-            user: None, // TODO: Add user model
+            user,
 
             citizen_id: table.citizen_id,
             blood_group: table.blood_group,
