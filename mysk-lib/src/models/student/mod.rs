@@ -19,7 +19,7 @@ use super::common::{
 pub mod db;
 pub mod fetch_levels;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub enum Student {
     IdOnly(IdOnlyStudent),
     Compact(Box<CompactStudent>),
