@@ -11,6 +11,7 @@ pub struct CompactStudent {
     pub last_name: MultiLangString,
     pub nickname: Option<MultiLangString>,
     pub student_id: String,
+    pub profile_url: Option<String>,
 }
 
 impl From<DbStudent> for CompactStudent {
@@ -24,6 +25,7 @@ impl From<DbStudent> for CompactStudent {
                 .nickname_th
                 .map(|th| MultiLangString::new(th, student.nickname_en)),
             student_id: student.student_id,
+            profile_url: student.profile,
         }
     }
 }

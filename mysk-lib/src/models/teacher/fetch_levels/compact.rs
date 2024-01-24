@@ -16,7 +16,7 @@ pub struct CompactTeacher {
     pub last_name: MultiLangString,
     pub nickname: Option<MultiLangString>,
     pub teacher_id: Option<String>,
-    pub profile: Option<String>,
+    pub profile_url: Option<String>,
     pub subject_group: SubjectGroup,
 }
 
@@ -38,7 +38,7 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
                 .nickname_th
                 .map(|th| MultiLangString::new(th, table.nickname_en)),
             teacher_id: table.teacher_id,
-            profile: table.profile,
+            profile_url: table.profile,
             subject_group,
         })
     }
