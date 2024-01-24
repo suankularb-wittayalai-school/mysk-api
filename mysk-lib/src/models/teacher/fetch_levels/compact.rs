@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use crate::models::{
     common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+    subject_group::SubjectGroup,
     teacher::db::DbTeacher,
 };
 
@@ -16,7 +17,7 @@ pub struct CompactTeacher {
     pub nickname: Option<MultiLangString>,
     pub teacher_id: Option<String>,
     pub profile: Option<String>,
-    pub subject_group: String, // TODO: Change to SubjectGroup
+    pub subject_group: SubjectGroup,
 }
 
 impl FetchLevelVariant<DbTeacher> for CompactTeacher {
@@ -25,7 +26,8 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
         table: DbTeacher,
         _descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self, sqlx::Error> {
-        // let subject_group = DbTeacher::get_teacher_subject_group(pool, table.id).await?;
+        let subject_group =
+            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
 
         Ok(Self {
             id: table.id,
@@ -37,7 +39,7 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
                 .map(|th| MultiLangString::new(th, table.nickname_en)),
             teacher_id: table.teacher_id,
             profile: table.profile,
-            subject_group: "TODO".to_string(), // TODO: Change to SubjectGroup
+            subject_group,
         })
     }
 }

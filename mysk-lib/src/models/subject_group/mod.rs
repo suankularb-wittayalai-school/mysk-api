@@ -2,15 +2,10 @@ pub mod db;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use self::db::DbSubjectGroup;
 
-use super::common::{
-    requests::FetchLevel,
-    string::MultiLangString,
-    traits::{GetById, TopLevelFromTable, TopLevelGetById},
-};
+use super::common::{requests::FetchLevel, string::MultiLangString, traits::TopLevelFromTable};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SubjectGroup {
@@ -34,10 +29,10 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
     }
 }
 
-impl TopLevelGetById for SubjectGroup {
-    async fn get_by_id(
+impl SubjectGroup {
+    pub async fn get_by_id(
         pool: &sqlx::PgPool,
-        id: Uuid,
+        id: i64,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self, sqlx::Error> {
@@ -46,9 +41,9 @@ impl TopLevelGetById for SubjectGroup {
         Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await
     }
 
-    async fn get_by_ids(
+    pub async fn get_by_ids(
         pool: &sqlx::PgPool,
-        ids: Vec<Uuid>,
+        ids: Vec<i64>,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>, sqlx::Error> {
