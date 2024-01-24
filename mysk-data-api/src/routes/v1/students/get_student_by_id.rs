@@ -4,7 +4,7 @@ use mysk_lib::{
     error::Error,
     models::{
         common::{
-            requests::{FetchLevel, RequestType},
+            requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
             response::ResponseType,
             traits::TopLevelGetById,
         },
@@ -15,15 +15,11 @@ use sqlx::types::Uuid;
 
 use crate::AppState;
 
-// TODO: change this to a real type
-#[derive(Debug, serde::Deserialize)]
-pub struct Placeholder;
-
 #[get("/{id}")]
 pub async fn get_student_by_id(
     data: web::Data<AppState>,
     id: web::Path<Uuid>,
-    request_query: web::Query<RequestType<Student, Placeholder, Placeholder>>,
+    request_query: web::Query<RequestType<Student, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder, actix_web::Error> {
     let pool = &data.db;
     let student_id = id.into_inner();

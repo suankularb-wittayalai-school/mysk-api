@@ -10,6 +10,7 @@ use crate::models::{
     },
     contact::Contact,
     student::Student,
+    teacher::Teacher,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,7 +18,7 @@ pub struct DefaultClassroom {
     pub id: Uuid,
     pub number: i64,
     pub room: String,
-    // pub class_advisor: Vec<Teacher>, // TODO: Change to Teacher
+    pub class_advisor: Vec<Teacher>,
     pub students: Vec<Student>,
     pub contacts: Vec<Contact>,
     pub year: i64,
@@ -31,16 +32,34 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
     ) -> Result<Self, sqlx::Error> {
         let student_ids = DbClassroom::get_classroom_students(pool, table.id).await?;
         let contact_ids = DbClassroom::get_classroom_contacts(pool, table.id).await?;
-        // TODO: Add class_advisor model
-        // let class_advisor_ids = DbClassroom::get_classroom_class_advisors(pool, table.id).await?;
+        let class_advisor_ids = DbClassroom::get_classroom_advisors(pool, table.id, None).await?;
 
         Ok(Self {
             id: table.id,
             number: table.number,
             room: table.main_room,
-            students: Student::get_by_ids(pool, student_ids, descendant_fetch_level, None).await?,
-            contacts: Contact::get_by_ids(pool, contact_ids, None, None).await?,
+            students: Student::get_by_ids(
+                pool,
+                student_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
+            contacts: Contact::get_by_ids(
+                pool,
+                contact_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
             year: table.year,
+            class_advisor: Teacher::get_by_ids(
+                pool,
+                class_advisor_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
         })
     }
 }

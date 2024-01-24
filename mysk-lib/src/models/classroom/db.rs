@@ -2,7 +2,10 @@ use chrono::{DateTime, Utc};
 use sqlx::query;
 use uuid::Uuid;
 
-use crate::models::common::traits::{BaseQuery, GetById};
+use crate::{
+    helpers::date::get_current_academic_year,
+    models::common::traits::{BaseQuery, GetById},
+};
 
 #[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow)]
 pub struct DbClassroom {
@@ -41,10 +44,12 @@ impl DbClassroom {
     pub async fn get_classroom_advisors(
         pool: &sqlx::PgPool,
         classroom_id: Uuid,
+        year: Option<i64>,
     ) -> Result<Vec<Uuid>, sqlx::Error> {
         query!(
-            r#"SELECT teacher_id FROM classroom_advisors WHERE classroom_id = $1"#,
-            classroom_id
+            r#"SELECT teacher_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE classroom_id = $1 AND year = $2"#,
+            classroom_id,
+            year.unwrap_or_else(|| get_current_academic_year(None))
         )
         .fetch_all(pool)
         .await

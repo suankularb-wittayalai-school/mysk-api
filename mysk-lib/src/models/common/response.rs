@@ -10,15 +10,15 @@ use serde::{Deserialize, Serialize};
 
 // use super::requests::PaginationConfig;
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct ErrorType<T> {
+pub struct ErrorType {
     pub id: String,
     pub code: u32,
-    pub error_type: T, // TODO: enum
+    pub error_type: String,
     pub detail: String,
     pub source: String,
 }
 
-impl<T> ErrorType<T> {
+impl ErrorType {
     pub fn to_status_code(&self) -> StatusCode {
         match self.code {
             400 => StatusCode::BAD_REQUEST,
@@ -32,7 +32,7 @@ impl<T> ErrorType<T> {
     }
 }
 
-impl std::fmt::Display for ErrorType<String> {
+impl std::fmt::Display for ErrorType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
@@ -42,7 +42,7 @@ impl std::fmt::Display for ErrorType<String> {
     }
 }
 
-impl std::error::Error for ErrorType<String> {
+impl std::error::Error for ErrorType {
     fn description(&self) -> &str {
         &self.detail
     }
@@ -126,13 +126,13 @@ impl<T> ResponseType<T> {
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct ErrorResponseType {
     api_version: String,
-    error: ErrorType<String>,
+    error: ErrorType,
     data: Option<String>, // always None
     meta: Option<MetadataType>,
 }
 
 impl ErrorResponseType {
-    pub fn new(error: ErrorType<String>, meta: Option<MetadataType>) -> Self {
+    pub fn new(error: ErrorType, meta: Option<MetadataType>) -> Self {
         let version = env!("CARGO_PKG_VERSION").to_string();
 
         ErrorResponseType {
