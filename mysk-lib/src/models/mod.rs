@@ -3,6 +3,7 @@ pub mod common;
 pub mod contact;
 pub mod person;
 pub mod student;
+pub mod subject;
 pub mod subject_group;
 pub mod teacher;
 pub mod user;
