@@ -2,10 +2,13 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::query;
 use uuid::Uuid;
 
-use crate::models::{
-    classroom::ClassroomWClassNo,
-    common::traits::{BaseQuery, GetById},
-    person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
+use crate::{
+    helpers::date::get_current_academic_year,
+    models::{
+        classroom::ClassroomWClassNo,
+        common::traits::{BaseQuery, GetById},
+        person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
+    },
 };
 
 #[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow)]
@@ -79,10 +82,15 @@ impl DbStudent {
     pub async fn get_student_classroom(
         pool: &sqlx::PgPool,
         student_id: Uuid,
+        academic_year: Option<i64>,
     ) -> Result<Option<ClassroomWClassNo>, sqlx::Error> {
         let res = query!(
-            r#"SELECT classroom_id, class_no FROM classroom_students WHERE student_id = $1"#,
-            student_id
+            r#"SELECT classroom_id, class_no FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_id WHERE student_id = $1 AND year = $2"#,
+            student_id,
+            match academic_year {
+                Some(year) => year,
+                None => get_current_academic_year(None),
+            }
         )
         .fetch_optional(pool)
         .await?;

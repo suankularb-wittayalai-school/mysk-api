@@ -2,9 +2,12 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::query;
 use uuid::Uuid;
 
-use crate::models::{
-    common::traits::{BaseQuery, GetById},
-    person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
+use crate::{
+    helpers::date::get_current_academic_year,
+    models::{
+        common::traits::{BaseQuery, GetById},
+        person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
+    },
 };
 
 #[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow)]
@@ -82,11 +85,16 @@ impl DbTeacher {
         academic_year: Option<i64>,
     ) -> Result<Option<Uuid>, sqlx::Error> {
         let res = query!(
-            r#"SELECT classroom_id FROM classroom_advisors WHERE teacher_id = $1 AND academic_year = $2"#,
+            r#"SELECT classroom_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE teacher_id = $1 AND classrooms.year = $2"#,
             teacher_id,
-            at
-        ).fetch_optional(pool).await?;
+            match academic_year {
+                Some(year) => year,
+                None => get_current_academic_year(None),
+            }
+        )
+        .fetch_optional(pool)
+        .await?;
 
-        Ok(res.map(|r| r.id))
+        Ok(res.map(|r| r.classroom_id))
     }
 }

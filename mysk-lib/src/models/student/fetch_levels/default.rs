@@ -44,7 +44,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
     ) -> Result<Self, sqlx::Error> {
         let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
 
-        let classroom = DbStudent::get_student_classroom(pool, table.id).await?;
+        let classroom = DbStudent::get_student_classroom(pool, table.id, None).await?;
         let user = match table.user_id {
             Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
             None => None,
