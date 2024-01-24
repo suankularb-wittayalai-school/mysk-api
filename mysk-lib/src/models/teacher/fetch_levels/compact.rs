@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{common::string::MultiLangString, teacher::db::DbTeacher};
+use crate::models::{
+    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+    teacher::db::DbTeacher,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactTeacher {
@@ -15,19 +19,25 @@ pub struct CompactTeacher {
     pub subject_group: String, // TODO: Change to SubjectGroup
 }
 
-impl From<DbTeacher> for CompactTeacher {
-    fn from(teacher: DbTeacher) -> Self {
-        Self {
-            id: teacher.id,
-            prefix: MultiLangString::new(teacher.prefix_th, teacher.prefix_en),
-            first_name: MultiLangString::new(teacher.first_name_th, teacher.first_name_en),
-            last_name: MultiLangString::new(teacher.last_name_th, teacher.last_name_en),
-            nickname: teacher
+impl FetchLevelVariant<DbTeacher> for CompactTeacher {
+    async fn from_table(
+        pool: &PgPool,
+        table: DbTeacher,
+        _descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Self, sqlx::Error> {
+        // let subject_group = DbTeacher::get_teacher_subject_group(pool, table.id).await?;
+
+        Ok(Self {
+            id: table.id,
+            prefix: MultiLangString::new(table.prefix_th, table.prefix_en),
+            first_name: MultiLangString::new(table.first_name_th, table.first_name_en),
+            last_name: MultiLangString::new(table.last_name_th, table.last_name_en),
+            nickname: table
                 .nickname_th
-                .map(|th| MultiLangString::new(th, teacher.nickname_en)),
-            teacher_id: teacher.teacher_id,
-            profile: teacher.profile,
-            subject_group: "TODO".to_string(),
-        }
+                .map(|th| MultiLangString::new(th, table.nickname_en)),
+            teacher_id: table.teacher_id,
+            profile: table.profile,
+            subject_group: "TODO".to_string(), // TODO: Change to SubjectGroup
+        })
     }
 }
