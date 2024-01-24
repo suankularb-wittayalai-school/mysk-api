@@ -1,7 +1,10 @@
 use actix_web::web;
 
 pub(crate) mod students;
+pub(crate) mod teachers;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
-    students::config(cfg);
+    cfg.service(web::scope("/students").configure(students::config));
+
+    cfg.service(web::scope("/teachers").configure(teachers::config));
 }
