@@ -30,7 +30,7 @@ pub struct DbSubject {
 
 impl BaseQuery for DbSubject {
     fn base_query() -> &'static str {
-        r#"SELECT id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type as "type: _", credit, description_th, description_en, semester, subject_group as subject_group_id, syllabus FROM subjects"#
+        r#"SELECT id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type, credit, description_th, description_en, semester, subject_group_id, syllabus FROM subjects"#
     }
 }
 

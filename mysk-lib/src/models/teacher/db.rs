@@ -97,4 +97,44 @@ impl DbTeacher {
 
         Ok(res.map(|r| r.classroom_id))
     }
+
+    pub async fn get_subject_in_charge(
+        pool: &sqlx::PgPool,
+        teacher_id: Uuid,
+        academic_year: Option<i64>,
+    ) -> Result<Vec<Uuid>, sqlx::Error> {
+        let res = query!(
+            r#"SELECT subject_id FROM subject_teachers WHERE teacher_id = $1 AND year = $2"#,
+            teacher_id,
+            match academic_year {
+                Some(year) => year,
+                None => get_current_academic_year(None),
+            }
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let res2 = query!(
+            r#"SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2"#,
+            teacher_id,
+            match academic_year {
+                Some(year) => year,
+                None => get_current_academic_year(None),
+            }
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let mut result = vec![];
+
+        for r in res {
+            result.push(r.subject_id);
+        }
+
+        for r in res2 {
+            result.push(r.subject_id);
+        }
+
+        Ok(result)
+    }
 }

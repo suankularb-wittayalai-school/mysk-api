@@ -39,10 +39,20 @@ impl TopLevelFromTable<DbTeacher> for Teacher {
                 CompactTeacher::from_table(pool, table, descendant_fetch_level).await?,
             ))),
             Some(FetchLevel::Default) => Ok(Self::Default(Box::new(
-                DefaultTeacher::from_table(pool, table, descendant_fetch_level).await?,
+                Box::pin(DefaultTeacher::from_table(
+                    pool,
+                    table,
+                    descendant_fetch_level,
+                ))
+                .await?,
             ))),
             Some(FetchLevel::Detailed) => Ok(Self::Detailed(Box::new(
-                DetailedTeacher::from_table(pool, table, descendant_fetch_level).await?,
+                Box::pin(DetailedTeacher::from_table(
+                    pool,
+                    table,
+                    descendant_fetch_level,
+                ))
+                .await?,
             ))),
             None => Ok(Self::IdOnly(Box::new(table.into()))),
         }

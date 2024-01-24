@@ -34,7 +34,7 @@ pub async fn get_teacher_by_id(
         .as_ref()
         .unwrap_or(&FetchLevel::IdOnly);
 
-    let student = Teacher::get_by_id(
+    let teacher = Teacher::get_by_id(
         pool,
         teacher_id,
         Some(fetch_level),
@@ -42,7 +42,7 @@ pub async fn get_teacher_by_id(
     )
     .await;
 
-    match student {
+    match teacher {
         Ok(student) => Ok(HttpResponse::Ok().json(ResponseType::new(student, None))),
         Err(e) => {
             Ok(Error::EntityNotFound(e.to_string(), format!("/v1/teachers/{teacher_id}")).into())

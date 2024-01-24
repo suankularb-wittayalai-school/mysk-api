@@ -13,6 +13,7 @@ use crate::models::{
     },
     contact::Contact,
     person::enums::sex::Sex,
+    subject::Subject,
     subject_group::SubjectGroup,
     teacher::db::DbTeacher,
     user::User,
@@ -34,7 +35,7 @@ pub struct DefaultTeacher {
     pub class_advisor_at: Option<Classroom>,
     pub user: Option<User>,
     pub subject_group: SubjectGroup,
-    pub subjects_in_charge: Vec<String>, // TODO: Implement Subject model
+    pub subjects_in_charge: Vec<Subject>,
 }
 
 // #[async_trait]
@@ -47,6 +48,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
         let contact_ids = DbTeacher::get_teacher_contacts(pool, table.id).await?;
 
         let classroom_id = DbTeacher::get_teacher_advisor_at(pool, table.id, None).await?;
+        let subject_id = DbTeacher::get_subject_in_charge(pool, table.id, None).await?;
 
         let subject_group = SubjectGroup::get_by_id(
             pool,
@@ -97,7 +99,13 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
             },
             user,
             subject_group,
-            subjects_in_charge: vec![],
+            subjects_in_charge: Subject::get_by_ids(
+                pool,
+                subject_id,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
         })
     }
 }
