@@ -9,7 +9,7 @@ use crate::models::{
 };
 
 #[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow)]
-pub struct DbStudent {
+pub struct DbTeacher {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
     pub prefix_th: String,
@@ -29,24 +29,25 @@ pub struct DbStudent {
     pub shirt_size: Option<ShirtSize>,
     pub blood_group: Option<BloodGroup>,
     pub sex: Sex,
-    pub student_id: String,
+    pub teacher_id: Option<String>,
+    pub subject_group_id: i64,
     pub user_id: Option<Uuid>,
 }
 
-impl BaseQuery for DbStudent {
+impl BaseQuery for DbTeacher {
     fn base_query() -> &'static str {
-        r#"SELECT students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, student_id, user_id FROM students INNER JOIN people ON students.person_id = people.id"#
+        r#"SELECT teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id, user_id, subject_group_id FROM teachers INNER JOIN people ON teachers.person_id = people.id"#
     }
 }
 
-impl GetById for DbStudent {
+impl GetById for DbTeacher {
     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
         // sqlx::query_as!(DbStudent, r#"SELECT students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size AS "shirt_size: _", blood_group AS "blood_group: _", sex AS "sex: _", student_id, user_id FROM students INNER JOIN people ON students.person_id = people.id WHERE students.id = $1"#, id)
         //     .fetch_one(pool)
         //     .await
 
-        sqlx::query_as::<_, DbStudent>(
-            format!("{} WHERE students.id = $1", Self::base_query()).as_str(),
+        sqlx::query_as::<_, DbTeacher>(
+            format!("{} WHERE teachers.id = $1", Self::base_query()).as_str(),
         )
         .bind(id)
         .fetch_one(pool)
@@ -54,8 +55,8 @@ impl GetById for DbStudent {
     }
 
     async fn get_by_ids(pool: &sqlx::PgPool, ids: Vec<Uuid>) -> Result<Vec<Self>, sqlx::Error> {
-        sqlx::query_as::<_, DbStudent>(
-            format!("{} WHERE students.id = ANY($1)", Self::base_query()).as_str(),
+        sqlx::query_as::<_, DbTeacher>(
+            format!("{} WHERE teachers.id = ANY($1)", Self::base_query()).as_str(),
         )
         .bind(ids)
         .fetch_all(pool)
@@ -63,36 +64,16 @@ impl GetById for DbStudent {
     }
 }
 
-impl DbStudent {
-    pub async fn get_student_contacts(
+impl DbTeacher {
+    pub async fn get_teacher_contacts(
         pool: &sqlx::PgPool,
         student_id: Uuid,
     ) -> Result<Vec<Uuid>, sqlx::Error> {
         let res = query!(
-            r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN students ON people.id = students.person_id WHERE students.id = $1"#,
+            r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN teachers ON people.id = teachers.person_id WHERE teachers.id = $1"#,
             student_id
         ).fetch_all(pool).await?;
 
         Ok(res.iter().map(|r| r.id).collect())
-    }
-
-    pub async fn get_student_classroom(
-        pool: &sqlx::PgPool,
-        student_id: Uuid,
-    ) -> Result<Option<ClassroomWClassNo>, sqlx::Error> {
-        let res = query!(
-            r#"SELECT classroom_id, class_no FROM classroom_students WHERE student_id = $1"#,
-            student_id
-        )
-        .fetch_optional(pool)
-        .await?;
-
-        match res {
-            None => Ok(None),
-            Some(res) => Ok(Some(ClassroomWClassNo {
-                id: res.classroom_id,
-                class_no: res.class_no,
-            })),
-        }
     }
 }

@@ -25,6 +25,12 @@ pub enum Classroom {
     Detailed(Box<DefaultClassroom>),
 }
 
+#[derive(Debug, Clone, Deserialize, sqlx::FromRow)]
+pub struct ClassroomWClassNo {
+    pub id: Uuid,
+    pub class_no: i64,
+}
+
 impl Serialize for Classroom {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
