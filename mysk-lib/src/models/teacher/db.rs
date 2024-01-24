@@ -3,7 +3,6 @@ use sqlx::query;
 use uuid::Uuid;
 
 use crate::models::{
-    classroom::ClassroomWClassNo,
     common::traits::{BaseQuery, GetById},
     person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
 };
@@ -67,13 +66,27 @@ impl GetById for DbTeacher {
 impl DbTeacher {
     pub async fn get_teacher_contacts(
         pool: &sqlx::PgPool,
-        student_id: Uuid,
+        teacher_id: Uuid,
     ) -> Result<Vec<Uuid>, sqlx::Error> {
         let res = query!(
             r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN teachers ON people.id = teachers.person_id WHERE teachers.id = $1"#,
-            student_id
+            teacher_id
         ).fetch_all(pool).await?;
 
         Ok(res.iter().map(|r| r.id).collect())
+    }
+
+    pub async fn get_teacher_advisor_at(
+        pool: &sqlx::PgPool,
+        teacher_id: Uuid,
+        academic_year: Option<i64>,
+    ) -> Result<Option<Uuid>, sqlx::Error> {
+        let res = query!(
+            r#"SELECT classroom_id FROM classroom_advisors WHERE teacher_id = $1 AND academic_year = $2"#,
+            teacher_id,
+            at
+        ).fetch_optional(pool).await?;
+
+        Ok(res.map(|r| r.id))
     }
 }
