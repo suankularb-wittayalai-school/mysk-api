@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod classroom;
 pub mod common;
 pub mod contact;
