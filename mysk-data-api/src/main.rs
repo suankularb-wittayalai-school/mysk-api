@@ -2,15 +2,17 @@ use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{http::header, web, App, HttpServer};
 use dotenv::dotenv;
+use mysk_lib::models::common::config::Config;
 // use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
 
+mod middlewares;
 mod routes;
 
 pub struct AppState {
     db: sqlx::PgPool,
-    jwt_secret: String,
+    env: Config,
 }
 
 #[actix_web::main]
