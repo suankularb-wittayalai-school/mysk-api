@@ -33,7 +33,7 @@ struct GoogleTokenResponse {
 async fn google_oauth_handler(
     data: web::Data<AppState>,
     query: web::Json<OAuthRequest>,
-) -> impl Responder {
+) -> Result<impl Responder, actix_web::Error> {
     // dbg!(query);
 
     let id_token: String = query.credential.to_owned();
@@ -41,20 +41,20 @@ async fn google_oauth_handler(
     // dbg!(id_token.as_str());
 
     if id_token.is_empty() {
-        return HttpResponse::Unauthorized().json(Error::InvalidToken(
+        return Ok(HttpResponse::Unauthorized().json(Error::InvalidToken(
             "Invalid token".to_string(),
             "/auth/oauth/google".to_string(),
-        ));
+        )));
     }
 
     // decode id_token to get google user info with jwt and get access_token and verify it with google secret
     let google_id_data = match verify_id_token(&id_token, &data.env).await {
         Ok(data) => data,
         Err(err) => {
-            return HttpResponse::Unauthorized().json(Error::InvalidToken(
+            return Ok(HttpResponse::Unauthorized().json(Error::InvalidToken(
                 err.to_string(),
                 "/auth/oauth/google".to_string(),
-            ));
+            )));
         }
     };
 
@@ -67,10 +67,10 @@ async fn google_oauth_handler(
     let user_id = match user {
         Some(user) => user.id,
         None => {
-            return HttpResponse::NotFound().json(Error::EntityNotFound(
+            return Ok(HttpResponse::NotFound().json(Error::EntityNotFound(
                 "User not found".to_string(),
                 "/auth/oauth/google".to_string(),
-            ))
+            )))
         }
     };
 
@@ -110,11 +110,13 @@ async fn google_oauth_handler(
                 None,
             );
 
-            HttpResponse::Ok().cookie(cookie).json(response)
+            Ok(HttpResponse::Ok().cookie(cookie).json(response))
         }
-        Err(err) => HttpResponse::InternalServerError().json(Error::InternalSeverError(
-            err.to_string(),
-            "/auth/oauth/google".to_string(),
-        )),
+        Err(err) => Ok(
+            HttpResponse::InternalServerError().json(Error::InternalSeverError(
+                err.to_string(),
+                "/auth/oauth/google".to_string(),
+            )),
+        ),
     }
 }

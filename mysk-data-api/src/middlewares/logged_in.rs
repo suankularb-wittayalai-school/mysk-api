@@ -1,5 +1,4 @@
-use actix_web::error::{ErrorInternalServerError, ErrorNotFound, ErrorUnauthorized};
-use actix_web::{dev::Payload, Error as ActixWebError};
+use actix_web::dev::Payload;
 use actix_web::{http, web, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
 use jsonwebtoken::{decode, DecodingKey, Validation};
@@ -7,15 +6,17 @@ use mysk_lib::error::Error;
 use mysk_lib::models::auth::TokenClaims;
 use mysk_lib::models::common::traits::GetById;
 use mysk_lib::models::user::User;
+use serde::Serialize;
 use std::pin::Pin;
 use uuid::Uuid;
 
 use crate::AppState;
 
+#[derive(Serialize)]
 pub struct LoggedIn(User);
 
 impl FromRequest for LoggedIn {
-    type Error = ActixWebError;
+    type Error = Error;
     type Future = Pin<Box<dyn FutureTrait<Output = Result<Self, Self::Error>>>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
@@ -23,11 +24,9 @@ impl FromRequest for LoggedIn {
             Some(state) => state,
             None => {
                 return Box::pin(async {
-                    Err(ErrorInternalServerError::<Error>(
-                        Error::InternalSeverError(
-                            "App state not found".to_string(),
-                            "LoggedIn Middleware".to_string(),
-                        ),
+                    Err(Error::InternalSeverError(
+                        "App state not found".to_string(),
+                        "LoggedIn Middleware".to_string(),
                     ))
                 })
             }
@@ -44,19 +43,19 @@ impl FromRequest for LoggedIn {
                 Err(_) => {
                     return Box::pin(async {
                         // return 401 unauthorized if the token is not a string as ResponseType
-                        Err(ErrorUnauthorized::<Error>(Error::InvalidToken(
+                        Err(Error::InvalidToken(
                             "Invalid token".to_string(),
                             "LoggedIn Middleware".to_string(),
-                        )))
+                        ))
                     });
                 }
             },
             None => {
                 return Box::pin(async {
-                    Err(ErrorUnauthorized::<Error>(Error::MissingToken(
+                    Err(Error::MissingToken(
                         "Missing token".to_string(),
                         "LoggedIn Middleware".to_string(),
-                    )))
+                    ))
                 })
             }
         };
@@ -71,10 +70,10 @@ impl FromRequest for LoggedIn {
             Ok(claims) => claims,
             Err(_) => {
                 return Box::pin(async {
-                    Err(ErrorUnauthorized::<Error>(Error::InvalidToken(
+                    Err(Error::InvalidToken(
                         "Invalid token".to_string(),
                         "LoggedIn Middleware".to_string(),
-                    )))
+                    ))
                 })
             }
         };
@@ -83,10 +82,10 @@ impl FromRequest for LoggedIn {
             Ok(user_id) => user_id,
             Err(_) => {
                 return Box::pin(async {
-                    Err(ErrorNotFound::<Error>(Error::EntityNotFound(
+                    Err(Error::EntityNotFound(
                         "User not found".to_string(),
                         "LoggedIn Middleware".to_string(),
-                    )))
+                    ))
                 })
             }
         };
@@ -96,10 +95,10 @@ impl FromRequest for LoggedIn {
 
             match user {
                 Ok(user) => Ok(LoggedIn(user)),
-                Err(_) => Err(ErrorNotFound::<Error>(Error::EntityNotFound(
+                Err(_) => Err(Error::EntityNotFound(
                     "User not found".to_string(),
                     "LoggedIn Middleware".to_string(),
-                ))),
+                )),
             }
         })
     }

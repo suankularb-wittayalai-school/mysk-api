@@ -1,4 +1,4 @@
-use actix_web::HttpResponse;
+use actix_web::{HttpResponse, ResponseError};
 use serde::Serialize;
 use std::fmt::Display;
 use uuid::Uuid;
@@ -16,17 +16,17 @@ pub enum Error {
     MissingToken(String, String),
 }
 
-impl From<Error> for HttpResponse {
-    fn from(error: Error) -> Self {
-        match error {
+impl From<&Error> for HttpResponse {
+    fn from(val: &Error) -> Self {
+        match val {
             Error::EntityNotFound(detail, source) => {
                 HttpResponse::NotFound().json(ErrorResponseType::new(
                     ErrorType {
                         id: Uuid::new_v4().to_string(),
                         code: 404,
                         error_type: "entity_not_found".to_string(),
-                        detail,
-                        source,
+                        detail: detail.to_string(),
+                        source: source.to_string(),
                     },
                     None,
                 ))
@@ -37,8 +37,8 @@ impl From<Error> for HttpResponse {
                         id: Uuid::new_v4().to_string(),
                         code: 500,
                         error_type: "internal_server_error".to_string(),
-                        detail,
-                        source,
+                        detail: detail.to_string(),
+                        source: source.to_string(),
                     },
                     None,
                 ))
@@ -49,8 +49,8 @@ impl From<Error> for HttpResponse {
                         id: Uuid::new_v4().to_string(),
                         code: 401,
                         error_type: "invalid_token".to_string(),
-                        detail,
-                        source,
+                        detail: detail.to_string(),
+                        source: source.to_string(),
                     },
                     None,
                 ))
@@ -61,13 +61,25 @@ impl From<Error> for HttpResponse {
                         id: Uuid::new_v4().to_string(),
                         code: 401,
                         error_type: "missing_token".to_string(),
-                        detail,
-                        source,
+                        detail: detail.to_string(),
+                        source: source.to_string(),
                     },
                     None,
                 ))
             }
         }
+    }
+}
+
+impl AsRef<Error> for Error {
+    fn as_ref(&self) -> &Error {
+        self
+    }
+}
+
+impl From<Error> for HttpResponse {
+    fn from(val: Error) -> Self {
+        (&val).into()
     }
 }
 
@@ -88,5 +100,11 @@ impl Display for Error {
             }
         };
         write!(f, "{}", error)
+    }
+}
+
+impl ResponseError for Error {
+    fn error_response(&self) -> HttpResponse {
+        self.into()
     }
 }
