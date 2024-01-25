@@ -39,3 +39,13 @@ impl GetById for User {
             .await
     }
 }
+
+impl User {
+    pub async fn get_by_email(pool: &sqlx::PgPool, email: &str) -> Option<Self> {
+        sqlx::query_as::<_, User>(format!("{} WHERE email = $1", Self::base_query()).as_str())
+            .bind(email)
+            .fetch_optional(pool)
+            .await
+            .unwrap()
+    }
+}

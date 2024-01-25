@@ -74,26 +74,18 @@ impl From<Error> for HttpResponse {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error = match self {
-            Error::EntityNotFound(detail, source) => format!(
-                "Entity not found: {} (source: {})",
-                detail.to_string(),
-                source.to_string()
-            ),
-            Error::InternalSeverError(detail, source) => format!(
-                "Internal server error: {} (source: {})",
-                detail.to_string(),
-                source.to_string()
-            ),
-            Error::InvalidToken(detail, source) => format!(
-                "Invalid token: {} (source: {})",
-                detail.to_string(),
-                source.to_string()
-            ),
-            Error::MissingToken(detail, source) => format!(
-                "Missing token: {} (source: {})",
-                detail.to_string(),
-                source.to_string()
-            ),
+            Error::EntityNotFound(detail, source) => {
+                format!("Entity not found: {} (source: {})", detail, source)
+            }
+            Error::InternalSeverError(detail, source) => {
+                format!("Internal server error: {} (source: {})", detail, source)
+            }
+            Error::InvalidToken(detail, source) => {
+                format!("Invalid token: {} (source: {})", detail, source)
+            }
+            Error::MissingToken(detail, source) => {
+                format!("Missing token: {} (source: {})", detail, source)
+            }
         };
         write!(f, "{}", error)
     }

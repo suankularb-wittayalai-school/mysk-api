@@ -27,8 +27,7 @@ impl FromRequest for LoggedIn {
                         Error::InternalSeverError(
                             "App state not found".to_string(),
                             "LoggedIn Middleware".to_string(),
-                        )
-                        .into(),
+                        ),
                     ))
                 })
             }
@@ -45,25 +44,19 @@ impl FromRequest for LoggedIn {
                 Err(_) => {
                     return Box::pin(async {
                         // return 401 unauthorized if the token is not a string as ResponseType
-                        Err(ErrorUnauthorized::<Error>(
-                            Error::InvalidToken(
-                                "Invalid token".to_string(),
-                                "LoggedIn Middleware".to_string(),
-                            )
-                            .into(),
-                        ))
+                        Err(ErrorUnauthorized::<Error>(Error::InvalidToken(
+                            "Invalid token".to_string(),
+                            "LoggedIn Middleware".to_string(),
+                        )))
                     });
                 }
             },
             None => {
                 return Box::pin(async {
-                    Err(ErrorUnauthorized::<Error>(
-                        Error::MissingToken(
-                            "Missing token".to_string(),
-                            "LoggedIn Middleware".to_string(),
-                        )
-                        .into(),
-                    ))
+                    Err(ErrorUnauthorized::<Error>(Error::MissingToken(
+                        "Missing token".to_string(),
+                        "LoggedIn Middleware".to_string(),
+                    )))
                 })
             }
         };
@@ -78,13 +71,10 @@ impl FromRequest for LoggedIn {
             Ok(claims) => claims,
             Err(_) => {
                 return Box::pin(async {
-                    Err(ErrorUnauthorized::<Error>(
-                        Error::InvalidToken(
-                            "Invalid token".to_string(),
-                            "LoggedIn Middleware".to_string(),
-                        )
-                        .into(),
-                    ))
+                    Err(ErrorUnauthorized::<Error>(Error::InvalidToken(
+                        "Invalid token".to_string(),
+                        "LoggedIn Middleware".to_string(),
+                    )))
                 })
             }
         };
@@ -93,13 +83,10 @@ impl FromRequest for LoggedIn {
             Ok(user_id) => user_id,
             Err(_) => {
                 return Box::pin(async {
-                    Err(ErrorNotFound::<Error>(
-                        Error::EntityNotFound(
-                            "User not found".to_string(),
-                            "LoggedIn Middleware".to_string(),
-                        )
-                        .into(),
-                    ))
+                    Err(ErrorNotFound::<Error>(Error::EntityNotFound(
+                        "User not found".to_string(),
+                        "LoggedIn Middleware".to_string(),
+                    )))
                 })
             }
         };
@@ -109,13 +96,10 @@ impl FromRequest for LoggedIn {
 
             match user {
                 Ok(user) => Ok(LoggedIn(user)),
-                Err(_) => Err(ErrorNotFound::<Error>(
-                    Error::EntityNotFound(
-                        "User not found".to_string(),
-                        "LoggedIn Middleware".to_string(),
-                    )
-                    .into(),
-                )),
+                Err(_) => Err(ErrorNotFound::<Error>(Error::EntityNotFound(
+                    "User not found".to_string(),
+                    "LoggedIn Middleware".to_string(),
+                ))),
             }
         })
     }

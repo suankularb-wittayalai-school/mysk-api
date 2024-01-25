@@ -4,7 +4,7 @@ use actix_web::{http::header, web, App, HttpServer};
 use dotenv::dotenv;
 use mysk_lib::models::common::config::Config;
 // use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use sqlx::postgres::PgPoolOptions;
 use std::env;
 
 mod middlewares;
@@ -24,7 +24,8 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    // let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let env = Config::init();
 
     let pool = match PgPoolOptions::new()
         .max_connections(15)
@@ -61,7 +62,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(AppState {
                 db: pool.clone(),
-                jwt_secret: jwt_secret.clone(),
+                env: env.clone(),
             }))
             // .service(web::scope("/api/v1").configure(routes::config))
             .configure(routes::config)
