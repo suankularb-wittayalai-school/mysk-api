@@ -9,7 +9,7 @@ use std::env;
 mod routes;
 
 pub struct AppState {
-    db: Pool<Postgres>,
+    db: sqlx::PgPool,
     jwt_secret: String,
 }
 
@@ -25,7 +25,7 @@ async fn main() -> std::io::Result<()> {
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
 
     let pool = match PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(15)
         .connect(&database_url)
         .await
     {
@@ -38,13 +38,6 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         }
     };
-
-    // let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-
-    // builder
-    //     .set_private_key_file("ssl/privkey.pem", SslFiletype::PEM)
-    //     .unwrap();
-    // builder.set_certificate_chain_file("ssl/cert.pem").unwrap();
 
     println!("🚀 Server started successfully");
 
