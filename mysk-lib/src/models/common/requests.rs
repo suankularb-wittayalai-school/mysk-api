@@ -2,6 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use utoipa::ToSchema;
 
+#[derive(Debug, serde::Deserialize)]
+pub struct QueryablePlaceholder;
+
+#[derive(Debug, serde::Deserialize)]
+pub struct SortablePlaceholder;
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum FetchLevel {
@@ -11,7 +17,7 @@ pub enum FetchLevel {
     Detailed,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct FilterConfig<T> {
     pub data: Option<T>,
     pub q: Option<String>,
@@ -23,13 +29,13 @@ pub struct SortingConfig<T> {
     pub ascending: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct PaginationConfig {
     pub p: u32,
     pub size: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct RequestType<T, Queryable, Sortable> {
     pub data: Option<T>,
     pub pagination: Option<PaginationConfig>,
