@@ -3,7 +3,7 @@ use actix_web::{http, web, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use mysk_lib::error::Error;
-use mysk_lib::models::auth::TokenClaims;
+use mysk_lib::models::auth::oauth::TokenClaims;
 use mysk_lib::models::common::traits::GetById;
 use mysk_lib::models::user::User;
 use serde::Serialize;

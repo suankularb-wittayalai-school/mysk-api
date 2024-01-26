@@ -7,7 +7,7 @@ use jsonwebtoken::{encode, EncodingKey, Header};
 use mysk_lib::{
     error::Error,
     models::{
-        auth::{verify_id_token, GoogleUserResult, TokenClaims},
+        auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
         common::response::ResponseType,
         user::User,
     },
