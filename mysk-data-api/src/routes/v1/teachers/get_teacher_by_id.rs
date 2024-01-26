@@ -13,12 +13,13 @@ use mysk_lib::{
 };
 use sqlx::types::Uuid;
 
-use crate::AppState;
+use crate::{middlewares::api_key::HaveApiKey, AppState};
 
 #[get("/{id}")]
 pub async fn get_teacher_by_id(
     data: web::Data<AppState>,
     id: web::Path<Uuid>,
+    _: HaveApiKey,
     request_query: web::Query<RequestType<Teacher, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder, actix_web::Error> {
     let pool: &sqlx::Pool<sqlx::Postgres> = &data.db;
