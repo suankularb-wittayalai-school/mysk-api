@@ -13,7 +13,7 @@ use uuid::Uuid;
 use crate::AppState;
 
 #[derive(Serialize)]
-pub struct LoggedIn(User);
+pub struct LoggedIn(pub User);
 
 impl FromRequest for LoggedIn {
     type Error = Error;

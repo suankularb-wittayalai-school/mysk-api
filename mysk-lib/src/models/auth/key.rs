@@ -1,11 +1,13 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::{prelude::FromRow, Error as SqlxError, PgPool};
+use sqlx::{prelude::FromRow, PgPool};
 use uuid::Uuid;
 
 use rand::rngs::OsRng;
-use rand::RngCore; // Secure CSPRNG
+use rand::RngCore;
+
+use crate::error::Error; // Secure CSPRNG
 
 // use prefixed_api_key::PrefixedApiKeyController;
 
@@ -38,8 +40,8 @@ impl ApiKey {
     pub async fn create(
         pool: &PgPool,
         user_id: Uuid,
-        expire_days: i64,
-    ) -> Result<String, SqlxError> {
+        expire_days: Option<i64>,
+    ) -> Result<String, Error> {
         // Generate a new API key
         let short_token = generate_api_key(8);
         let long_token = generate_api_key(24);
@@ -48,21 +50,23 @@ impl ApiKey {
         let mut hasher = Sha256::new();
         hasher.update(long_token.as_bytes());
         let hash = hasher.finalize();
-        // make sure the hash is a valid UTF-8 string
-        let hash = String::from_utf8(hash.to_vec());
+        // // make sure the hash is a valid UTF-8 string
+        // let hash = String::from_utf8(hash.to_vec());
+        // base58 encode the hash
+        let hash = bs58::encode(hash).into_string();
 
-        let hash = match hash {
-            Ok(hash) => hash,
-            Err(_) => {
-                return Err(SqlxError::Io(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    "Invalid hash",
-                )))
-            }
-        };
+        // let hash = match hash {
+        //     Ok(hash) => hash,
+        //     Err(_) => {
+        //         return Err(Error::InternalSeverError(
+        //             "Failed to hash the API key".to_string(),
+        //             "ApiKey Model".to_string(),
+        //         ))
+        //     }
+        // };
 
         // Insert the API key into the database
-        sqlx::query!(
+        let res = sqlx::query!(
             r#"
             INSERT INTO user_api_keys (user_id, short_token, long_token_hash, expire_at)
             VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 DAY'))
@@ -70,12 +74,21 @@ impl ApiKey {
             user_id,
             short_token,
             hash,
-            expire_days as f32
+            match expire_days {
+                Some(days) => Some(days as f64),
+                None => None,
+            }
         )
         .execute(pool)
-        .await?;
+        .await;
 
-        Ok(format!("mysk_{}_{}", short_token, long_token))
+        match res {
+            Ok(_) => Ok(format!("mysk_{}_{}", short_token, long_token)),
+            Err(err) => Err(Error::InternalSeverError(
+                err.to_string(),
+                "ApiKey Model".to_string(),
+            )),
+        }
     }
 }
 

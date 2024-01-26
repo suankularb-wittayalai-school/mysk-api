@@ -49,24 +49,9 @@ export async function fetchAPI<Data extends {} = {}>(
   );
   if (!res.ok) {
     // throw new Error(await res.text());
-    return {
-      api_version: "1.0",
-      data: null,
-      error: {
-        id: "",
-        code: res.status,
-        detail: await res.text(),
-        error_type: "APIError",
-        source: sift([
-          process.env.NEXT_PUBLIC_API_URL,
-          // "http://127.0.0.1:8000",
-          path,
-          query && "?" + qs.stringify(query, { encode: false }),
-        ]).join(""),
-      },
-      meta: null,
-    };
+    return await res.json();
   }
 
   return await res.json();
 }
+
