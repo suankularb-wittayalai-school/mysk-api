@@ -26,6 +26,8 @@ export async function fetchAPI<Data extends {} = {}>(
     meta: null;
   } & ({ data: Data; error: null } | { data: null; error: APIError })
 > {
+  const API_KEY = process.env.NEXT_PUBLIC_MYSK_API_KEY;
+
   let res = await fetch(
     sift([
       process.env.NEXT_PUBLIC_API_URL,
@@ -41,6 +43,7 @@ export async function fetchAPI<Data extends {} = {}>(
                 headers: {
                   ...options.headers,
                   Authorization: `Bearer ${sessionToken}`,
+                  "x-api-key": API_KEY ?? "",
                 },
               }
             : {}),

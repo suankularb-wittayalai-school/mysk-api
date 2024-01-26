@@ -60,10 +60,12 @@ impl FromRequest for HaveApiKey {
         let token = PrefixedApiKey::from(token.to_string());
 
         let mut hasher = Sha256::new();
-        hasher.update(token.to_string().as_bytes());
+        hasher.update(token.get_long_token().as_bytes());
         let hashed_token = hasher.finalize();
         // let hash = String::from_utf8(hashed_token.to_vec());
         let hash = bs58::encode(hashed_token).into_string();
+
+        dbg!(&token, &hash);
 
         // let hash = match hash {
         //     Ok(hash) => hash,
@@ -81,7 +83,7 @@ impl FromRequest for HaveApiKey {
             let api_key = match sqlx::query_as!(
                 ApiKey,
                 r#"
-                SELECT * FROM user_api_keys WHERE long_token_hash = $1 AND short_token = $2 AND expire_at > NOW()
+                SELECT * FROM user_api_keys WHERE long_token_hash = $1 AND short_token = $2 AND (expire_at > NOW() OR expire_at IS NULL)
                 "#,
                 hash,
                 token.get_short_token()

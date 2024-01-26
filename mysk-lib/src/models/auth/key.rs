@@ -21,6 +21,7 @@ pub struct ApiKey {
     pub expire_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug)]
 pub struct PrefixedApiKey {
     prefix: String,
     short_token: String,
