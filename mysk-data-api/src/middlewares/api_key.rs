@@ -32,7 +32,7 @@ impl FromRequest for HaveApiKey {
 
         let pool = app_state.db.clone();
 
-        let x_api_key_header = req.headers().get("x-api-key");
+        let x_api_key_header = req.headers().get("X-API-KEY");
 
         let token = match x_api_key_header {
             Some(token) => match token.to_str() {
@@ -65,7 +65,7 @@ impl FromRequest for HaveApiKey {
         // let hash = String::from_utf8(hashed_token.to_vec());
         let hash = bs58::encode(hashed_token).into_string();
 
-        dbg!(&token, &hash);
+        // dbg!(&token, &hash);
 
         // let hash = match hash {
         //     Ok(hash) => hash,

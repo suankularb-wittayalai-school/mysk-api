@@ -20,7 +20,7 @@ pub async fn test(
 
     let student_id = request.query_string().split('=').collect::<Vec<&str>>()[1];
 
-    dbg!(student_id);
+    // dbg!(student_id);
 
     let student = DbStudent::get_by_id(pool, student_id.parse().unwrap())
         .await
