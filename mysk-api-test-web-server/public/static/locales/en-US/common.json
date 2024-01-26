@@ -1,0 +1,12 @@
+{
+  "brand": {
+    "name": "Next.js Template",
+    "logoText": "<0>SK </0><1>Next.js Template</1>",
+    "school": "Suankularb Wittayalai School"
+  },
+  "navigation": {
+    "home": "Home",
+    "login": "Log in",
+    "about": "About"
+  }
+}
