@@ -12,7 +12,7 @@ use self::{
 
 use super::common::{
     requests::FetchLevel,
-    traits::{FetchLevelVariant, GetById, TopLevelFromTable, TopLevelGetById},
+    traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
 };
 
 pub mod db;
