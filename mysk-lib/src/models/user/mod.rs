@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{Error, PgPool};
 use uuid::Uuid;
 
 use self::enums::user_role::UserRole;

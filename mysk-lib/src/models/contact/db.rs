@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
-use sqlx::{Error, PgPool};
-use uuid::Uuid;
 
 // use crate::models::common::traits::{BaseQuery, GetById};
 

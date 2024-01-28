@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDate, Utc};
-use sqlx::{query, Error, PgPool};
+use sqlx::query;
 use uuid::Uuid;
 
 use crate::{

@@ -1,5 +1,6 @@
 // use async_trait::async_trait;
 use chrono::NaiveDate;
+use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;

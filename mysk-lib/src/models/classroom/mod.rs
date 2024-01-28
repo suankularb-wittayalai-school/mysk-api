@@ -8,6 +8,7 @@ use self::{
     },
 };
 
+use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::pool;
 use uuid::Uuid;

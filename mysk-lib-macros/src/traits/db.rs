@@ -7,17 +7,11 @@ pub trait BaseQuery {
 
 // only for struct with id: Uuid and implements BaseQuery
 pub trait GetById: BaseQuery {
-    fn get_by_id(
-        pool: &PgPool,
-        id: Uuid,
-    ) -> impl std::future::Future<Output = Result<Self, Error>> + Send
+    async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self, Error>
     where
         Self: Sized;
 
-    fn get_by_ids(
-        pool: &PgPool,
-        ids: Vec<Uuid>,
-    ) -> impl std::future::Future<Output = Result<Vec<Self>, Error>> + Send
+    async fn get_by_ids(pool: &PgPool, ids: Vec<Uuid>) -> Result<Vec<Self>, Error>
     where
         Self: Sized;
 }

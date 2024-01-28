@@ -16,30 +16,18 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl GetById for #ident {
-            fn get_by_id(
-                pool: &PgPool,
-                id: Uuid,
-            ) -> impl std::future::Future<Output = Result<Self, Error>> + Send
-            where
-                Self: Sized,
-            {
-                let query = format!("{} WHERE id = $1", Self::base_query());
-                sqlx::query_as::<_, Self>(&query)
+            async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
+                sqlx::query_as::<_, #ident>(format!("{} WHERE id = $1", Self::base_query()).as_str())
                     .bind(id)
                     .fetch_one(pool)
+                    .await
             }
 
-            fn get_by_ids(
-                pool: &PgPool,
-                ids: Vec<Uuid>,
-            ) -> impl std::future::Future<Output = Result<Vec<Self>, Error>> + Send
-            where
-                Self: Sized,
-            {
-                let query = format!("{} WHERE id = ANY($1)", Self::base_query());
-                sqlx::query_as::<_, Self>(&query)
-                    .bind(ids)
+            async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> Result<Vec<Self>, sqlx::Error> {
+                sqlx::query_as::<_, #ident>(format!("{} WHERE id = ANY($1)", Self::base_query()).as_str())
+                    .bind(id)
                     .fetch_all(pool)
+                    .await
             }
         }
     };

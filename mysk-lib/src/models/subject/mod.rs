@@ -1,3 +1,4 @@
+use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::PgPool;
 use uuid::Uuid;

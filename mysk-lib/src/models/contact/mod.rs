@@ -2,6 +2,7 @@ pub mod db;
 pub mod enums;
 
 use chrono::{DateTime, Utc};
+use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
