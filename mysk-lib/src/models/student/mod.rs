@@ -63,27 +63,26 @@ impl TopLevelGetById for Student {
     async fn get_by_id(
         pool: &sqlx::PgPool,
         id: Uuid,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self, sqlx::Error> {
         let student = DbStudent::get_by_id(pool, id).await?;
 
-        Self::from_table(pool, student, _fetch_level, _descendant_fetch_level).await
+        Self::from_table(pool, student, fetch_level, descendant_fetch_level).await
     }
 
     async fn get_by_ids(
         pool: &sqlx::PgPool,
         ids: Vec<Uuid>,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>, sqlx::Error> {
         let students = DbStudent::get_by_ids(pool, ids).await?;
 
         let mut result = vec![];
 
         for contact in students {
-            result
-                .push(Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await?)
+            result.push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?)
         }
 
         Ok(result)

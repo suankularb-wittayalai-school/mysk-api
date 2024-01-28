@@ -47,18 +47,18 @@ impl GoogleUserResult {
 pub struct TokenPayload {
     // Add fields here as needed to capture the claims from the ID token
     // For example: iss, aud, exp, sub, email, etc.
-    aud: String,
-    azp: String,
+    _aud: String,
+    _azp: String,
     email: String,
     email_verified: bool,
-    exp: usize,
+    _exp: usize,
     given_name: String,
     family_name: String,
-    iat: usize,
-    iss: String,
-    jti: String,
+    _iat: usize,
+    _iss: String,
+    _jti: String,
     name: String,
-    nbf: usize,
+    _nbf: usize,
     picture: String,
     sub: String,
 }

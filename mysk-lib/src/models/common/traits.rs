@@ -13,24 +13,6 @@ pub trait FetchLevelVariant<T> {
         Self: Sized;
 }
 
-// pub trait BaseQuery {
-//     fn base_query() -> &'static str;
-// }
-
-// // only for struct with id: Uuid and implements BaseQuery
-// pub trait GetById {
-//     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, Error>
-//     where
-//         Self: Sized;
-
-//     async fn get_by_ids(
-//         pool: &sqlx::PgPool,
-//         ids: Vec<sqlx::types::Uuid>,
-//     ) -> Result<Vec<Self>, Error>
-//     where
-//         Self: Sized;
-// }
-
 pub trait TopLevelFromTable<T> {
     async fn from_table(
         pool: &pool::Pool<sqlx::Postgres>,
