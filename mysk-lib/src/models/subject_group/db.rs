@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
+use mysk_lib_derives::BaseQuery;
+use mysk_lib_macros::traits::db::BaseQuery;
 
-use crate::models::common::traits::BaseQuery;
-
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery)]
+#[base_query(query = "SELECT id, created_at, name_th, name_en FROM subject_groups")]
 pub struct DbSubjectGroup {
     pub id: i64,
     pub created_at: Option<DateTime<Utc>>,
@@ -10,11 +11,11 @@ pub struct DbSubjectGroup {
     pub name_en: String,
 }
 
-impl BaseQuery for DbSubjectGroup {
-    fn base_query() -> &'static str {
-        r#"SELECT id, created_at, name_th, name_en FROM subject_groups"#
-    }
-}
+// impl BaseQuery for DbSubjectGroup {
+//     fn base_query() -> &'static str {
+//         r#"SELECT id, created_at, name_th, name_en FROM subject_groups"#
+//     }
+// }
 
 impl DbSubjectGroup {
     pub async fn get_by_id(pool: &sqlx::PgPool, id: i64) -> Result<Self, sqlx::Error> {
