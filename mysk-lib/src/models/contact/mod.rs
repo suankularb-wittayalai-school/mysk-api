@@ -10,7 +10,7 @@ use self::{db::DbContact, enums::contact_type::ContactType};
 use super::common::{
     requests::FetchLevel,
     string::FlexibleMultiLangString,
-    traits::{GetById, TopLevelFromTable, TopLevelGetById},
+    traits::{TopLevelFromTable, TopLevelGetById},
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

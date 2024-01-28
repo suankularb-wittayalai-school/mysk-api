@@ -1,0 +1,16 @@
+[package]
+name = "mysk-lib-derives"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
+
+
+[dependencies]
+mysk-lib-macros = { path = "../mysk-lib-macros" }
+proc-macro2 = "1.0.30"
+quote = "1.0.9"
+syn = { version = "2.0.48", features = ["full"] }
+darling = "0.20.3"

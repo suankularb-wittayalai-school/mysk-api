@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 use super::common::{
     requests::FetchLevel,
-    traits::{FetchLevelVariant, GetById, TopLevelFromTable, TopLevelGetById},
+    traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
 };
 
 #[derive(Clone, Debug, Deserialize)]
