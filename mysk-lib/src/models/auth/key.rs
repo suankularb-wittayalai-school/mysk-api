@@ -1,15 +1,12 @@
 use chrono::{DateTime, Utc};
+use rand::rngs::OsRng;
+use rand::RngCore;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::{prelude::FromRow, PgPool};
 use uuid::Uuid;
 
-use rand::rngs::OsRng;
-use rand::RngCore;
-
-use crate::error::Error; // Secure CSPRNG
-
-// use prefixed_api_key::PrefixedApiKeyController;
+use crate::prelude::*;
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct ApiKey {
@@ -38,11 +35,7 @@ fn generate_api_key(length: usize) -> String {
 }
 
 impl ApiKey {
-    pub async fn create(
-        pool: &PgPool,
-        user_id: Uuid,
-        expire_days: Option<i64>,
-    ) -> Result<String, Error> {
+    pub async fn create(pool: &PgPool, user_id: Uuid, expire_days: Option<i64>) -> Result<String> {
         // Generate a new API key
         let short_token = generate_api_key(8);
         let long_token = generate_api_key(24);

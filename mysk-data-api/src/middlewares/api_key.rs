@@ -1,8 +1,8 @@
 use actix_web::dev::Payload;
 use actix_web::{web, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
-use mysk_lib::error::Error;
 use mysk_lib::models::auth::key::{ApiKey, PrefixedApiKey};
+use mysk_lib::prelude::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::Error as SqlxError;
@@ -15,7 +15,7 @@ pub struct HaveApiKey(ApiKey);
 
 impl FromRequest for HaveApiKey {
     type Error = Error;
-    type Future = Pin<Box<dyn FutureTrait<Output = Result<Self, Self::Error>>>>;
+    type Future = Pin<Box<dyn FutureTrait<Output = Result<Self>>>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let app_state = match req.app_data::<web::Data<AppState>>() {

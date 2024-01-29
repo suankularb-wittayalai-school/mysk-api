@@ -1,14 +1,15 @@
-use sqlx::{pool, Error, PgPool};
+use sqlx::{pool, PgPool};
 use uuid::Uuid;
 
 use super::requests::FetchLevel;
+use crate::prelude::*;
 
 pub trait FetchLevelVariant<T> {
     async fn from_table(
         pool: &PgPool,
         table: T,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self>
     where
         Self: Sized;
 }
@@ -19,7 +20,7 @@ pub trait TopLevelFromTable<T> {
         table: T,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self>
     where
         Self: Sized;
 }
@@ -30,7 +31,7 @@ pub trait TopLevelGetById {
         id: Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self>
     where
         Self: Sized;
 
@@ -39,7 +40,7 @@ pub trait TopLevelGetById {
         ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Vec<Self>, Error>
+    ) -> Result<Vec<Self>>
     where
         Self: Sized;
 }

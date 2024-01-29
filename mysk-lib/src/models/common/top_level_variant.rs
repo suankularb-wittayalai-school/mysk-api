@@ -1,8 +1,10 @@
 use std::marker::PhantomData;
 
 use actix_web::HttpResponse;
-use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
+use mysk_lib_macros::traits::db::GetById;
 
 use super::{
     requests::FetchLevel,
@@ -43,7 +45,7 @@ where
         table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         match fetch_level {
             Some(FetchLevel::IdOnly) => Ok(Self::IdOnly(
                 Box::new(IdOnly::from_table(pool, table, descendant_fetch_level).await?),
@@ -87,7 +89,7 @@ where
     fn serialize<S: serde::Serializer>(
         &self,
         serializer: S,
-    ) -> Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error> {
+    ) -> std::result::Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error> {
         match self {
             TopLevelVariant::IdOnly(variant, _) => variant.serialize(serializer),
             TopLevelVariant::Compact(variant, _) => variant.serialize(serializer),
@@ -115,8 +117,18 @@ where
         id: uuid::Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
-        let variant = DbVariant::get_by_id(pool, id).await?;
+    ) -> Result<Self> {
+        let variant = DbVariant::get_by_id(pool, id).await;
+
+        let variant = match variant {
+            Ok(variant) => variant,
+            Err(e) => {
+                return Err(Error::InternalSeverError(
+                    e.to_string(),
+                    "TopLevelGetById::get_by_id".to_string(),
+                ))
+            }
+        };
 
         Self::from_table(pool, variant, fetch_level, descendant_fetch_level).await
     }
@@ -126,8 +138,18 @@ where
         ids: Vec<uuid::Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Vec<Self>, sqlx::Error> {
-        let variants = DbVariant::get_by_ids(pool, ids).await?;
+    ) -> Result<Vec<Self>> {
+        let variants = DbVariant::get_by_ids(pool, ids).await;
+
+        let variants = match variants {
+            Ok(variants) => variants,
+            Err(e) => {
+                return Err(Error::InternalSeverError(
+                    e.to_string(),
+                    "TopLevelGetById::get_by_ids".to_string(),
+                ))
+            }
+        };
 
         let mut result = vec![];
 
@@ -178,7 +200,7 @@ impl<
         Default: Serialize + FetchLevelVariant<DbVariant>,
         Detailed: Serialize + FetchLevelVariant<DbVariant>,
     > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
-    for Result<HttpResponse, actix_web::Error>
+    for Result<HttpResponse>
 {
     fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
         let response_type: ResponseType<

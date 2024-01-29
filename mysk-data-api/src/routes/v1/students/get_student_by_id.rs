@@ -1,17 +1,17 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Responder};
+use sqlx::types::Uuid;
 
+use mysk_lib::prelude::*;
 use mysk_lib::{
     error::Error,
     models::{
         common::{
             requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
-            response::ResponseType,
             traits::TopLevelGetById,
         },
         student::Student,
     },
 };
-use sqlx::types::Uuid;
 
 use crate::{middlewares::api_key::HaveApiKey, AppState};
 
@@ -21,7 +21,7 @@ pub async fn get_student_by_id(
     id: web::Path<Uuid>,
     _: HaveApiKey,
     request_query: web::Query<RequestType<Student, QueryablePlaceholder, SortablePlaceholder>>,
-) -> Result<impl Responder, actix_web::Error> {
+) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = id.into_inner();
 
@@ -41,12 +41,7 @@ pub async fn get_student_by_id(
         Some(fetch_level),
         Some(descendant_fetch_level),
     )
-    .await;
+    .await?;
 
-    match student {
-        Ok(student) => student.into(),
-        Err(e) => {
-            Ok(Error::EntityNotFound(e.to_string(), format!("/v1/students/{student_id}")).into())
-        }
-    }
+    Ok(student)
 }

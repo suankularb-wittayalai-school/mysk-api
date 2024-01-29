@@ -2,9 +2,9 @@ use actix_web::dev::Payload;
 use actix_web::{http, web, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use mysk_lib::error::Error;
 use mysk_lib::models::auth::oauth::TokenClaims;
 use mysk_lib::models::user::User;
+use mysk_lib::prelude::*;
 use mysk_lib_macros::traits::db::GetById;
 use serde::Serialize;
 use std::pin::Pin;
@@ -17,7 +17,7 @@ pub struct LoggedIn(pub User);
 
 impl FromRequest for LoggedIn {
     type Error = Error;
-    type Future = Pin<Box<dyn FutureTrait<Output = Result<Self, Self::Error>>>>;
+    type Future = Pin<Box<dyn FutureTrait<Output = Result<Self>>>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let app_state = match req.app_data::<web::Data<AppState>>() {

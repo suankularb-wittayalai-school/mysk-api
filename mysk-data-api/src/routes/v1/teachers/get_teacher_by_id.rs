@@ -1,5 +1,7 @@
 use actix_web::{get, web, HttpResponse, Responder};
+use sqlx::types::Uuid;
 
+use mysk_lib::prelude::*;
 use mysk_lib::{
     error::Error,
     models::{
@@ -11,7 +13,6 @@ use mysk_lib::{
         teacher::Teacher,
     },
 };
-use sqlx::types::Uuid;
 
 use crate::{middlewares::api_key::HaveApiKey, AppState};
 
@@ -21,7 +22,7 @@ pub async fn get_teacher_by_id(
     id: web::Path<Uuid>,
     _: HaveApiKey,
     request_query: web::Query<RequestType<Teacher, QueryablePlaceholder, SortablePlaceholder>>,
-) -> Result<impl Responder, actix_web::Error> {
+) -> Result<impl Responder> {
     let pool: &sqlx::Pool<sqlx::Postgres> = &data.db;
     let teacher_id = id.into_inner();
 
@@ -41,12 +42,7 @@ pub async fn get_teacher_by_id(
         Some(fetch_level),
         Some(descendant_fetch_level),
     )
-    .await;
+    .await?;
 
-    match teacher {
-        Ok(student) => Ok(HttpResponse::Ok().json(ResponseType::new(student, None))),
-        Err(e) => {
-            Ok(Error::EntityNotFound(e.to_string(), format!("/v1/teachers/{teacher_id}")).into())
-        }
-    }
+    Ok(teacher)
 }
