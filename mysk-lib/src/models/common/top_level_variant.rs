@@ -170,3 +170,21 @@ impl<
         HttpResponse::Ok().json(response_type)
     }
 }
+
+impl<
+        DbVariant: GetById,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+        Compact: Serialize + FetchLevelVariant<DbVariant>,
+        Default: Serialize + FetchLevelVariant<DbVariant>,
+        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
+    for Result<HttpResponse, actix_web::Error>
+{
+    fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
+        let response_type: ResponseType<
+            TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>,
+        > = variant.into();
+
+        Ok(HttpResponse::Ok().json(response_type))
+    }
+}
