@@ -51,7 +51,7 @@ export const getStaticProps = async ({ locale }: { locale: LangCode }) => ({
 });
 
 IndexPage.pageHeader = {
-  title: "SK Shopping Test Server",
+  title: "MySK API Test Server",
   // icon: <MaterialIcon icon="waving_hand" />,
 };
 
