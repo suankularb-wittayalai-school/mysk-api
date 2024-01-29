@@ -6,7 +6,7 @@ macro_rules! impl_fetch_level_variant_from {
                 _pool: &PgPool,
                 table: $db_type,
                 _descendant_fetch_level: Option<&FetchLevel>,
-            ) -> Result<Self, sqlx::Error> {
+            ) -> Result<Self> {
                 Ok(Self::from(table))
             }
         }

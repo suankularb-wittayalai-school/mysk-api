@@ -4,6 +4,7 @@ use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use sqlx::query;
 use uuid::Uuid;
 
+use crate::prelude::*;
 use crate::{
     helpers::date::get_current_academic_year,
     // models::common::traits::{BaseQuery, GetById},
@@ -24,8 +25,8 @@ impl DbClassroom {
         pool: &sqlx::PgPool,
         classroom_id: Uuid,
         year: Option<i64>,
-    ) -> Result<Vec<Uuid>, sqlx::Error> {
-        query!(
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
             r#"SELECT teacher_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE classroom_id = $1 AND year = $2"#,
             classroom_id,
             year.unwrap_or_else(|| get_current_academic_year(None))
@@ -37,14 +38,22 @@ impl DbClassroom {
                 .into_iter()
                 .map(|advisor| advisor.teacher_id)
                 .collect()
-        })
+        });
+
+        match res {
+            Ok(advisors) => Ok(advisors),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbClassroom::get_classroom_advisors".to_string(),
+            )),
+        }
     }
 
     pub async fn get_classroom_students(
         pool: &sqlx::PgPool,
         classroom_id: Uuid,
-    ) -> Result<Vec<Uuid>, sqlx::Error> {
-        query!(
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
             r#"SELECT student_id FROM classroom_students WHERE classroom_id = $1"#,
             classroom_id
         )
@@ -55,14 +64,22 @@ impl DbClassroom {
                 .into_iter()
                 .map(|student| student.student_id)
                 .collect()
-        })
+        });
+
+        match res {
+            Ok(students) => Ok(students),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbClassroom::get_classroom_students".to_string(),
+            )),
+        }
     }
 
     pub async fn get_classroom_contacts(
         pool: &sqlx::PgPool,
         classroom_id: Uuid,
-    ) -> Result<Vec<Uuid>, sqlx::Error> {
-        query!(
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
             r#"SELECT contact_id FROM classroom_contacts WHERE classroom_id = $1"#,
             classroom_id
         )
@@ -73,6 +90,14 @@ impl DbClassroom {
                 .into_iter()
                 .map(|contact| contact.contact_id)
                 .collect()
-        })
+        });
+
+        match res {
+            Ok(contacts) => Ok(contacts),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbClassroom::get_classroom_contacts".to_string(),
+            )),
+        }
     }
 }

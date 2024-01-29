@@ -65,11 +65,27 @@ async fn google_oauth_handler(
 
     let user = User::get_by_email(&data.db, &google_user.email).await;
 
+    // let user_id = match user {
+    //     Some(user) => Ok(user.id),
+    //     None => {
+    //         return Err(Error::EntityNotFound(
+    //             "User not found".to_string(),
+    //             "/auth/oauth/google".to_string(),
+    //         ))
+    //     }
+    // };
+
     let user_id = match user {
-        Some(user) => user.id,
-        None => {
+        Ok(Some(user)) => user.id,
+        Ok(None) => {
             return Err(Error::EntityNotFound(
                 "User not found".to_string(),
+                "/auth/oauth/google".to_string(),
+            ))
+        }
+        Err(err) => {
+            return Err(Error::InternalSeverError(
+                err.to_string(),
                 "/auth/oauth/google".to_string(),
             ))
         }

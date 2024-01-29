@@ -13,6 +13,7 @@ use super::common::{
     string::FlexibleMultiLangString,
     traits::{TopLevelFromTable, TopLevelGetById},
 };
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Contact {
@@ -32,7 +33,7 @@ impl TopLevelFromTable<DbContact> for Contact {
         table: db::DbContact,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         Ok(Self {
             id: table.id,
             created_at: table.created_at,
@@ -66,7 +67,7 @@ impl TopLevelGetById for Contact {
         id: Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         let contact = DbContact::get_by_id(pool, id).await?;
 
         Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await
@@ -77,7 +78,7 @@ impl TopLevelGetById for Contact {
         ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Vec<Self>, sqlx::Error> {
+    ) -> Result<Vec<Self>> {
         let contacts = DbContact::get_by_ids(pool, ids).await?;
 
         let mut result = vec![];

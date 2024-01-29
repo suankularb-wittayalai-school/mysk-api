@@ -2,6 +2,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::query;
 use uuid::Uuid;
 
+use crate::prelude::*;
 use crate::{
     helpers::date::get_current_academic_year,
     models::{
@@ -9,7 +10,6 @@ use crate::{
         person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
     },
 };
-
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
@@ -44,23 +44,26 @@ pub struct DbTeacher {
 }
 
 impl DbTeacher {
-    pub async fn get_teacher_contacts(
-        pool: &sqlx::PgPool,
-        teacher_id: Uuid,
-    ) -> Result<Vec<Uuid>, sqlx::Error> {
+    pub async fn get_teacher_contacts(pool: &sqlx::PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN teachers ON people.id = teachers.person_id WHERE teachers.id = $1"#,
             teacher_id
-        ).fetch_all(pool).await?;
+        ).fetch_all(pool).await;
 
-        Ok(res.iter().map(|r| r.id).collect())
+        match res {
+            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbTeacher::get_teacher_contacts".to_string(),
+            )),
+        }
     }
 
     pub async fn get_teacher_advisor_at(
         pool: &sqlx::PgPool,
         teacher_id: Uuid,
         academic_year: Option<i64>,
-    ) -> Result<Option<Uuid>, sqlx::Error> {
+    ) -> Result<Option<Uuid>> {
         let res = query!(
             r#"SELECT classroom_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE teacher_id = $1 AND classrooms.year = $2"#,
             teacher_id,
@@ -70,16 +73,22 @@ impl DbTeacher {
             }
         )
         .fetch_optional(pool)
-        .await?;
+        .await;
 
-        Ok(res.map(|r| r.classroom_id))
+        match res {
+            Ok(res) => Ok(res.map(|r| r.classroom_id)),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbTeacher::get_teacher_advisor_at".to_string(),
+            )),
+        }
     }
 
     pub async fn get_subject_in_charge(
         pool: &sqlx::PgPool,
         teacher_id: Uuid,
         academic_year: Option<i64>,
-    ) -> Result<Vec<Uuid>, sqlx::Error> {
+    ) -> Result<Vec<Uuid>> {
         let res = query!(
             r#"SELECT subject_id FROM subject_teachers WHERE teacher_id = $1 AND year = $2"#,
             teacher_id,
@@ -89,7 +98,7 @@ impl DbTeacher {
             }
         )
         .fetch_all(pool)
-        .await?;
+        .await;
 
         let res2 = query!(
             r#"SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2"#,
@@ -100,7 +109,27 @@ impl DbTeacher {
             }
         )
         .fetch_all(pool)
-        .await?;
+        .await;
+
+        let res = match res {
+            Ok(res) => res,
+            Err(e) => {
+                return Err(Error::InternalSeverError(
+                    e.to_string(),
+                    "DbTeacher::get_subject_in_charge".to_string(),
+                ))
+            }
+        };
+
+        let res2 = match res2 {
+            Ok(res) => res,
+            Err(e) => {
+                return Err(Error::InternalSeverError(
+                    e.to_string(),
+                    "DbTeacher::get_subject_in_charge".to_string(),
+                ))
+            }
+        };
 
         let mut result = vec![];
 

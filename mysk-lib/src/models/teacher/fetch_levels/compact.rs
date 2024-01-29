@@ -7,6 +7,7 @@ use crate::models::{
     subject_group::SubjectGroup,
     teacher::db::DbTeacher,
 };
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactTeacher {
@@ -25,7 +26,7 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
         pool: &PgPool,
         table: DbTeacher,
         _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
 

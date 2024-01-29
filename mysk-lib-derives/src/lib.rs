@@ -24,14 +24,14 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let expanded = match opts.table {
         None => quote! {
             impl GetById for #ident {
-                async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
+                async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> std::result::Result<Self, sqlx::Error> {
                     sqlx::query_as::<_, #ident>(format!("{} WHERE id = $1", Self::base_query()).as_str())
                         .bind(id)
                         .fetch_one(pool)
                         .await
                 }
 
-                async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> Result<Vec<Self>, sqlx::Error> {
+                async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> {
                     sqlx::query_as::<_, #ident>(format!("{} WHERE id = ANY($1)", Self::base_query()).as_str())
                         .bind(id)
                         .fetch_all(pool)
@@ -41,14 +41,14 @@ pub fn derive(input: TokenStream) -> TokenStream {
         },
         Some(table) => quote! {
             impl GetById for #ident {
-                async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
+                async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> std::result::Result<Self, sqlx::Error> {
                     sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = $1", Self::base_query(), #table).as_str())
                         .bind(id)
                         .fetch_one(pool)
                         .await
                 }
 
-                async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> Result<Vec<Self>, sqlx::Error> {
+                async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> {
                     sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = ANY($1)", Self::base_query(), #table).as_str())
                         .bind(id)
                         .fetch_all(pool)

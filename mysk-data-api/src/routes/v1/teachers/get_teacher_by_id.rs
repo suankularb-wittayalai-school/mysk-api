@@ -1,18 +1,14 @@
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Responder};
 use sqlx::types::Uuid;
 
-use mysk_lib::prelude::*;
-use mysk_lib::{
-    error::Error,
-    models::{
-        common::{
-            requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
-            response::ResponseType,
-            traits::TopLevelGetById,
-        },
-        teacher::Teacher,
+use mysk_lib::models::{
+    common::{
+        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        traits::TopLevelGetById,
     },
+    teacher::Teacher,
 };
+use mysk_lib::prelude::*;
 
 use crate::{middlewares::api_key::HaveApiKey, AppState};
 

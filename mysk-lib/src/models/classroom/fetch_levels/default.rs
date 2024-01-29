@@ -12,6 +12,7 @@ use crate::models::{
     student::Student,
     teacher::Teacher,
 };
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultClassroom {
@@ -29,7 +30,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
         pool: &PgPool,
         table: DbClassroom,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         let student_ids = DbClassroom::get_classroom_students(pool, table.id).await?;
         let contact_ids = DbClassroom::get_classroom_contacts(pool, table.id).await?;
         let class_advisor_ids = DbClassroom::get_classroom_advisors(pool, table.id, None).await?;

@@ -67,6 +67,12 @@ impl From<&Error> for ErrorType {
     }
 }
 
+impl From<sqlx::Error> for Error {
+    fn from(val: sqlx::Error) -> Self {
+        Error::InternalSeverError(val.to_string(), "sqlx".to_string())
+    }
+}
+
 impl From<&Error> for HttpResponse {
     fn from(val: &Error) -> Self {
         let res_val: ErrorResponseType = val.into();

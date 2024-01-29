@@ -2,6 +2,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::query;
 use uuid::Uuid;
 
+use crate::prelude::*;
 use crate::{
     helpers::date::get_current_academic_year,
     models::{
@@ -43,23 +44,26 @@ pub struct DbStudent {
 }
 
 impl DbStudent {
-    pub async fn get_student_contacts(
-        pool: &sqlx::PgPool,
-        student_id: Uuid,
-    ) -> Result<Vec<Uuid>, sqlx::Error> {
+    pub async fn get_student_contacts(pool: &sqlx::PgPool, student_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN students ON people.id = students.person_id WHERE students.id = $1"#,
             student_id
-        ).fetch_all(pool).await?;
+        ).fetch_all(pool).await;
 
-        Ok(res.iter().map(|r| r.id).collect())
+        match res {
+            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbStudent::get_student_contacts".to_string(),
+            )),
+        }
     }
 
     pub async fn get_student_classroom(
         pool: &sqlx::PgPool,
         student_id: Uuid,
         academic_year: Option<i64>,
-    ) -> Result<Option<ClassroomWClassNo>, sqlx::Error> {
+    ) -> Result<Option<ClassroomWClassNo>> {
         let res = query!(
             r#"SELECT classroom_id, class_no FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_id WHERE student_id = $1 AND year = $2"#,
             student_id,
@@ -69,14 +73,20 @@ impl DbStudent {
             }
         )
         .fetch_optional(pool)
-        .await?;
+        .await;
 
         match res {
-            None => Ok(None),
-            Some(res) => Ok(Some(ClassroomWClassNo {
-                id: res.classroom_id,
-                class_no: res.class_no,
-            })),
+            Ok(res) => match res {
+                Some(res) => Ok(Some(ClassroomWClassNo {
+                    id: res.classroom_id,
+                    class_no: res.class_no,
+                })),
+                None => Ok(None),
+            },
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbStudent::get_student_classroom".to_string(),
+            )),
         }
     }
 }

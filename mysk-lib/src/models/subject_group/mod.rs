@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use self::db::DbSubjectGroup;
-
 use super::common::{requests::FetchLevel, string::MultiLangString, traits::TopLevelFromTable};
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SubjectGroup {
@@ -20,7 +20,7 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
         table: DbSubjectGroup,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         Ok(Self {
             id: table.id,
             created_at: table.created_at,
@@ -35,7 +35,7 @@ impl SubjectGroup {
         id: i64,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         let contact = DbSubjectGroup::get_by_id(pool, id).await?;
 
         Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await
@@ -46,7 +46,7 @@ impl SubjectGroup {
         ids: Vec<i64>,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Vec<Self>, sqlx::Error> {
+    ) -> Result<Vec<Self>> {
         let contacts = DbSubjectGroup::get_by_ids(pool, ids).await?;
 
         let mut result = vec![];
