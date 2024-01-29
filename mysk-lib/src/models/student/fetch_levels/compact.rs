@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{Error, PgPool};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::models::{
     common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
     student::db::DbStudent,
 };
+
+use mysk_lib_macros::impl_fetch_level_variant_from;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactStudent {
@@ -34,12 +36,4 @@ impl From<DbStudent> for CompactStudent {
     }
 }
 
-impl FetchLevelVariant<DbStudent> for CompactStudent {
-    async fn from_table(
-        _pool: &PgPool,
-        table: DbStudent,
-        _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, Error> {
-        Ok(Self::from(table))
-    }
-}
+impl_fetch_level_variant_from!(CompactStudent, DbStudent);
