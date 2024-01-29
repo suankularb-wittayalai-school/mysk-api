@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
+use sqlx::{Error, PgPool};
 use uuid::Uuid;
 
-use crate::models::{common::string::MultiLangString, student::db::DbStudent};
+use crate::models::{
+    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+    student::db::DbStudent,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactStudent {
@@ -27,5 +31,15 @@ impl From<DbStudent> for CompactStudent {
             student_id: student.student_id,
             profile_url: student.profile,
         }
+    }
+}
+
+impl FetchLevelVariant<DbStudent> for CompactStudent {
+    async fn from_table(
+        _pool: &PgPool,
+        table: DbStudent,
+        _descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Self, Error> {
+        Ok(Self::from(table))
     }
 }
