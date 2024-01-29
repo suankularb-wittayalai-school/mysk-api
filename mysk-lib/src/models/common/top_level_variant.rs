@@ -48,15 +48,17 @@ where
                 PhantomData,
             )),
             Some(FetchLevel::Compact) => Ok(Self::Compact(
-                Box::new(Compact::from_table(pool, table, descendant_fetch_level).await?),
+                Box::new(Box::pin(Compact::from_table(pool, table, descendant_fetch_level)).await?),
                 PhantomData,
             )),
             Some(FetchLevel::Default) => Ok(Self::Default(
-                Box::new(Default::from_table(pool, table, descendant_fetch_level).await?),
+                Box::new(Box::pin(Default::from_table(pool, table, descendant_fetch_level)).await?),
                 PhantomData,
             )),
             Some(FetchLevel::Detailed) => Ok(Self::Detailed(
-                Box::new(Detailed::from_table(pool, table, descendant_fetch_level).await?),
+                Box::new(
+                    Box::pin(Detailed::from_table(pool, table, descendant_fetch_level)).await?,
+                ),
                 PhantomData,
             )),
             None => Ok(Self::IdOnly(
