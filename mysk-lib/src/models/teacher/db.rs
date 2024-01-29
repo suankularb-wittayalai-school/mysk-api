@@ -17,6 +17,7 @@ use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 #[base_query(
     query = r#"SELECT teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id, user_id, subject_group_id FROM teachers INNER JOIN people ON teachers.person_id = people.id"#
 )]
+#[get_by_id(table = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

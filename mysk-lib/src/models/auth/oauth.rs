@@ -47,17 +47,24 @@ impl GoogleUserResult {
 pub struct TokenPayload {
     // Add fields here as needed to capture the claims from the ID token
     // For example: iss, aud, exp, sub, email, etc.
+    #[serde(rename = "aud")]
     _aud: String,
+    #[serde(rename = "azp")]
     _azp: String,
     email: String,
     email_verified: bool,
+    #[serde(rename = "exp")]
     _exp: usize,
     given_name: String,
     family_name: String,
+    #[serde(rename = "iat")]
     _iat: usize,
+    #[serde(rename = "iss")]
     _iss: String,
+    #[serde(rename = "jti")]
     _jti: String,
     name: String,
+    #[serde(rename = "nbf")]
     _nbf: usize,
     picture: String,
     sub: String,

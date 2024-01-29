@@ -72,6 +72,7 @@ export const useOneTapSignin = (options?: {
                     body: JSON.stringify({ credential: response.credential }),
                   }
                 );
+              console.log({ response });
 
               if (error) {
                 // throw new Error(error.detail);
@@ -79,6 +80,8 @@ export const useOneTapSignin = (options?: {
                 setLoading(false);
                 return;
               }
+
+              console.log({ BackendCredentials, error });
 
               const { data: user, error: userError } = await fetchAPI<User>(
                 "/auth/user",
@@ -155,3 +158,4 @@ export const useOneTapSignin = (options?: {
 
   return { loading };
 };
+

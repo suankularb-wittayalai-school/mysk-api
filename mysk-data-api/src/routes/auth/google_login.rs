@@ -34,8 +34,6 @@ async fn google_oauth_handler(
     data: web::Data<AppState>,
     query: web::Json<OAuthRequest>,
 ) -> Result<impl Responder, actix_web::Error> {
-    // dbg!(query);
-
     let id_token: String = query.credential.to_owned();
 
     // dbg!(id_token.as_str());
@@ -57,6 +55,7 @@ async fn google_oauth_handler(
             )));
         }
     };
+    // dbg!(&query);
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
 
