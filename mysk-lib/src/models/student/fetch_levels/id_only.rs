@@ -1,4 +1,4 @@
-use mysk_lib_macros::{id_only_variant_boiler_plate, impl_fetch_level_variant_from};
+use mysk_lib_macros::{impl_fetch_level_variant_from, impl_id_only_variant_from};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -13,4 +13,4 @@ pub struct IdOnlyStudent {
     pub id: Uuid,
 }
 
-id_only_variant_boiler_plate!(IdOnlyStudent, DbStudent);
+impl_id_only_variant_from!(IdOnlyStudent, DbStudent);
