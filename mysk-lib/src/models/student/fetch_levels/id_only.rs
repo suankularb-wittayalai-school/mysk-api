@@ -1,3 +1,4 @@
+use mysk_lib_macros::fetch_level_variant::non_db_request_variant;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -7,23 +8,11 @@ use crate::models::{
     student::db::DbStudent,
 };
 
+use mysk_lib_macros::non_db_request_variant;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdOnlyStudent {
     pub id: Uuid,
 }
 
-impl From<DbStudent> for IdOnlyStudent {
-    fn from(student: DbStudent) -> Self {
-        Self { id: student.id }
-    }
-}
-
-impl FetchLevelVariant<DbStudent> for IdOnlyStudent {
-    async fn from_table(
-        _pool: &PgPool,
-        table: DbStudent,
-        _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
-        Ok(Self::from(table))
-    }
-}
+non_db_request_variant!(IdOnlyStudent, DbStudent);
