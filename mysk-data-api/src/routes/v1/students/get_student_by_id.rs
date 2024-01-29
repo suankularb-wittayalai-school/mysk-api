@@ -44,7 +44,7 @@ pub async fn get_student_by_id(
     .await;
 
     match student {
-        Ok(student) => Ok(HttpResponse::Ok().json(ResponseType::new(student, None))),
+        Ok(student) => Ok(student.into()),
         Err(e) => {
             Ok(Error::EntityNotFound(e.to_string(), format!("/v1/students/{student_id}")).into())
         }

@@ -1,10 +1,12 @@
 use std::marker::PhantomData;
 
+use actix_web::HttpResponse;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 
 use super::{
     requests::FetchLevel,
+    response::ResponseType,
     traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
 };
 
@@ -135,5 +137,36 @@ where
         }
 
         Ok(result)
+    }
+}
+
+impl<
+        DbVariant: GetById,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+        Compact: Serialize + FetchLevelVariant<DbVariant>,
+        Default: Serialize + FetchLevelVariant<DbVariant>,
+        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
+    for ResponseType<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
+{
+    fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
+        ResponseType::new(variant, None)
+    }
+}
+
+impl<
+        DbVariant: GetById,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+        Compact: Serialize + FetchLevelVariant<DbVariant>,
+        Default: Serialize + FetchLevelVariant<DbVariant>,
+        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for HttpResponse
+{
+    fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
+        let response_type: ResponseType<
+            TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>,
+        > = variant.into();
+
+        HttpResponse::Ok().json(response_type)
     }
 }
