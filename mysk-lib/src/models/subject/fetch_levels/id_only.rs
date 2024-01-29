@@ -1,6 +1,9 @@
+use mysk_lib_macros::{id_only_variant_boiler_plate, impl_fetch_level_variant_from};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::models::common::{requests::FetchLevel, traits::FetchLevelVariant};
 use crate::models::subject::db::DbSubject;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -8,8 +11,4 @@ pub struct IdOnlySubject {
     pub id: Uuid,
 }
 
-impl From<DbSubject> for IdOnlySubject {
-    fn from(subject: DbSubject) -> Self {
-        Self { id: subject.id }
-    }
-}
+id_only_variant_boiler_plate!(IdOnlySubject, DbSubject);

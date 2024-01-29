@@ -1,3 +1,4 @@
+use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -24,12 +25,4 @@ impl From<DbClassroom> for CompactClassroom {
     }
 }
 
-impl FetchLevelVariant<DbClassroom> for CompactClassroom {
-    async fn from_table(
-        _pool: &PgPool,
-        table: DbClassroom,
-        _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
-        Ok(Self::from(table))
-    }
-}
+impl_fetch_level_variant_from!(CompactClassroom, DbClassroom);

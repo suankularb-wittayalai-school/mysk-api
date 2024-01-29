@@ -1,3 +1,4 @@
+use mysk_lib_macros::{id_only_variant_boiler_plate, impl_fetch_level_variant_from};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -12,18 +13,4 @@ pub struct IdOnlyClassroom {
     pub id: Uuid,
 }
 
-impl From<DbClassroom> for IdOnlyClassroom {
-    fn from(classroom: DbClassroom) -> Self {
-        Self { id: classroom.id }
-    }
-}
-
-impl FetchLevelVariant<DbClassroom> for IdOnlyClassroom {
-    async fn from_table(
-        _pool: &PgPool,
-        table: DbClassroom,
-        _descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
-        Ok(Self::from(table))
-    }
-}
+id_only_variant_boiler_plate!(IdOnlyClassroom, DbClassroom);
