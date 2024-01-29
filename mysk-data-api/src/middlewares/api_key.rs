@@ -34,6 +34,8 @@ impl FromRequest for HaveApiKey {
 
         let x_api_key_header = req.headers().get("X-API-KEY");
 
+        // dbg!(x_api_key_header);
+
         let token = match x_api_key_header {
             Some(token) => match token.to_str() {
                 Ok(token) => token,
