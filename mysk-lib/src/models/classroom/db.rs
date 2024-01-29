@@ -19,30 +19,6 @@ pub struct DbClassroom {
     pub main_room: String,
 }
 
-// impl BaseQuery for DbClassroom {
-//     fn base_query() -> &'static str {
-//         r#"SELECT id, created_at, number, year, main_room FROM classrooms"#
-//     }
-// }
-
-// impl GetById for DbClassroom {
-//     async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
-//         sqlx::query_as::<_, DbClassroom>(format!("{} WHERE id = $1", Self::base_query()).as_str())
-//             .bind(id)
-//             .fetch_one(pool)
-//             .await
-//     }
-
-//     async fn get_by_ids(pool: &sqlx::PgPool, ids: Vec<Uuid>) -> Result<Vec<Self>, sqlx::Error> {
-//         sqlx::query_as::<_, DbClassroom>(
-//             format!("{} WHERE id = ANY($1)", Self::base_query()).as_str(),
-//         )
-//         .bind(ids)
-//         .fetch_all(pool)
-//         .await
-//     }
-// }
-
 impl DbClassroom {
     pub async fn get_classroom_advisors(
         pool: &sqlx::PgPool,

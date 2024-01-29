@@ -10,13 +10,6 @@ pub struct DbSubjectGroup {
     pub name_th: String,
     pub name_en: String,
 }
-
-// impl BaseQuery for DbSubjectGroup {
-//     fn base_query() -> &'static str {
-//         r#"SELECT id, created_at, name_th, name_en FROM subject_groups"#
-//     }
-// }
-
 impl DbSubjectGroup {
     pub async fn get_by_id(pool: &sqlx::PgPool, id: i64) -> Result<Self, sqlx::Error> {
         sqlx::query_as::<_, DbSubjectGroup>(
