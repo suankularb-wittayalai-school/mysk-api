@@ -1,5 +1,6 @@
 // use async_trait::async_trait;
 use chrono::NaiveDate;
+use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -9,13 +10,14 @@ use crate::models::{
     common::{
         requests::FetchLevel,
         string::MultiLangString,
-        traits::{FetchLevelVariant, GetById, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById},
     },
     contact::Contact,
     person::enums::{blood_group::BloodGroup, sex::Sex},
     student::db::DbStudent,
     user::User,
 };
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DetailedStudent {
@@ -45,7 +47,7 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
         pool: &PgPool,
         table: DbStudent,
         descendant_fetch_level: Option<&FetchLevel>,
-    ) -> Result<Self, sqlx::Error> {
+    ) -> Result<Self> {
         let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
 
         let classroom = DbStudent::get_student_classroom(pool, table.id, None).await?;

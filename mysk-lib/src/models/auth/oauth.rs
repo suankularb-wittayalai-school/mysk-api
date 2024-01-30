@@ -1,9 +1,10 @@
 use jsonwebtoken::Validation;
-use reqwest::{Client, Response};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 use crate::models::common::config::Config;
+use crate::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
@@ -47,18 +48,25 @@ impl GoogleUserResult {
 pub struct TokenPayload {
     // Add fields here as needed to capture the claims from the ID token
     // For example: iss, aud, exp, sub, email, etc.
-    aud: String,
-    azp: String,
+    #[serde(rename = "aud")]
+    _aud: String,
+    #[serde(rename = "azp")]
+    _azp: String,
     email: String,
     email_verified: bool,
-    exp: usize,
+    #[serde(rename = "exp")]
+    _exp: usize,
     given_name: String,
     family_name: String,
-    iat: usize,
-    iss: String,
-    jti: String,
+    #[serde(rename = "iat")]
+    _iat: usize,
+    #[serde(rename = "iss")]
+    _iss: String,
+    #[serde(rename = "jti")]
+    _jti: String,
     name: String,
-    nbf: usize,
+    #[serde(rename = "nbf")]
+    _nbf: usize,
     picture: String,
     sub: String,
 }
@@ -79,23 +87,39 @@ struct GooglePublicKeys {
     keys: Vec<GooglePublicKey>,
 }
 
-pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayload, String> {
+pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayload> {
     let public_keys_url = "https://www.googleapis.com/oauth2/v3/certs";
-    let public_keys_response: Response = Client::new()
-        .get(public_keys_url)
-        .send()
-        .await
-        .map_err(|err| err.to_string())?;
+    let public_keys_response = Client::new().get(public_keys_url).send().await;
+
+    let public_keys_response = match public_keys_response {
+        Ok(response) => response,
+        Err(err) => {
+            return Err(Error::InternalSeverError(
+                err.to_string(),
+                "verify_id_token".to_string(),
+            ))
+        }
+    };
 
     if !public_keys_response.status().is_success() {
-        return Err("Failed to retrieve Google's public keys".to_owned());
+        return Err(Error::InternalSeverError(
+            "Failed to get public keys".to_string(),
+            "verify_id_token".to_string(),
+        ));
     }
 
     // public key response is array of keys convert to hashmap with kid as key
-    let public_keys: GooglePublicKeys = public_keys_response
-        .json()
-        .await
-        .map_err(|err| err.to_string())?;
+    let public_keys = public_keys_response.json().await;
+
+    let public_keys: GooglePublicKeys = match public_keys {
+        Ok(keys) => keys,
+        Err(err) => {
+            return Err(Error::InternalSeverError(
+                err.to_string(),
+                "verify_id_token".to_string(),
+            ))
+        }
+    };
 
     let public_keys: HashMap<String, String> = public_keys.keys.into_iter().fold(
         HashMap::new(),
@@ -107,14 +131,41 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
 
     // dbg!(&public_keys);
 
-    let header = jsonwebtoken::decode_header(id_token).map_err(|err| err.to_string())?;
+    let header = jsonwebtoken::decode_header(id_token);
 
-    let kid = header.kid.ok_or("Missing 'kid' in ID token header")?;
+    let header = match header {
+        Ok(header) => header,
+        Err(err) => {
+            return Err(Error::InternalSeverError(
+                err.to_string(),
+                "verify_id_token".to_string(),
+            ))
+        }
+    };
+
+    let kid = match header.kid {
+        Some(kid) => kid,
+        None => {
+            return Err(Error::InternalSeverError(
+                "No kid in header".to_string(),
+                "verify_id_token".to_string(),
+            ))
+        }
+    };
 
     let public_key = public_keys[kid.as_str()].as_str();
 
-    let public_key = jsonwebtoken::DecodingKey::from_rsa_components(public_key, "AQAB")
-        .map_err(|err| err.to_string())?;
+    let public_key = jsonwebtoken::DecodingKey::from_rsa_components(public_key, "AQAB");
+
+    let public_key = match public_key {
+        Ok(key) => key,
+        Err(err) => {
+            return Err(Error::InternalSeverError(
+                err.to_string(),
+                "verify_id_token".to_string(),
+            ))
+        }
+    };
 
     let mut validation = Validation::new(header.alg);
 
@@ -123,8 +174,16 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
 
     // dbg!(&validation);
 
-    let token_payload = jsonwebtoken::decode::<TokenPayload>(id_token, &public_key, &validation)
-        .map_err(|err| err.to_string())?;
+    let token_payload = jsonwebtoken::decode::<TokenPayload>(id_token, &public_key, &validation);
+    let token_payload = match token_payload {
+        Ok(payload) => payload,
+        Err(err) => {
+            return Err(Error::InternalSeverError(
+                err.to_string(),
+                "verify_id_token".to_string(),
+            ))
+        }
+    };
 
     Ok(token_payload.claims)
 }

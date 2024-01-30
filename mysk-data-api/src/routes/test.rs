@@ -7,15 +7,13 @@ use mysk_lib::models::{
     },
     student::{db::DbStudent, Student},
 };
+use mysk_lib::prelude::*;
 
 use crate::AppState;
 
 #[utoipa::path(path = "/test", tag = "Global")]
 #[get("/test")]
-pub async fn test(
-    data: web::Data<AppState>,
-    request: HttpRequest,
-) -> Result<impl Responder, Error> {
+pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
 
     let student_id = request.query_string().split('=').collect::<Vec<&str>>()[1];

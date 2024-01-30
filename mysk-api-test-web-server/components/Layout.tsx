@@ -61,7 +61,7 @@ const Layout: FC<
         <NavDrawerSection
           header={
             <div className="skc-headline-small !tracking-tighter">
-              <span>SK Shopping </span>
+              <span>MySK API </span>
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text font-bold text-transparent">
                 Test Server
               </span>
@@ -107,17 +107,15 @@ const Layout: FC<
       {/* Page Header */}
       {pageHeader && (
         <PageHeader
-          brand={<Favicon />}
-          homeURL="/"
+          parentURL="/"
           buttonElement={Link}
           onNavToggle={() => setNavOpen(true)}
-          {...pageHeader}
-          title={
-            typeof pageHeader.title === "object" && "ns" in pageHeader.title
-              ? t(pageHeader.title.key, { ns: pageHeader.title.ns })
-              : pageHeader.title
-          }
-        />
+          // {...pageHeader}
+        >
+          {typeof pageHeader.title === "object" && "ns" in pageHeader.title
+            ? t(pageHeader.title.key, { ns: pageHeader.title.ns })
+            : pageHeader.title}
+        </PageHeader>
       )}
 
       {/* Page loading indicator */}
@@ -143,3 +141,4 @@ const Layout: FC<
 };
 
 export default Layout;
+

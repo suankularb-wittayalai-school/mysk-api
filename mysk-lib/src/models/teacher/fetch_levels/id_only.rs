@@ -1,6 +1,10 @@
+use crate::prelude::*;
+
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::models::common::{requests::FetchLevel, traits::FetchLevelVariant};
 use crate::models::teacher::db::DbTeacher;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -8,8 +12,4 @@ pub struct IdOnlyTeacher {
     pub id: Uuid,
 }
 
-impl From<DbTeacher> for IdOnlyTeacher {
-    fn from(teacher: DbTeacher) -> Self {
-        Self { id: teacher.id }
-    }
-}
+impl_id_only_variant_from!(IdOnlyTeacher, DbTeacher);

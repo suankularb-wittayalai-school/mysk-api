@@ -1,7 +1,14 @@
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{common::string::MultiLangString, student::db::DbStudent};
+use crate::models::{
+    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+    student::db::DbStudent,
+};
+use crate::prelude::*;
+
+use mysk_lib_macros::impl_fetch_level_variant_from;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactStudent {
@@ -29,3 +36,5 @@ impl From<DbStudent> for CompactStudent {
         }
     }
 }
+
+impl_fetch_level_variant_from!(CompactStudent, DbStudent);

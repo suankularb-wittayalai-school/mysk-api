@@ -1,6 +1,7 @@
 // A component that fetches data from the server and displays it as formatted json
 
 import { fetchAPI } from "@/utils/backend";
+import { Editor } from "@monaco-editor/react";
 import {
   Actions,
   Button,
@@ -97,25 +98,40 @@ export default function FetchComponent({
           </Select>
 
           {method !== "GET" && (
-            <TextField<string>
-              appearance="outlined"
-              label="Request Body"
-              behavior="textarea"
-              helperMsg="Enter request body in JSON format"
+            // <TextField<string>
+            //   appearance="outlined"
+            //   label="Request Body"
+            //   behavior="textarea"
+            //   helperMsg="Enter request body in JSON format"
+            //   value={body ? body.toString() : ""}
+            //   onChange={setBody}
+            //   className="col-span-4"
+            // />
+            <Editor
+              height="35vh"
+              defaultLanguage="json"
               value={body ? body.toString() : ""}
-              onChange={setBody}
-              className="col-span-4"
+              onChange={(value) => setBody(value ?? "")}
+              width={"75vw"}
             />
           )}
           {method === "GET" && (
-            <TextField<string>
-              appearance="outlined"
-              label="Query String"
-              behavior="textarea"
-              helperMsg="Enter query string in JSON format"
+            // <TextField<string>
+            //   appearance="outlined"
+            //   label="Query String"
+            //   behavior="textarea"
+            //   helperMsg="Enter query string in JSON format"
+            //   value={query ? query.toString() : ""}
+            //   onChange={setQuery}
+            //   className="col-span-4"
+            // />
+            <Editor
+              height="35vh"
+              defaultLanguage="json"
               value={query ? query.toString() : ""}
-              onChange={setQuery}
-              className="col-span-4"
+              onChange={(value) => setQuery(value ?? "")}
+              width={"75vw"}
+              theme="vs-dark"
             />
           )}
         </Columns>
@@ -148,9 +164,16 @@ export default function FetchComponent({
         {loading && <p>Loading...</p>}
         {/* {!loading && <pre>{returnResponse}</pre>} */}
         {!loading && (
-          <SyntaxHighlighter language="json">
-            {returnResponse}
-          </SyntaxHighlighter>
+          // <SyntaxHighlighter language="json">
+          //   {returnResponse}
+          // </SyntaxHighlighter>
+          <Editor
+            height="25vh"
+            defaultLanguage="json"
+            value={returnResponse ? returnResponse.toString() : ""}
+            width={"75vw"}
+            theme="vs-dark"
+          />
         )}
       </Section>
     </>

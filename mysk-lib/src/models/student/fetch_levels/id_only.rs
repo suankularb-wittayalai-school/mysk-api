@@ -1,15 +1,17 @@
+use crate::prelude::*;
+
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::student::db::DbStudent;
+use crate::models::{
+    common::{requests::FetchLevel, traits::FetchLevelVariant},
+    student::db::DbStudent,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdOnlyStudent {
     pub id: Uuid,
 }
 
-impl From<DbStudent> for IdOnlyStudent {
-    fn from(student: DbStudent) -> Self {
-        Self { id: student.id }
-    }
-}
+impl_id_only_variant_from!(IdOnlyStudent, DbStudent);

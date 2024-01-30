@@ -1,11 +1,16 @@
 use chrono::{DateTime, NaiveDate, Utc};
+use mysk_lib_derives::{BaseQuery, GetById};
+use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use uuid::Uuid;
 
-use crate::models::common::traits::GetById;
+// use crate::models::common::traits::GetById;
 
 use super::enums::shirt_size::ShirtSize;
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[base_query(
+    query = "SELECT id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size FROM people"
+)]
 pub struct Person {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -24,35 +29,4 @@ pub struct Person {
     pub profile: Option<String>,
     pub pants_size: Option<String>,
     pub shirt_size: Option<ShirtSize>,
-}
-
-impl GetById for Person {
-    async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> Result<Self, sqlx::Error> {
-        sqlx::query_as!(
-            Person,
-            r#"
-            SELECT id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size AS "shirt_size: _" FROM people
-            WHERE id = $1
-            "#,
-            id
-        )
-        .fetch_one(pool)
-        .await
-    }
-
-    async fn get_by_ids(
-        pool: &sqlx::PgPool,
-        ids: Vec<sqlx::types::Uuid>,
-    ) -> Result<Vec<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Person,
-            r#"
-            SELECT id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size AS "shirt_size: _" FROM people
-            WHERE id = ANY($1)
-            "#,
-            &ids
-        )
-        .fetch_all(pool)
-        .await
-    }
 }
