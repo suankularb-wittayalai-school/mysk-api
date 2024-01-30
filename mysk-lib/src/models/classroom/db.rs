@@ -1,6 +1,8 @@
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use schemars::JsonSchema;
 use sqlx::query;
 use uuid::Uuid;
 
@@ -10,7 +12,9 @@ use crate::{
     // models::common::traits::{BaseQuery, GetById},
 };
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(
+    Debug, Clone, serde::Deserialize, sqlx::FromRow, JsonSchema, ApiComponent, BaseQuery, GetById,
+)]
 #[base_query(query = "SELECT id, created_at, number, year, main_room FROM classrooms")]
 pub struct DbClassroom {
     pub id: Uuid,

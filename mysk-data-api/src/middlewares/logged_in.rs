@@ -1,18 +1,20 @@
 use actix_web::dev::Payload;
 use actix_web::{http, web, FromRequest, HttpRequest};
+use apistos::ApiComponent;
 use futures::Future as FutureTrait;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use mysk_lib::models::auth::oauth::TokenClaims;
 use mysk_lib::models::user::User;
 use mysk_lib::prelude::*;
 use mysk_lib_macros::traits::db::GetById;
+use schemars::JsonSchema;
 use serde::Serialize;
 use std::pin::Pin;
 use uuid::Uuid;
 
 use crate::AppState;
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema, ApiComponent)]
 pub struct LoggedIn(pub User);
 
 impl FromRequest for LoggedIn {

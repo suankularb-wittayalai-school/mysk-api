@@ -1,4 +1,6 @@
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use uuid::Uuid;
 
 use mysk_lib_derives::{BaseQuery, GetById};
@@ -8,7 +10,9 @@ use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
 use super::enums::contact_type::ContactType;
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(
+    Debug, Clone, serde::Deserialize, sqlx::FromRow, JsonSchema, ApiComponent, BaseQuery, GetById,
+)]
 #[base_query(
     query = "SELECT id, created_at, name_th, name_en, type, value, include_students, include_teachers, include_parents FROM contacts"
 )]

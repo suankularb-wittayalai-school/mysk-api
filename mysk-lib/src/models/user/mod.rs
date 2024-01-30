@@ -1,4 +1,6 @@
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -9,7 +11,17 @@ use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
 pub mod enums;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    sqlx::FromRow,
+    BaseQuery,
+    GetById,
+    JsonSchema,
+    ApiComponent,
+)]
 #[base_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
 pub struct User {
     pub id: Uuid,

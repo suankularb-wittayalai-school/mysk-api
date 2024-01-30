@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 
 use actix_web::{HttpResponse, Responder};
+use apistos::ApiComponent;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
@@ -12,13 +14,13 @@ use super::{
     traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
 };
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, JsonSchema, ApiComponent)]
 pub enum TopLevelVariant<
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    DbVariant: GetById + ApiComponent + JsonSchema,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Default: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema + std::default::Default,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
 > {
     IdOnly(Box<IdOnly>, PhantomData<DbVariant>),
     Compact(Box<Compact>, PhantomData<DbVariant>),
@@ -27,18 +29,26 @@ pub enum TopLevelVariant<
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > TopLevelFromTable<DbVariant>
     for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Default: Serialize
+        + FetchLevelVariant<DbVariant>
+        + ApiComponent
+        + JsonSchema
+        + std::default::Default,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
 {
     async fn from_table(
         pool: &sqlx::pool::Pool<sqlx::Postgres>,
@@ -74,17 +84,21 @@ where
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > Serialize for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Default: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
 {
     fn serialize<S: serde::Serializer>(
         &self,
@@ -100,17 +114,21 @@ where
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > TopLevelGetById for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Default: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
 {
     async fn get_by_id(
         pool: &sqlx::pool::Pool<sqlx::Postgres>,
@@ -163,11 +181,15 @@ where
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
     for ResponseType<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
 {
@@ -177,11 +199,15 @@ impl<
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for HttpResponse
 {
     fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
@@ -194,11 +220,15 @@ impl<
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
     for Result<HttpResponse>
 {
@@ -212,11 +242,15 @@ impl<
 }
 
 impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
+        DbVariant: GetById + ApiComponent + JsonSchema,
+        IdOnly: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Compact: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
+        Default: Serialize
+            + FetchLevelVariant<DbVariant>
+            + ApiComponent
+            + JsonSchema
+            + std::default::Default,
+        Detailed: Serialize + FetchLevelVariant<DbVariant> + ApiComponent + JsonSchema,
     > Responder for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 {
     type Body = actix_web::body::BoxBody;

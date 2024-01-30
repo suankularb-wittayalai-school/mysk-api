@@ -1,10 +1,12 @@
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 
 use crate::prelude::*;
 use mysk_lib_derives::BaseQuery;
 use mysk_lib_macros::traits::db::BaseQuery;
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery)]
+#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, JsonSchema, ApiComponent, BaseQuery)]
 #[base_query(query = "SELECT subject_groups.id, created_at, name_th, name_en FROM subject_groups")]
 pub struct DbSubjectGroup {
     pub id: i64,

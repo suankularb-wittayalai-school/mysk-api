@@ -1,8 +1,10 @@
 pub mod db;
 pub mod enums;
 
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::traits::db::GetById;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -15,7 +17,7 @@ use super::common::{
 };
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, ApiComponent)]
 pub struct Contact {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

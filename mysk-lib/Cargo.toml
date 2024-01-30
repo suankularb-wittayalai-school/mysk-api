@@ -32,5 +32,12 @@ futures = "0.3.17"
 bs58 = "0.5.0"
 sha2 = "0.10.8"
 rand = "0.8.4"
+apistos = { version = "0.1", features = ["extras", "qs_query"] }
+schemars = { package = "apistos-schemars", version = "0.8", features = [
+    "chrono",
+    "uuid",
+    "url",
+    "rust_decimal",
+] }
 mysk-lib-derives = { path = "../mysk-lib-derives" }
 mysk-lib-macros = { path = "../mysk-lib-macros" }

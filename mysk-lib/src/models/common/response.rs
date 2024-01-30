@@ -3,7 +3,9 @@ use actix_web::{
     http::{header::ContentType, StatusCode},
 };
 
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use sqlx::{prelude::FromRow, PgPool};
 use utoipa::ToSchema;
 
@@ -67,7 +69,7 @@ impl std::error::Error for ErrorType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, JsonSchema, ApiComponent)]
 pub struct PaginationType {
     first: String,
     last: String,
@@ -87,7 +89,7 @@ impl std::fmt::Display for PaginationType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, JsonSchema, ApiComponent)]
 pub struct MetadataType {
     timestamp: DateTime<Utc>,
     pagination: Option<PaginationType>,
@@ -121,15 +123,15 @@ impl std::fmt::Display for MetadataType {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct ResponseType<T> {
+#[derive(Serialize, Deserialize, ToSchema, JsonSchema, ApiComponent)]
+pub struct ResponseType<T: JsonSchema + ApiComponent> {
     api_version: String,
     data: Option<T>,
     error: Option<String>, // Always None
     meta: MetadataType,
 }
 
-impl<T> ResponseType<T> {
+impl<T: JsonSchema + ApiComponent> ResponseType<T> {
     pub fn new(data: T, meta: Option<MetadataType>) -> Self {
         let version = env!("CARGO_PKG_VERSION").to_string();
 

@@ -1,4 +1,6 @@
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use sqlx::query;
 use uuid::Uuid;
 
@@ -13,7 +15,9 @@ use super::enums::subject_type::SubjectType;
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(
+    Debug, Clone, serde::Deserialize, sqlx::FromRow, JsonSchema, ApiComponent, BaseQuery, GetById,
+)]
 #[base_query(
     query = "SELECT id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type, credit, description_th, description_en, semester, subject_group_id, syllabus FROM subjects"
 )]

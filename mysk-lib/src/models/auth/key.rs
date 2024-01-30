@@ -1,6 +1,8 @@
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
 use rand::rngs::OsRng;
 use rand::RngCore;
+use schemars::JsonSchema;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::{prelude::FromRow, PgPool};

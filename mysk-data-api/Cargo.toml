@@ -33,4 +33,11 @@ jsonwebtoken = "9.2.0"
 uuid = { version = "1.7.0", features = ["serde", "v4"] }
 sha2 = "0.10.8"
 bs58 = "0.5.0"
+apistos = { version = "0.1", features = ["extras", "qs_query"] }
+schemars = { package = "apistos-schemars", version = "0.8", features = [
+    "chrono",
+    "uuid",
+    "url",
+    "rust_decimal",
+] }
 mysk-lib-macros = { path = "../mysk-lib-macros" }

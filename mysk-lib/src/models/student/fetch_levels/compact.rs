@@ -1,3 +1,5 @@
+use apistos::ApiComponent;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -10,7 +12,7 @@ use crate::prelude::*;
 
 use mysk_lib_macros::impl_fetch_level_variant_from;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, ApiComponent)]
 pub struct CompactStudent {
     pub id: Uuid,
     pub prefix: MultiLangString,

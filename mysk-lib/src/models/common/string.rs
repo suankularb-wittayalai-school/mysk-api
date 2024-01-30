@@ -1,14 +1,16 @@
+use apistos::ApiComponent;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone, JsonSchema, ApiComponent, Default)]
 pub struct MultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,
     pub th: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[derive(Serialize, Deserialize, Debug, ToSchema, Clone, JsonSchema, ApiComponent)]
 pub struct FlexibleMultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,

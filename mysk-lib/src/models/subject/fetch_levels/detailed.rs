@@ -1,3 +1,5 @@
+use apistos::ApiComponent;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -15,7 +17,7 @@ use crate::models::{
 };
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, ApiComponent)]
 pub struct DetailedSubject {
     pub id: Uuid,
     pub name: MultiLangString,

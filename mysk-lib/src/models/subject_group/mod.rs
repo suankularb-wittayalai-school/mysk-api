@@ -1,13 +1,15 @@
 pub mod db;
 
+use apistos::ApiComponent;
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use self::db::DbSubjectGroup;
 use super::common::{requests::FetchLevel, string::MultiLangString, traits::TopLevelFromTable};
 use crate::prelude::*;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, ApiComponent)]
 pub struct SubjectGroup {
     pub id: i64,
     pub created_at: Option<DateTime<Utc>>,
