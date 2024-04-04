@@ -2,6 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use utoipa::ToSchema;
 
+#[derive(Debug, serde::Deserialize)]
+pub struct QueryablePlaceholder;
+
+#[derive(Debug, serde::Deserialize)]
+pub struct SortablePlaceholder;
+
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum FetchLevel {

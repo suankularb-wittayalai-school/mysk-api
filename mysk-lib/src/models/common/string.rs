@@ -22,7 +22,19 @@ impl std::fmt::Display for MultiLangString {
 }
 
 impl MultiLangString {
-    pub fn new(en: Option<String>, th: String) -> MultiLangString {
+    pub fn new(th: String, en: Option<String>) -> MultiLangString {
         MultiLangString { en, th }
+    }
+}
+
+impl std::fmt::Display for FlexibleMultiLangString {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{{ en: {:?}, th: {:?} }}", self.en, self.th)
+    }
+}
+
+impl FlexibleMultiLangString {
+    pub fn new(th: Option<String>, en: Option<String>) -> FlexibleMultiLangString {
+        FlexibleMultiLangString { en, th }
     }
 }

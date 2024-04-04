@@ -2,15 +2,17 @@ use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{http::header, web, App, HttpServer};
 use dotenv::dotenv;
+use mysk_lib::models::common::config::Config;
 // use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use sqlx::postgres::PgPoolOptions;
 use std::env;
 
+mod middlewares;
 mod routes;
 
 pub struct AppState {
-    db: Pool<Postgres>,
-    jwt_secret: String,
+    db: sqlx::PgPool,
+    env: Config,
 }
 
 #[actix_web::main]
@@ -22,15 +24,16 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    // let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let env = Config::init();
 
     let pool = match PgPoolOptions::new()
-        .max_connections(5)
+        .max_connections(15)
         .connect(&database_url)
         .await
     {
         Ok(pool) => {
-            println!("✅Connection to the database is successful!");
+            println!("✅ Connection to the database is successful!");
             pool
         }
         Err(err) => {
@@ -38,13 +41,6 @@ async fn main() -> std::io::Result<()> {
             std::process::exit(1);
         }
     };
-
-    // let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-
-    // builder
-    //     .set_private_key_file("ssl/privkey.pem", SslFiletype::PEM)
-    //     .unwrap();
-    // builder.set_certificate_chain_file("ssl/cert.pem").unwrap();
 
     println!("🚀 Server started successfully");
 
@@ -66,7 +62,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(AppState {
                 db: pool.clone(),
-                jwt_secret: jwt_secret.clone(),
+                env: env.clone(),
             }))
             // .service(web::scope("/api/v1").configure(routes::config))
             .configure(routes::config)

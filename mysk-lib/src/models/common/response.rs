@@ -4,21 +4,23 @@ use actix_web::{
 };
 
 use chrono::{DateTime, Utc};
+use sqlx::{prelude::FromRow, PgPool};
 use utoipa::ToSchema;
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 // use super::requests::PaginationConfig;
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
-pub struct ErrorType<T> {
-    pub id: String,
-    pub code: u32,
-    pub error_type: T, // TODO: enum
+#[derive(Serialize, Deserialize, Debug, ToSchema, FromRow)]
+pub struct ErrorType {
+    pub id: Uuid,
+    pub code: i64,
+    pub error_type: String,
     pub detail: String,
     pub source: String,
 }
 
-impl<T> ErrorType<T> {
+impl ErrorType {
     pub fn to_status_code(&self) -> StatusCode {
         match self.code {
             400 => StatusCode::BAD_REQUEST,
@@ -30,9 +32,26 @@ impl<T> ErrorType<T> {
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
+
+    pub async fn log(&self, pool: &PgPool, api_key: Option<Uuid>) {
+        let _ = sqlx::query!(
+            r#"
+            INSERT INTO api_logging.error_logs (id, code, error_type, detail, source, api_key_id)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+            self.id,
+            self.code,
+            self.error_type,
+            self.detail,
+            self.source,
+            api_key
+        )
+        .execute(pool)
+        .await;
+    }
 }
 
-impl std::fmt::Display for ErrorType<String> {
+impl std::fmt::Display for ErrorType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             f,
@@ -42,7 +61,7 @@ impl std::fmt::Display for ErrorType<String> {
     }
 }
 
-impl std::error::Error for ErrorType<String> {
+impl std::error::Error for ErrorType {
     fn description(&self) -> &str {
         &self.detail
     }
@@ -126,13 +145,13 @@ impl<T> ResponseType<T> {
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct ErrorResponseType {
     api_version: String,
-    error: ErrorType<String>,
+    error: ErrorType,
     data: Option<String>, // always None
     meta: Option<MetadataType>,
 }
 
 impl ErrorResponseType {
-    pub fn new(error: ErrorType<String>, meta: Option<MetadataType>) -> Self {
+    pub fn new(error: ErrorType, meta: Option<MetadataType>) -> Self {
         let version = env!("CARGO_PKG_VERSION").to_string();
 
         ErrorResponseType {
