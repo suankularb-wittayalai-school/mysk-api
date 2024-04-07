@@ -1,7 +1,11 @@
 use chrono::{DateTime, Utc};
+use sqlx::query;
 use uuid::Uuid;
 
-use crate::models::subject::enums::subject_type::SubjectType;
+use crate::prelude::*;
+use crate::{
+    helpers::date::get_current_academic_year, models::subject::enums::subject_type::SubjectType,
+};
 
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
@@ -28,4 +32,48 @@ pub struct DbElectiveSubject {
     pub semester: Option<i64>,
     pub subject_group_id: i64,
     pub syllabus: Option<String>,
+}
+
+impl DbElectiveSubject {
+    pub async fn get_subject_applicable_classrooms(
+        &self,
+        pool: &sqlx::PgPool,
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
+            r#"SELECT classroom_id FROM elective_subject_classrooms WHERE elective_subject_id = $1"#,
+            self.id
+        )
+        .fetch_all(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.iter().map(|r| r.classroom_id).collect()),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::get_subject_applicable_classrooms".to_string(),
+            )),
+        }
+    }
+
+    pub async fn get_enrolled_students(
+        &self,
+        pool: &sqlx::PgPool,
+        academic_year: Option<i64>,
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
+            r#"SELECT student_id FROM student_elective_subjects WHERE elective_subject_id = $1 and year = $2"#,
+            self.id,
+            academic_year.unwrap_or_else(|| get_current_academic_year(None))
+        )
+        .fetch_all(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.iter().map(|r| r.student_id).collect()),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::get_enrolled_students".to_string(),
+            )),
+        }
+    }
 }
