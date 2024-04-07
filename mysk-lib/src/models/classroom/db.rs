@@ -17,7 +17,7 @@ pub struct DbClassroom {
     pub created_at: Option<DateTime<Utc>>,
     pub number: i64,
     pub year: i64,
-    pub main_room: String,
+    pub main_room: Option<String>,
 }
 
 impl DbClassroom {

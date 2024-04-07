@@ -1,34 +1,53 @@
-use actix_web::{get, web, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse, Responder};
 
-use mysk_lib::models::{
-    common::{
-        response::ResponseType,
-        traits::{CombineFromTable, GetById},
-    },
-    student::{db::DbStudent, Student},
-};
+// use mysk_lib::models::common::requests::FetchLevel;
+use mysk_lib::models::common::requests::RequestType;
+use mysk_lib::models::common::traits::TopLevelGetById;
+use mysk_lib::models::elective_subject::ElectiveSubject;
+use mysk_lib::models::*;
 use mysk_lib::prelude::*;
+// use mysk_lib_macros::traits::db::GetById;
+use uuid::Uuid;
 
 use crate::AppState;
 
 #[utoipa::path(path = "/test", tag = "Global")]
 #[get("/test")]
-pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<impl Responder> {
+pub async fn test(
+    data: web::Data<AppState>,
+    request_query: web::Query<
+        RequestType<
+            ElectiveSubject,
+            common::requests::QueryablePlaceholder,
+            common::requests::SortablePlaceholder,
+        >,
+    >,
+) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
 
-    let student_id = request.query_string().split('=').collect::<Vec<&str>>()[1];
+    let model_id = Uuid::parse_str("d05c155a-ebe0-456b-b289-7b0eb1487f04").unwrap();
 
-    // dbg!(student_id);
+    let fetch_level = request_query.fetch_level.as_ref();
 
-    let student = DbStudent::get_by_id(pool, student_id.parse().unwrap())
-        .await
-        .unwrap();
+    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
-    let student = Student::combine_from_table(pool, student, None, None)
-        .await
-        .unwrap();
+    let model = elective_subject::ElectiveSubject::get_by_id(
+        pool,
+        model_id,
+        fetch_level,
+        descendant_fetch_level,
+    )
+    .await?;
 
-    let response = ResponseType::new(student, None);
+    // let model = elective_trade_offer::ElectiveTradeOffer::get_by_id(
+    //     pool,
+    //     model_id,
+    //     fetch_level,
+    //     descendant_fetch_level,
+    // )
+    // .await?;
+
+    let response = common::response::ResponseType::new(model, None);
 
     Ok(HttpResponse::Ok().json(response))
 }

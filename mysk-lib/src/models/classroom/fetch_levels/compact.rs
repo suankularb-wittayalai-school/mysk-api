@@ -13,7 +13,7 @@ use crate::models::{
 pub struct CompactClassroom {
     pub id: Uuid,
     pub number: i64,
-    pub room: String,
+    pub room: Option<String>,
 }
 
 impl From<DbClassroom> for CompactClassroom {

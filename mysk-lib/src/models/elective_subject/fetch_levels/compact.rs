@@ -6,19 +6,21 @@ use uuid::Uuid;
 
 use crate::models::{
     common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
-    subject::db::DbSubject,
+    elective_subject::db::DbElectiveSubject,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CompactSubject {
+pub struct CompactElectiveSubject {
     pub id: Uuid,
     pub name: MultiLangString,
     pub code: MultiLangString,
     pub short_name: MultiLangString,
+    pub class_size: i64,
+    pub cap_size: i64,
 }
 
-impl From<DbSubject> for CompactSubject {
-    fn from(subject: DbSubject) -> Self {
+impl From<DbElectiveSubject> for CompactElectiveSubject {
+    fn from(subject: DbElectiveSubject) -> Self {
         Self {
             id: subject.id,
             name: MultiLangString::new(subject.name_th, Some(subject.name_en)),
@@ -27,8 +29,10 @@ impl From<DbSubject> for CompactSubject {
                 subject.short_name_th.unwrap_or("".to_string()),
                 subject.short_name_en,
             ),
+            class_size: subject.class_size,
+            cap_size: subject.cap_size,
         }
     }
 }
 
-impl_fetch_level_variant_from!(CompactSubject, DbSubject);
+impl_fetch_level_variant_from!(CompactElectiveSubject, DbElectiveSubject);

@@ -18,7 +18,7 @@ use crate::prelude::*;
 pub struct DefaultClassroom {
     pub id: Uuid,
     pub number: i64,
-    pub room: String,
+    pub room: Option<String>,
     pub class_advisor: Vec<Teacher>,
     pub students: Vec<Student>,
     pub contacts: Vec<Contact>,

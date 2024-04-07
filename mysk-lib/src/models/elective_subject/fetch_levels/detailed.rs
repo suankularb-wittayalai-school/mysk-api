@@ -9,6 +9,8 @@ use crate::models::{
         string::{FlexibleMultiLangString, MultiLangString},
         traits::{FetchLevelVariant, TopLevelGetById},
     },
+    elective_subject::db::DbElectiveSubject,
+    student::Student,
     subject::{db::DbSubject, enums::subject_type::SubjectType},
     subject_group::SubjectGroup,
     teacher::Teacher,
@@ -16,35 +18,41 @@ use crate::models::{
 use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DetailedSubject {
+pub struct DetailedElectiveSubject {
     pub id: Uuid,
     pub name: MultiLangString,
-    pub code: MultiLangString,
     pub short_name: MultiLangString,
-    pub r#type: SubjectType,
-    pub credit: f64,
+    pub code: MultiLangString,
     pub description: Option<FlexibleMultiLangString>,
-    pub semester: Option<i64>,
-    pub subject_group: SubjectGroup,
-    pub syllabus: Option<String>,
     pub teachers: Vec<Teacher>,
     pub co_teachers: Vec<Teacher>,
-    pub classrooms: Vec<Classroom>,
+    pub subject_group: SubjectGroup,
+    pub syllabus: Option<String>,
+    pub credit: f64,
+    pub class_size: i64,
+    pub cap_size: i64,
+    pub room: String,
+    pub r#type: SubjectType,
+    pub semester: Option<i64>,
+    pub applicable_classrooms: Vec<Classroom>,
+    pub students: Vec<Student>,
 }
 
 // #[async_trait]
-impl FetchLevelVariant<DbSubject> for DetailedSubject {
+impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
     async fn from_table(
         pool: &PgPool,
-        table: DbSubject,
+        table: DbElectiveSubject,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
 
-        let classroom_ids = DbSubject::get_subject_classrooms(pool, table.id, None).await?;
-        let teacher_ids = DbSubject::get_subject_teachers(pool, table.id, None).await?;
-        let co_teacher_ids = DbSubject::get_subject_co_teachers(pool, table.id, None).await?;
+        let teacher_ids = DbSubject::get_subject_teachers(pool, table.subject_id, None).await?;
+        let co_teacher_ids =
+            DbSubject::get_subject_co_teachers(pool, table.subject_id, None).await?;
+        let applicable_classroom_ids = table.get_subject_applicable_classrooms(pool).await?;
+        let student_ids = table.get_enrolled_students(pool, None).await?;
 
         let description = match (table.description_th, table.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
@@ -76,13 +84,6 @@ impl FetchLevelVariant<DbSubject> for DetailedSubject {
             semester: table.semester,
             subject_group,
             syllabus: table.syllabus,
-            classrooms: Classroom::get_by_ids(
-                pool,
-                classroom_ids,
-                descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
-            )
-            .await?,
             teachers: Teacher::get_by_ids(
                 pool,
                 teacher_ids,
@@ -93,6 +94,23 @@ impl FetchLevelVariant<DbSubject> for DetailedSubject {
             co_teachers: Teacher::get_by_ids(
                 pool,
                 co_teacher_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
+            class_size: table.class_size,
+            cap_size: table.cap_size,
+            room: table.room,
+            applicable_classrooms: Classroom::get_by_ids(
+                pool,
+                applicable_classroom_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
+            students: Student::get_by_ids(
+                pool,
+                student_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
             )

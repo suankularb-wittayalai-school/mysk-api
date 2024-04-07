@@ -18,7 +18,7 @@ impl Display for SubjectType {
         match self {
             SubjectType::CoreCourse => write!(f, "core_course"),
             SubjectType::AdditionalCourse => write!(f, "additional_course"),
-            SubjectType::ElectiveCourse => write!(f, "elective_course"),
+            SubjectType::ElectiveCourse => write!(f, "elective"),
             SubjectType::LearnersDevelopmentActivities => {
                 write!(f, "learners_development_activities")
             }
@@ -50,7 +50,7 @@ impl<'r> sqlx::Decode<'r, sqlx::Postgres> for SubjectType {
         match s.as_str() {
             "core_course" => Ok(SubjectType::CoreCourse),
             "additional_course" => Ok(SubjectType::AdditionalCourse),
-            "elective_course" => Ok(SubjectType::ElectiveCourse),
+            "elective" => Ok(SubjectType::ElectiveCourse),
             "learners_development_activities" => Ok(SubjectType::LearnersDevelopmentActivities),
 
             _ => Err(Box::new(sqlx::Error::Decode("Unknown subject type".into()))),
