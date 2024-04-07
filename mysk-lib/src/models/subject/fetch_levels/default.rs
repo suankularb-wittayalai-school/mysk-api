@@ -22,7 +22,7 @@ pub struct DefaultSubject {
     pub r#type: SubjectType,
     pub credit: f64,
     pub description: Option<FlexibleMultiLangString>,
-    pub semester: i64,
+    pub semester: Option<i64>,
     pub subject_group: SubjectGroup,
     pub syllabus: Option<String>,
 }
