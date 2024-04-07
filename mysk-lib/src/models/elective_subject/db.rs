@@ -8,7 +8,7 @@ use crate::prelude::*;
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
 #[base_query(query = "SELECT * FROM complete_elective_subjects_view")]
 pub struct DbElectiveSubject {
     pub id: Uuid,
@@ -21,8 +21,8 @@ pub struct DbElectiveSubject {
     pub name_en: String,
     pub code_th: String,
     pub code_en: String,
-    pub short_name_th: String,
-    pub short_name_en: String,
+    pub short_name_th: Option<String>,
+    pub short_name_en: Option<String>,
     pub r#type: SubjectType,
     pub credit: f64,
     pub description_th: Option<String>,

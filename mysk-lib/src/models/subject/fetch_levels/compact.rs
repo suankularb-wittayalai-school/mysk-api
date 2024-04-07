@@ -23,7 +23,10 @@ impl From<DbSubject> for CompactSubject {
             id: subject.id,
             name: MultiLangString::new(subject.name_th, Some(subject.name_en)),
             code: MultiLangString::new(subject.code_th, Some(subject.code_en)),
-            short_name: MultiLangString::new(subject.short_name_th, Some(subject.short_name_en)),
+            short_name: MultiLangString::new(
+                subject.short_name_th.unwrap_or("".to_string()),
+                subject.short_name_en,
+            ),
         }
     }
 }
