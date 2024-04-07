@@ -25,21 +25,24 @@ pub async fn test(
 ) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
 
-    let elective_id = Uuid::parse_str("aac285b1-15a5-4138-8b4d-88b743e472d3").unwrap();
+    let elective_id = Uuid::parse_str("ee921113-12a4-4358-8043-6d0eb5ea64f1").unwrap();
 
     let fetch_level = request_query.fetch_level.as_ref();
 
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
-    let elective = elective_subject::ElectiveSubject::get_by_id(
-        pool,
-        elective_id,
-        fetch_level,
-        descendant_fetch_level,
-    )
-    .await?;
+    // let elective = elective_subject::ElectiveSubject::get_by_id(
+    //     pool,
+    //     elective_id,
+    //     fetch_level,
+    //     descendant_fetch_level,
+    // )
+    // .await?;
 
-    let response = common::response::ResponseType::new(elective, None);
+    let trade_offer =
+        elective_trade_offer::db::DbElectiveSubject::get_by_id(pool, elective_id).await?;
+
+    let response = common::response::ResponseType::new(trade_offer, None);
 
     Ok(HttpResponse::Ok().json(response))
 }

@@ -1,4 +1,5 @@
 pub mod config;
+pub mod enums;
 pub mod requests;
 pub mod response;
 pub mod string;
