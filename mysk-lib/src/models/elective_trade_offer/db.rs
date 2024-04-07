@@ -8,7 +8,7 @@ use crate::models::common::enums::submission_status::SubmissionStatus;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
 #[base_query(query = "SELECT * FROM elective_subject_trade_offers")]
-pub struct DbElectiveSubject {
+pub struct DbElectiveTradeOffer {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
     pub sender_id: Uuid,

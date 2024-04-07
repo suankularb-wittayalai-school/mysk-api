@@ -40,7 +40,7 @@ pub async fn test(
     // .await?;
 
     let trade_offer =
-        elective_trade_offer::db::DbElectiveSubject::get_by_id(pool, elective_id).await?;
+        elective_trade_offer::db::DbElectiveTradeOffer::get_by_id(pool, elective_id).await?;
 
     let response = common::response::ResponseType::new(trade_offer, None);
 
