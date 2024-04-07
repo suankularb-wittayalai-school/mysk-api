@@ -1,12 +1,12 @@
-use actix_web::{get, web, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse, Responder};
 
-use mysk_lib::models::common::requests::FetchLevel;
+// use mysk_lib::models::common::requests::FetchLevel;
 use mysk_lib::models::common::requests::RequestType;
 use mysk_lib::models::common::traits::TopLevelGetById;
 use mysk_lib::models::elective_subject::ElectiveSubject;
 use mysk_lib::models::*;
 use mysk_lib::prelude::*;
-use mysk_lib_macros::traits::db::GetById;
+// use mysk_lib_macros::traits::db::GetById;
 use uuid::Uuid;
 
 use crate::AppState;
@@ -25,24 +25,29 @@ pub async fn test(
 ) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
 
-    let elective_id = Uuid::parse_str("ee921113-12a4-4358-8043-6d0eb5ea64f1").unwrap();
+    let model_id = Uuid::parse_str("d05c155a-ebe0-456b-b289-7b0eb1487f04").unwrap();
 
     let fetch_level = request_query.fetch_level.as_ref();
 
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
-    // let elective = elective_subject::ElectiveSubject::get_by_id(
+    let model = elective_subject::ElectiveSubject::get_by_id(
+        pool,
+        model_id,
+        fetch_level,
+        descendant_fetch_level,
+    )
+    .await?;
+
+    // let model = elective_trade_offer::ElectiveTradeOffer::get_by_id(
     //     pool,
-    //     elective_id,
+    //     model_id,
     //     fetch_level,
     //     descendant_fetch_level,
     // )
     // .await?;
 
-    let trade_offer =
-        elective_trade_offer::db::DbElectiveTradeOffer::get_by_id(pool, elective_id).await?;
-
-    let response = common::response::ResponseType::new(trade_offer, None);
+    let response = common::response::ResponseType::new(model, None);
 
     Ok(HttpResponse::Ok().json(response))
 }
