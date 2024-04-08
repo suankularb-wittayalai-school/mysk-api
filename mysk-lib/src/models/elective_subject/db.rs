@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use sqlx::Row;
-use sqlx::{query, Execute, QueryBuilder};
+use sqlx::{query, QueryBuilder};
 use uuid::Uuid;
 
 use crate::models::common::requests::{
@@ -14,7 +14,7 @@ use crate::{
 };
 
 use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{self, BaseQuery, GetById};
+use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
 use super::request::queryable::QueryableElectiveSubject;
 use super::request::sortable::SortableElectiveSubject;

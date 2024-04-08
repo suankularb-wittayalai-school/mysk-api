@@ -18,23 +18,23 @@ use crate::AppState;
 #[get("/")]
 pub async fn query_elective_subject(
     data: web::Data<AppState>,
-    request: HttpRequest,
+    request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
     _: HaveApiKey,
 ) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
-    let request_query = serde_qs::from_str::<
-        RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
-    >(request.query_string());
+    // let request_query = serde_qs::from_str::<
+    //     RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
+    // >(request.query_string());
 
-    let request_query = match request_query {
-        Ok(query) => query,
-        Err(e) => {
-            return Err(Error::InvalidRequest(
-                e.to_string(),
-                "/v1/subjects/electives/".to_string(),
-            ));
-        }
-    };
+    // let request_query = match request_query {
+    //     Ok(query) => query,
+    //     Err(e) => {
+    //         return Err(Error::InvalidRequest(
+    //             e.to_string(),
+    //             "/v1/subjects/electives/".to_string(),
+    //         ));
+    //     }
+    // };
 
     let fetch_level = request_query.fetch_level.as_ref();
 

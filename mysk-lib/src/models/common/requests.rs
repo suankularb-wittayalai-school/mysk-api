@@ -1,7 +1,10 @@
+use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use serde::{Deserialize, Serialize};
 
 use sqlx::Encode;
 use utoipa::ToSchema;
+
+use crate::prelude::*;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct QueryablePlaceholder;
@@ -70,6 +73,30 @@ pub struct RequestType<T, Queryable, Sortable> {
     pub sort: Option<SortingConfig<Sortable>>,
     pub fetch_level: Option<FetchLevel>,
     pub descendant_fetch_level: Option<FetchLevel>,
+}
+
+// Implement from request for RequestType with any T, Queryable, and Sortable
+impl<T, Queryable, Sortable> FromRequest for RequestType<T, Queryable, Sortable>
+where
+    T: serde::de::DeserializeOwned,
+    Queryable: serde::de::DeserializeOwned,
+    Sortable: serde::de::DeserializeOwned,
+{
+    type Error = Error;
+    type Future = futures::future::Ready<Result<Self>>;
+
+    fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
+        let query_string = req.query_string();
+        let request_query = serde_qs::from_str::<RequestType<T, Queryable, Sortable>>(query_string);
+
+        match request_query {
+            Ok(query) => futures::future::ready(Ok(query)),
+            Err(e) => futures::future::ready(Err(Error::InvalidRequest(
+                e.to_string(),
+                req.path().to_string(),
+            ))),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
