@@ -1,8 +1,9 @@
 use sqlx::{pool, PgPool};
 use uuid::Uuid;
 
-use super::requests::{
-    FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
+use super::{
+    requests::{FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
+    response::PaginationType,
 };
 use crate::prelude::*;
 
@@ -58,6 +59,14 @@ pub trait TopLevelQuery<QueryableObject: Queryable, SortableObject> {
     ) -> Result<Vec<Self>>
     where
         Self: Sized;
+
+    async fn response_pagination(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableObject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<PaginationType>
+    where
+        Self: Sized;
 }
 
 /// A trait for Queryable objects with ability to convert to query string conditions
@@ -75,6 +84,14 @@ pub trait QueryDb<QueryableObject: Queryable, SortableObject> {
         sort: Option<&SortingConfig<SortableObject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
+    where
+        Self: Sized;
+
+    async fn response_pagination(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableObject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<PaginationType>
     where
         Self: Sized;
 }

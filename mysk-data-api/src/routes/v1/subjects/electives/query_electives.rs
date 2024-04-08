@@ -1,6 +1,7 @@
 use actix_web::HttpRequest;
 use actix_web::{get, web, HttpResponse, Responder};
 
+use mysk_lib::models::common::response::MetadataType;
 // use mysk_lib::models::common::requests::FetchLevel;
 use mysk_lib::models::common::traits::TopLevelQuery;
 use mysk_lib::models::common::{requests::RequestType, response::ResponseType};
@@ -53,7 +54,9 @@ pub async fn query_elective_subject(
     )
     .await?;
 
-    let response = ResponseType::new(electives, None);
+    let pagination = ElectiveSubject::response_pagination(pool, filter, pagination).await?;
+
+    let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))
 }

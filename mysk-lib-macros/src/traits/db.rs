@@ -3,6 +3,8 @@ use uuid::Uuid;
 
 pub trait BaseQuery {
     fn base_query() -> &'static str;
+
+    fn count_query() -> &'static str;
 }
 
 // only for struct with id: Uuid and implements BaseQuery

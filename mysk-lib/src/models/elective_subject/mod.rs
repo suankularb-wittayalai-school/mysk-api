@@ -8,6 +8,7 @@ use self::{
 };
 use super::common::{
     requests::{FetchLevel, FilterConfig, PaginationConfig, SortingConfig},
+    response::PaginationType,
     top_level_variant::TopLevelVariant,
     traits::{QueryDb, TopLevelQuery},
 };
@@ -45,5 +46,13 @@ impl TopLevelQuery<QueryableElectiveSubject, SortableElectiveSubject> for Electi
         }
 
         Ok(result)
+    }
+
+    async fn response_pagination(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableElectiveSubject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<PaginationType> {
+        DbElectiveSubject::response_pagination(pool, filter, pagination).await
     }
 }
