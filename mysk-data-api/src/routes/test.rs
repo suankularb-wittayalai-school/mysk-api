@@ -2,10 +2,11 @@ use actix_web::HttpRequest;
 use actix_web::{get, web, HttpResponse, Responder};
 
 // use mysk_lib::models::common::requests::FetchLevel;
-use mysk_lib::models::common::requests::{RequestType, SortablePlaceholder};
+use mysk_lib::models::common::requests::RequestType;
 use mysk_lib::models::common::traits::QueryDb;
 use mysk_lib::models::common::traits::TopLevelGetById;
 use mysk_lib::models::elective_subject::request::queryable::QueryableElectiveSubject;
+use mysk_lib::models::elective_subject::request::sortable::SortableElectiveSubject;
 use mysk_lib::models::elective_subject::ElectiveSubject;
 use mysk_lib::models::*;
 use mysk_lib::prelude::*;
@@ -19,7 +20,7 @@ use crate::AppState;
 pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
     let request_query = serde_qs::from_str::<
-        RequestType<ElectiveSubject, QueryableElectiveSubject, SortablePlaceholder>,
+        RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
     >(request.query_string())
     .unwrap();
 
@@ -30,6 +31,7 @@ pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<imp
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
     let filter = request_query.filter.as_ref();
+    let sort = request_query.sort.as_ref();
 
     // let model = elective_subject::ElectiveSubject::get_by_id(
     //     pool,
@@ -41,7 +43,7 @@ pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<imp
 
     dbg!(&filter);
 
-    let model = elective_subject::db::DbElectiveSubject::query(pool, filter, None, None).await?;
+    let model = elective_subject::db::DbElectiveSubject::query(pool, filter, sort, None).await?;
 
     // let model = elective_trade_offer::ElectiveTradeOffer::get_by_id(
     //     pool,

@@ -54,12 +54,12 @@ pub trait Queryable {
 }
 
 /// A trait for DB objects with ability to query from DB
-pub trait QueryDb<QueryableObject, SortableObject> {
-    // Query from DB
+pub trait QueryDb<QueryableObject: Queryable, SortableObject> {
+    /// Query from DB
     async fn query(
         pool: &sqlx::PgPool,
         filter: Option<&FilterConfig<QueryableObject>>,
-        sorting: Option<&SortingConfig<SortableObject>>,
+        sort: Option<&SortingConfig<SortableObject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where

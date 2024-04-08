@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::{query, Execute, QueryBuilder};
+use sqlx::{query, QueryBuilder};
 use uuid::Uuid;
 
 use crate::models::common::requests::{
@@ -15,7 +15,7 @@ use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 
 use super::request::queryable::QueryableElectiveSubject;
-use super::ElectiveSubject;
+use super::request::sortable::SortableElectiveSubject;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
 #[base_query(query = "SELECT * FROM complete_elective_subjects_view")]
@@ -85,11 +85,11 @@ impl DbElectiveSubject {
     }
 }
 
-impl QueryDb<QueryableElectiveSubject, String> for DbElectiveSubject {
+impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
     async fn query(
         pool: &sqlx::PgPool,
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
-        sorting: Option<&SortingConfig<String>>,
+        sort: Option<&SortingConfig<SortableElectiveSubject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
@@ -151,9 +151,22 @@ impl QueryDb<QueryableElectiveSubject, String> for DbElectiveSubject {
             }
         }
 
-        // let res = query.build();
+        if let Some(sorting) = sort {
+            query.push(" ORDER BY ");
+            let columns = sorting
+                .by
+                .clone()
+                .into_iter()
+                .map(|c| c.to_string())
+                .collect::<Vec<String>>();
+            query.push(columns.join(", "));
 
-        // dbg!(res.sql());
+            if sorting.ascending.unwrap_or(true) {
+                query.push(" ASC");
+            } else {
+                query.push(" DESC");
+            }
+        }
 
         query
             .build_query_as::<DbElectiveSubject>()

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use sqlx::{postgres::PgArgumentBuffer, Encode};
+use sqlx::Encode;
 use utoipa::ToSchema;
 
 #[derive(Debug, serde::Deserialize)]
@@ -41,7 +41,7 @@ pub struct RequestType<T, Queryable, Sortable> {
     pub data: Option<T>,
     pub pagination: Option<PaginationConfig>,
     pub filter: Option<FilterConfig<Queryable>>,
-    pub sorting: Option<SortingConfig<Sortable>>,
+    pub sort: Option<SortingConfig<Sortable>>,
     pub fetch_level: Option<FetchLevel>,
     pub descendant_fetch_level: Option<FetchLevel>,
 }
