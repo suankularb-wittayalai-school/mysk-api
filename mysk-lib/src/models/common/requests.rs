@@ -47,13 +47,14 @@ impl<SortingObject: Display> SortingConfig<SortingObject> {
     }
 
     pub fn to_order_by_clause(&self) -> String {
-        let mut order_by = String::new();
-        for (i, by) in self.by.iter().enumerate() {
-            if i > 0 {
-                order_by.push_str(", ");
-            }
-            order_by.push_str(&format!("{}", by));
-        }
+        let mut order_by = " ORDER BY ".to_string();
+        let columns = self
+            .by
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        order_by.push_str(&columns);
 
         if let Some(ascending) = self.ascending {
             order_by.push_str(if ascending { " ASC" } else { " DESC" });

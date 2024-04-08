@@ -14,7 +14,7 @@ use crate::{
 };
 
 use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::traits::db::{self, BaseQuery, GetById};
 
 use super::request::queryable::QueryableElectiveSubject;
 use super::request::sortable::SortableElectiveSubject;
@@ -179,6 +179,8 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
                 }
             }
         }
+
+        // dbg!(&query.build().sql());
 
         query
             .build_query_as::<DbElectiveSubject>()
