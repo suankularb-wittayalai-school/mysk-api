@@ -1,7 +1,9 @@
 use sqlx::{pool, PgPool};
 use uuid::Uuid;
 
-use super::requests::FetchLevel;
+use super::requests::{
+    FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
+};
 use crate::prelude::*;
 
 pub trait FetchLevelVariant<T> {
@@ -40,6 +42,25 @@ pub trait TopLevelGetById {
         ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+    ) -> Result<Vec<Self>>
+    where
+        Self: Sized;
+}
+
+/// A trait for Queryable objects with ability to convert to query string conditions
+pub trait Queryable {
+    // Convert to query string conditions
+    fn to_query_string(&self) -> Vec<SqlSection>;
+}
+
+/// A trait for DB objects with ability to query from DB
+pub trait QueryDb<QueryableObject, SortableObject> {
+    // Query from DB
+    async fn query(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableObject>>,
+        sorting: Option<&SortingConfig<SortableObject>>,
+        pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
         Self: Sized;

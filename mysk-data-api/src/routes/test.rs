@@ -1,8 +1,11 @@
+use actix_web::HttpRequest;
 use actix_web::{get, web, HttpResponse, Responder};
 
 // use mysk_lib::models::common::requests::FetchLevel;
-use mysk_lib::models::common::requests::RequestType;
+use mysk_lib::models::common::requests::{RequestType, SortablePlaceholder};
+use mysk_lib::models::common::traits::QueryDb;
 use mysk_lib::models::common::traits::TopLevelGetById;
+use mysk_lib::models::elective_subject::request::queryable::QueryableElectiveSubject;
 use mysk_lib::models::elective_subject::ElectiveSubject;
 use mysk_lib::models::*;
 use mysk_lib::prelude::*;
@@ -13,17 +16,12 @@ use crate::AppState;
 
 #[utoipa::path(path = "/test", tag = "Global")]
 #[get("/test")]
-pub async fn test(
-    data: web::Data<AppState>,
-    request_query: web::Query<
-        RequestType<
-            ElectiveSubject,
-            common::requests::QueryablePlaceholder,
-            common::requests::SortablePlaceholder,
-        >,
-    >,
-) -> Result<impl Responder> {
+pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
+    let request_query = serde_qs::from_str::<
+        RequestType<ElectiveSubject, QueryableElectiveSubject, SortablePlaceholder>,
+    >(request.query_string())
+    .unwrap();
 
     let model_id = Uuid::parse_str("d05c155a-ebe0-456b-b289-7b0eb1487f04").unwrap();
 
@@ -31,13 +29,19 @@ pub async fn test(
 
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
-    let model = elective_subject::ElectiveSubject::get_by_id(
-        pool,
-        model_id,
-        fetch_level,
-        descendant_fetch_level,
-    )
-    .await?;
+    let filter = request_query.filter.as_ref();
+
+    // let model = elective_subject::ElectiveSubject::get_by_id(
+    //     pool,
+    //     model_id,
+    //     fetch_level,
+    //     descendant_fetch_level,
+    // )
+    // .await?;
+
+    dbg!(&filter);
+
+    let model = elective_subject::db::DbElectiveSubject::query(pool, filter, None, None).await?;
 
     // let model = elective_trade_offer::ElectiveTradeOffer::get_by_id(
     //     pool,
