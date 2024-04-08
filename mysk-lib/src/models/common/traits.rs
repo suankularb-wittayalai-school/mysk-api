@@ -47,6 +47,19 @@ pub trait TopLevelGetById {
         Self: Sized;
 }
 
+pub trait TopLevelQuery<QueryableObject: Queryable, SortableObject> {
+    async fn query(
+        pool: &sqlx::PgPool,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
+        filter: Option<&FilterConfig<QueryableObject>>,
+        sort: Option<&SortingConfig<SortableObject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<Vec<Self>>
+    where
+        Self: Sized;
+}
+
 /// A trait for Queryable objects with ability to convert to query string conditions
 pub trait Queryable {
     // Convert to query string conditions

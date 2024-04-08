@@ -69,10 +69,10 @@ impl std::error::Error for ErrorType {
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct PaginationType {
-    first: String,
-    last: String,
-    next: Option<String>,
-    prev: Option<String>,
+    first_p: u32,
+    last_p: u32,
+    next_p: Option<u32>,
+    prev_p: Option<u32>,
     size: u32,
     total: u32,
 }
@@ -82,7 +82,7 @@ impl std::fmt::Display for PaginationType {
         write!(
             f,
             "{{ first: {}, last: {}, next: {:?}, prev: {:?}, size: {}, total: {} }}",
-            self.first, self.last, self.next, self.prev, self.size, self.total
+            self.first_p, self.last_p, self.next_p, self.prev_p, self.size, self.total
         )
     }
 }
