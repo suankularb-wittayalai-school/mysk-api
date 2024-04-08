@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +13,12 @@ pub struct QueryablePlaceholder;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct SortablePlaceholder;
+
+impl Display for SortablePlaceholder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "")
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -28,9 +36,31 @@ pub struct FilterConfig<T> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct SortingConfig<T> {
+pub struct SortingConfig<T: Display> {
     pub by: Vec<T>,
     pub ascending: Option<bool>,
+}
+
+impl<SortingObject: Display> SortingConfig<SortingObject> {
+    pub fn new(by: Vec<SortingObject>, ascending: Option<bool>) -> Self {
+        Self { by, ascending }
+    }
+
+    pub fn to_order_by_clause(&self) -> String {
+        let mut order_by = String::new();
+        for (i, by) in self.by.iter().enumerate() {
+            if i > 0 {
+                order_by.push_str(", ");
+            }
+            order_by.push_str(&format!("{}", by));
+        }
+
+        if let Some(ascending) = self.ascending {
+            order_by.push_str(if ascending { " ASC" } else { " DESC" });
+        }
+
+        order_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
@@ -66,7 +96,7 @@ impl PaginationConfig {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct RequestType<T, Queryable, Sortable> {
+pub struct RequestType<T, Queryable, Sortable: Display> {
     pub data: Option<T>,
     pub pagination: Option<PaginationConfig>,
     pub filter: Option<FilterConfig<Queryable>>,
@@ -76,7 +106,7 @@ pub struct RequestType<T, Queryable, Sortable> {
 }
 
 // Implement from request for RequestType with any T, Queryable, and Sortable
-impl<T, Queryable, Sortable> FromRequest for RequestType<T, Queryable, Sortable>
+impl<T, Queryable, Sortable: Display> FromRequest for RequestType<T, Queryable, Sortable>
 where
     T: serde::de::DeserializeOwned,
     Queryable: serde::de::DeserializeOwned,

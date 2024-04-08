@@ -157,20 +157,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         }
 
         if let Some(sorting) = sort {
-            query.push(" ORDER BY ");
-            let columns = sorting
-                .by
-                .clone()
-                .into_iter()
-                .map(|c| c.to_string())
-                .collect::<Vec<String>>();
-            query.push(columns.join(", "));
-
-            if sorting.ascending.unwrap_or(true) {
-                query.push(" ASC");
-            } else {
-                query.push(" DESC");
-            }
+            query.push(sorting.to_order_by_clause());
         }
 
         if let Some(pagination) = pagination {
