@@ -1,8 +1,9 @@
+use mysk_lib_macros::traits::db::BaseQuery;
 use sqlx::{pool, PgPool};
 use uuid::Uuid;
 
 use super::{
-    requests::{FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
+    requests::{FetchLevel, FilterConfig, PaginationConfig, SortingConfig, SqlSection},
     response::PaginationType,
 };
 use crate::prelude::*;
@@ -48,7 +49,12 @@ pub trait TopLevelGetById {
         Self: Sized;
 }
 
-pub trait TopLevelQuery<QueryableObject: Queryable, SortableObject> {
+pub trait TopLevelQuery<
+    DbVariant: QueryDb<QueryableObject, SortableObject> + BaseQuery,
+    QueryableObject: Queryable,
+    SortableObject,
+>
+{
     async fn query(
         pool: &sqlx::PgPool,
         fetch_level: Option<&FetchLevel>,
@@ -58,7 +64,19 @@ pub trait TopLevelQuery<QueryableObject: Queryable, SortableObject> {
         pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
-        Self: Sized;
+        Self: TopLevelFromTable<DbVariant> + Sized,
+    {
+        let models = DbVariant::query(pool, filter, sort, pagination).await?;
+
+        let mut result = vec![];
+
+        for variant in models {
+            result
+                .push(Self::from_table(pool, variant, fetch_level, descendant_fetch_level).await?);
+        }
+
+        Ok(result)
+    }
 
     async fn response_pagination(
         pool: &sqlx::PgPool,
@@ -66,7 +84,10 @@ pub trait TopLevelQuery<QueryableObject: Queryable, SortableObject> {
         pagination: Option<&PaginationConfig>,
     ) -> Result<PaginationType>
     where
-        Self: Sized;
+        Self: Sized,
+    {
+        DbVariant::response_pagination(pool, filter, pagination).await
+    }
 }
 
 /// A trait for Queryable objects with ability to convert to query string conditions
@@ -85,7 +106,7 @@ pub trait QueryDb<QueryableObject: Queryable, SortableObject> {
         pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
-        Self: Sized;
+        Self: BaseQuery + Sized;
 
     async fn response_pagination(
         pool: &sqlx::PgPool,

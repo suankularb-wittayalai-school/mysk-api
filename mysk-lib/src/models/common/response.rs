@@ -88,18 +88,22 @@ impl std::fmt::Display for PaginationType {
 }
 
 impl PaginationType {
-    pub fn new(curr_p: u32, size: u32, total: u32) -> Self {
+    pub fn new(current_p: u32, size: u32, total: u32) -> Self {
         let page_count = (total as f64 / size as f64).ceil() as u32;
 
         PaginationType {
             first_p: 1,
             last_p: page_count,
-            next_p: if curr_p < page_count {
-                Some(curr_p + 1)
+            next_p: if current_p < page_count {
+                Some(current_p + 1)
             } else {
                 None
             },
-            prev_p: if curr_p > 1 { Some(curr_p - 1) } else { None },
+            prev_p: if current_p > 1 {
+                Some(current_p - 1)
+            } else {
+                None
+            },
             size,
             total,
         }
