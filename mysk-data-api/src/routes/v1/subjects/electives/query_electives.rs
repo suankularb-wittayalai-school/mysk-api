@@ -11,12 +11,14 @@ use mysk_lib::models::elective_subject::ElectiveSubject;
 use mysk_lib::prelude::*;
 // use mysk_lib_macros::traits::db::GetById;
 
+use crate::middlewares::api_key::HaveApiKey;
 use crate::AppState;
 
 #[get("/")]
 pub async fn query_elective_subject(
     data: web::Data<AppState>,
     request: HttpRequest,
+    _: HaveApiKey,
 ) -> Result<impl Responder> {
     let pool: &sqlx::PgPool = &data.db;
     let request_query = serde_qs::from_str::<
