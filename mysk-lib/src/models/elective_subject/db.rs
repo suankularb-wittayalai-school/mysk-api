@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use sqlx::{query, QueryBuilder};
+use sqlx::{query, Execute, QueryBuilder};
 use uuid::Uuid;
 
 use crate::models::common::requests::{
@@ -12,7 +12,7 @@ use crate::{
 };
 
 use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::traits::db::{self, BaseQuery, GetById};
 
 use super::request::queryable::QueryableElectiveSubject;
 use super::request::sortable::SortableElectiveSubject;
@@ -165,6 +165,26 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
                 query.push(" ASC");
             } else {
                 query.push(" DESC");
+            }
+        }
+
+        if let Some(pagination) = pagination {
+            let limit_section = pagination.to_limit_clause();
+            // dbg!(&limit_section);
+            query.push(" ");
+            for (i, sql) in limit_section.sql.iter().enumerate() {
+                query.push(sql);
+                if i < limit_section.params.len() {
+                    match limit_section.params[i] {
+                        QueryParam::Int(v) => query.push_bind(v),
+                        _ => {
+                            return Err(Error::InternalSeverError(
+                                "Invalid pagination params".to_string(),
+                                "DbElectiveSubject::query".to_string(),
+                            ));
+                        }
+                    };
+                }
             }
         }
 

@@ -36,6 +36,32 @@ pub struct PaginationConfig {
     pub size: Option<u32>,
 }
 
+impl Default for PaginationConfig {
+    fn default() -> Self {
+        Self {
+            p: 1,
+            size: Some(50),
+        }
+    }
+}
+
+impl PaginationConfig {
+    pub fn new(p: u32, size: Option<u32>) -> Self {
+        Self { p, size }
+    }
+
+    pub fn to_limit_clause(&self) -> SqlSection {
+        // LIMIT $1 OFFSET $2
+        SqlSection {
+            sql: vec!["LIMIT ".to_string(), " OFFSET ".to_string()],
+            params: vec![
+                QueryParam::Int(self.size.unwrap_or(50) as i64),
+                QueryParam::Int(((self.p - 1) * self.size.unwrap_or(50)) as i64),
+            ],
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
 pub struct RequestType<T, Queryable, Sortable> {
     pub data: Option<T>,

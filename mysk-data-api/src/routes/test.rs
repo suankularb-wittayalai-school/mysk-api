@@ -32,7 +32,7 @@ pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<imp
 
     let filter = request_query.filter.as_ref();
     let sort = request_query.sort.as_ref();
-
+    let pagination = request_query.pagination.as_ref();
     // let model = elective_subject::ElectiveSubject::get_by_id(
     //     pool,
     //     model_id,
@@ -41,9 +41,10 @@ pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<imp
     // )
     // .await?;
 
-    dbg!(&filter);
+    dbg!(&pagination);
 
-    let model = elective_subject::db::DbElectiveSubject::query(pool, filter, sort, None).await?;
+    let model =
+        elective_subject::db::DbElectiveSubject::query(pool, filter, sort, pagination).await?;
 
     // let model = elective_trade_offer::ElectiveTradeOffer::get_by_id(
     //     pool,
