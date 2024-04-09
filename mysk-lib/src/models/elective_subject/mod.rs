@@ -4,12 +4,13 @@ use self::{
         compact::CompactElectiveSubject, default::DefaultElectiveSubject,
         detailed::DetailedElectiveSubject, id_only::IdOnlyElectiveSubject,
     },
+    request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
 };
-
-use super::common::top_level_variant::TopLevelVariant;
+use super::common::{top_level_variant::TopLevelVariant, traits::TopLevelQuery};
 
 pub mod db;
 pub mod fetch_levels;
+pub mod request;
 
 pub type ElectiveSubject = TopLevelVariant<
     DbElectiveSubject,
@@ -18,3 +19,8 @@ pub type ElectiveSubject = TopLevelVariant<
     DefaultElectiveSubject,
     DetailedElectiveSubject,
 >;
+
+impl TopLevelQuery<DbElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>
+    for ElectiveSubject
+{
+}

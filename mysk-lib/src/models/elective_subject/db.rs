@@ -1,17 +1,29 @@
 use chrono::{DateTime, Utc};
-use sqlx::query;
+use sqlx::Row;
+use sqlx::{query, QueryBuilder};
 use uuid::Uuid;
 
+use crate::models::common::requests::{
+    FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
+};
+use crate::models::common::response::PaginationType;
+use crate::models::common::traits::{QueryDb, Queryable};
 use crate::prelude::*;
 use crate::{
     helpers::date::get_current_academic_year, models::subject::enums::subject_type::SubjectType,
 };
 
 use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::traits::db::{self, BaseQuery, GetById};
+
+use super::request::queryable::QueryableElectiveSubject;
+use super::request::sortable::SortableElectiveSubject;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
-#[base_query(query = "SELECT * FROM complete_elective_subjects_view")]
+#[base_query(
+    query = "SELECT * FROM complete_elective_subjects_view",
+    count_query = "SELECT COUNT(*) FROM complete_elective_subjects_view"
+)]
 pub struct DbElectiveSubject {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -75,5 +87,187 @@ impl DbElectiveSubject {
                 "DbElectiveSubject::get_enrolled_students".to_string(),
             )),
         }
+    }
+}
+
+impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
+    async fn query(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableElectiveSubject>>,
+        sort: Option<&SortingConfig<SortableElectiveSubject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<Vec<Self>>
+    where
+        Self: Sized,
+    {
+        let mut query = QueryBuilder::<'_, sqlx::Postgres>::new(DbElectiveSubject::base_query());
+
+        let mut where_sections: Vec<SqlSection> = Vec::new();
+
+        if let Some(filter) = filter {
+            if let Some(q) = &filter.q {
+                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR code_th ILIKE '%q%' OR code_en ILIKE '%q%')
+                where_sections.push(SqlSection {
+                    sql: vec![
+                        "(name_th ILIKE concat('%', ".to_string(),
+                        ", '%') OR name_en ILIKE concat('%', ".to_string(),
+                        ", '%') OR code_th ILIKE concat('%', ".to_string(),
+                        ", '%') OR code_en ILIKE concat('%', ".to_string(),
+                        ", '%'))".to_string(),
+                    ],
+                    params: vec![
+                        QueryParam::String(q.to_string()),
+                        QueryParam::String(q.to_string()),
+                        QueryParam::String(q.to_string()),
+                        QueryParam::String(q.to_string()),
+                    ],
+                });
+            }
+            if let Some(data) = &filter.data {
+                let mut data_sections = data.to_query_string();
+                where_sections.append(&mut data_sections);
+            }
+        }
+
+        for (i, section) in where_sections.iter().enumerate() {
+            // add WHERE or AND before each section
+            query.push(if i == 0 { " WHERE " } else { "AND " });
+            // len of sql should be len of params + 1
+            // loop through index of sql
+            //   push sql[i]
+            //   if i < len of params
+            //     push params[i]
+            for (j, sql) in section.sql.iter().enumerate() {
+                query.push(sql);
+                if j < section.params.len() {
+                    match &section.params[j] {
+                        QueryParam::Int(v) => query.push_bind(v),
+                        QueryParam::Float(v) => query.push_bind(v),
+                        QueryParam::String(v) => query.push_bind(v),
+                        QueryParam::Bool(v) => query.push_bind(v),
+                        QueryParam::Uuid(v) => query.push_bind(v),
+                        QueryParam::ArrayInt(v) => query.push_bind(v),
+                        QueryParam::ArrayFloat(v) => query.push_bind(v),
+                        QueryParam::ArrayString(v) => query.push_bind(v),
+                        QueryParam::ArrayBool(v) => query.push_bind(v),
+                        QueryParam::ArrayUuid(v) => query.push_bind(v),
+                    };
+                }
+            }
+        }
+
+        if let Some(sorting) = sort {
+            query.push(sorting.to_order_by_clause());
+        }
+
+        if let Some(pagination) = pagination {
+            let limit_section = pagination.to_limit_clause();
+            // dbg!(&limit_section);
+            query.push(" ");
+            for (i, sql) in limit_section.sql.iter().enumerate() {
+                query.push(sql);
+                if i < limit_section.params.len() {
+                    match limit_section.params[i] {
+                        QueryParam::Int(v) => query.push_bind(v),
+                        _ => {
+                            return Err(Error::InternalSeverError(
+                                "Invalid pagination params".to_string(),
+                                "DbElectiveSubject::query".to_string(),
+                            ));
+                        }
+                    };
+                }
+            }
+        }
+
+        // dbg!(&query.build().sql());
+
+        query
+            .build_query_as::<DbElectiveSubject>()
+            .fetch_all(pool)
+            .await
+            .map_err(|e| {
+                Error::InternalSeverError(e.to_string(), "DbElectiveSubject::query".to_string())
+            })
+    }
+
+    async fn response_pagination(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableElectiveSubject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<PaginationType> {
+        let mut query = QueryBuilder::<'_, sqlx::Postgres>::new(DbElectiveSubject::count_query());
+
+        let mut where_sections: Vec<SqlSection> = Vec::new();
+
+        if let Some(filter) = filter {
+            if let Some(q) = &filter.q {
+                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR code_th ILIKE '%q%' OR code_en ILIKE '%q%')
+                where_sections.push(SqlSection {
+                    sql: vec![
+                        "(name_th ILIKE concat('%', ".to_string(),
+                        ", '%') OR name_en ILIKE concat('%', ".to_string(),
+                        ", '%') OR code_th ILIKE concat('%', ".to_string(),
+                        ", '%') OR code_en ILIKE concat('%', ".to_string(),
+                        ", '%'))".to_string(),
+                    ],
+                    params: vec![
+                        QueryParam::String(q.to_string()),
+                        QueryParam::String(q.to_string()),
+                        QueryParam::String(q.to_string()),
+                        QueryParam::String(q.to_string()),
+                    ],
+                });
+            }
+            if let Some(data) = &filter.data {
+                let mut data_sections = data.to_query_string();
+                where_sections.append(&mut data_sections);
+            }
+        }
+
+        for (i, section) in where_sections.iter().enumerate() {
+            // add WHERE or AND before each section
+            query.push(if i == 0 { " WHERE " } else { "AND " });
+            // len of sql should be len of params + 1
+            // loop through index of sql
+            //   push sql[i]
+            //   if i < len of params
+            //     push params[i]
+            for (j, sql) in section.sql.iter().enumerate() {
+                query.push(sql);
+                if j < section.params.len() {
+                    match &section.params[j] {
+                        QueryParam::Int(v) => query.push_bind(v),
+                        QueryParam::Float(v) => query.push_bind(v),
+                        QueryParam::String(v) => query.push_bind(v),
+                        QueryParam::Bool(v) => query.push_bind(v),
+                        QueryParam::Uuid(v) => query.push_bind(v),
+                        QueryParam::ArrayInt(v) => query.push_bind(v),
+                        QueryParam::ArrayFloat(v) => query.push_bind(v),
+                        QueryParam::ArrayString(v) => query.push_bind(v),
+                        QueryParam::ArrayBool(v) => query.push_bind(v),
+                        QueryParam::ArrayUuid(v) => query.push_bind(v),
+                    };
+                }
+            }
+        }
+
+        let count = query.build().fetch_one(pool).await.map_err(|e| {
+            Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::response_pagination".to_string(),
+            )
+        })?;
+
+        let count = count.get::<i64, _>("count");
+
+        Ok(PaginationType::new(
+            pagination.unwrap_or(&PaginationConfig::default()).p,
+            pagination
+                .unwrap_or(&PaginationConfig::default())
+                .size
+                .unwrap_or(50),
+            count as u32,
+        ))
     }
 }

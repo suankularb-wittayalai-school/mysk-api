@@ -4,9 +4,10 @@ use quote::quote;
 use syn::{parse_macro_input, DeriveInput};
 
 #[derive(FromDeriveInput, Default)]
-#[darling(default, attributes(base_query))]
+#[darling(default, attributes(base_query, count_query))]
 struct BaseQueryOpts {
     query: String,
+    count_query: String,
 }
 
 #[derive(FromDeriveInput, Default)]
@@ -61,18 +62,23 @@ pub fn derive(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-#[proc_macro_derive(BaseQuery, attributes(base_query))]
+#[proc_macro_derive(BaseQuery, attributes(base_query, count_query))]
 pub fn derive_base_query(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let opts = BaseQueryOpts::from_derive_input(&input).expect("Wrong options");
     let DeriveInput { ident, .. } = input;
 
     let query = opts.query;
+    let count_query = opts.count_query;
 
     let expanded = quote! {
         impl BaseQuery for #ident {
             fn base_query() -> &'static str {
                 #query
+            }
+
+            fn count_query() -> &'static str {
+                #count_query
             }
         }
     };

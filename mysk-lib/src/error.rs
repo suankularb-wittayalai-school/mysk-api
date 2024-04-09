@@ -9,6 +9,7 @@ use crate::models::common::response::{ErrorResponseType, ErrorType};
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Error {
+    InvalidRequest(String, String),
     EntityNotFound(String, String),
     InternalSeverError(String, String),
     // Auth errors
@@ -21,6 +22,13 @@ pub enum Error {
 impl From<&Error> for ErrorType {
     fn from(val: &Error) -> Self {
         match val {
+            Error::InvalidRequest(detail, source) => ErrorType {
+                id: Uuid::new_v4(),
+                code: 400,
+                error_type: "invalid_request".to_string(),
+                detail: detail.to_string(),
+                source: source.to_string(),
+            },
             Error::EntityNotFound(detail, source) => ErrorType {
                 id: Uuid::new_v4(),
                 code: 404,
@@ -77,6 +85,7 @@ impl From<&Error> for HttpResponse {
     fn from(val: &Error) -> Self {
         let res_val: ErrorResponseType = val.into();
         match val {
+            Error::InvalidRequest(_, _) => HttpResponse::BadRequest().json(res_val),
             Error::EntityNotFound(_, _) => HttpResponse::NotFound().json(res_val),
             Error::InternalSeverError(_, _) => HttpResponse::InternalServerError().json(res_val),
             Error::InvalidToken(_, _) => HttpResponse::Unauthorized().json(res_val),
@@ -120,6 +129,9 @@ impl From<Error> for ErrorResponseType {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let error = match self {
+            Error::InvalidRequest(detail, source) => {
+                format!("Invalid request: {} (source: {})", detail, source)
+            }
             Error::EntityNotFound(detail, source) => {
                 format!("Entity not found: {} (source: {})", detail, source)
             }
