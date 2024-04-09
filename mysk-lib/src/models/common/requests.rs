@@ -118,7 +118,9 @@ where
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
         let query_string = req.query_string();
-        let request_query = serde_qs::from_str::<RequestType<T, Queryable, Sortable>>(query_string);
+        let qs_parser = serde_qs::Config::new(5, false);
+        let request_query =
+            qs_parser.deserialize_str::<RequestType<T, Queryable, Sortable>>(query_string);
 
         match request_query {
             Ok(query) => futures::future::ready(Ok(query)),
