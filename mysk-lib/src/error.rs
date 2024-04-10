@@ -12,6 +12,7 @@ pub enum Error {
     InvalidRequest(String, String),
     EntityNotFound(String, String),
     InvalidPermission(String, String),
+    Conflicted(String, String),
     InternalSeverError(String, String),
     // Auth errors
     InvalidToken(String, String),
@@ -41,6 +42,13 @@ impl From<&Error> for ErrorType {
                 id: Uuid::new_v4(),
                 code: 403,
                 error_type: "invalid_permission".to_string(),
+                detail: detail.to_string(),
+                source: source.to_string(),
+            },
+            Error::Conflicted(detail, source) => ErrorType {
+                id: Uuid::new_v4(),
+                code: 409,
+                error_type: "conflicted".to_string(),
                 detail: detail.to_string(),
                 source: source.to_string(),
             },
@@ -96,6 +104,7 @@ impl From<&Error> for HttpResponse {
             Error::InvalidRequest(_, _) => HttpResponse::BadRequest().json(res_val),
             Error::EntityNotFound(_, _) => HttpResponse::NotFound().json(res_val),
             Error::InvalidPermission(_, _) => HttpResponse::Forbidden().json(res_val),
+            Error::Conflicted(_, _) => HttpResponse::Conflict().json(res_val),
             Error::InternalSeverError(_, _) => HttpResponse::InternalServerError().json(res_val),
             Error::InvalidToken(_, _) => HttpResponse::Unauthorized().json(res_val),
             Error::MissingToken(_, _) => HttpResponse::Unauthorized().json(res_val),
@@ -146,6 +155,9 @@ impl Display for Error {
             }
             Error::InvalidPermission(detail, source) => {
                 format!("Invalid permission: {} (source: {})", detail, source)
+            }
+            Error::Conflicted(detail, source) => {
+                format!("Conflicted: {} (source: {})", detail, source)
             }
             Error::InternalSeverError(detail, source) => {
                 format!("Internal server error: {} (source: {})", detail, source)
