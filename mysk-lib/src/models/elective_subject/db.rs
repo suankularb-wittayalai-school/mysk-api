@@ -88,6 +88,8 @@ impl DbElectiveSubject {
             )),
         }
     }
+
+    // pub async fn enroll_student() {}
 }
 
 impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
