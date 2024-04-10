@@ -44,6 +44,22 @@ pub struct DbStudent {
 }
 
 impl DbStudent {
+    pub async fn get_student_from_user_id(
+        pool: &sqlx::PgPool,
+        user_id: Uuid,
+    ) -> Result<Option<Uuid>> {
+        query!(r#"SELECT id FROM students WHERE user_id = $1"#, user_id)
+            .fetch_optional(pool)
+            .await
+            .map(|res| res.map(|r| r.id))
+            .map_err(|e| {
+                Error::InternalSeverError(
+                    e.to_string(),
+                    "DbStudent::get_student_from_user_id".to_string(),
+                )
+            })
+    }
+
     pub async fn get_student_contacts(pool: &sqlx::PgPool, student_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN students ON people.id = students.person_id WHERE students.id = $1"#,

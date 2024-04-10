@@ -12,35 +12,25 @@ use mysk_lib::models::common::requests::{
 use mysk_lib::models::elective_subject::ElectiveSubject;
 
 use crate::middlewares::logged_in::LoggedIn;
+use crate::middlewares::student::StudentOnly;
 use crate::{middlewares::api_key::HaveApiKey, AppState};
 
 #[post("/{id}/enroll")]
 pub async fn enroll_elective_subject(
     data: web::Data<AppState>,
     id: web::Path<Uuid>,
-    user: LoggedIn,
+    student_id: StudentOnly,
     _: HaveApiKey,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
+    let student_id = student_id.0;
     let id = id.into_inner();
 
     // let elective_enroll = ElectiveSubject::enroll();
 
     // let user = user.0;
-    dbg!(&user);
-
-    // Check if the user is a student
-    match user.role {
-        UserRole::Student => {}
-        _ => {
-            return Err(Error::InvalidPermission(
-                "Only students can enroll in electives".to_string(),
-                format!("/subjects/electives/{}/enroll", id.to_string()),
-            ));
-        }
-    }
+    dbg!(&student_id);
 
     let elective = ElectiveSubject::get_by_id(pool, id, Some(&FetchLevel::Detailed), None).await?;
 
@@ -50,7 +40,7 @@ pub async fn enroll_elective_subject(
             if elective.class_size == elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
-                    format!("/subjects/electives/{}/enroll", id.to_string()),
+                    format!("/subjects/electives/{id}/enroll"),
                 ));
             }
         }
@@ -61,5 +51,5 @@ pub async fn enroll_elective_subject(
 
     // check if the student has already enrolled in the elective before
 
-    Ok(HttpResponse::Ok())
+    Ok(HttpResponse::Created())
 }
