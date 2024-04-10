@@ -2,9 +2,8 @@ use crate::{
     middlewares::{api_key::HaveApiKey, student::StudentOnly},
     AppState,
 };
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{put, web, HttpResponse, Responder};
 use mysk_lib::{
-    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         classroom::Classroom,
         common::{
@@ -17,10 +16,11 @@ use mysk_lib::{
     },
     prelude::*,
 };
-use sqlx::{query, types::Uuid};
+use sqlx::query;
+use uuid::Uuid;
 
-#[post("/{id}/enroll")]
-pub async fn enroll_elective_subject(
+#[put("/{id}/enroll")]
+async fn modify_elective_subject(
     data: web::Data<AppState>,
     id: web::Path<Uuid>,
     student_id: StudentOnly,
@@ -78,7 +78,7 @@ pub async fn enroll_elective_subject(
                     })
                 {
                     return Err(Error::InvalidPermission(
-                        "Student is not in a class available for the elective".to_string(),
+                        "Student not in a class available for the elective".to_string(),
                         format!("/subjects/electives/{elective_id}/enroll"),
                     ));
                 }
@@ -98,6 +98,7 @@ pub async fn enroll_elective_subject(
     )
     .fetch_one(pool)
     .await?;
+
     let enroll_count: i64 = enroll_count.count.unwrap_or(0);
     if enroll_count > 0 {
         return Err(Error::InvalidPermission(
@@ -106,38 +107,12 @@ pub async fn enroll_elective_subject(
         ));
     }
 
-    // Checks if the student is already enrolled in an elective this semester
-    let has_enrolled = query!(
-        r#"
-        SELECT EXISTS (
-            SELECT FROM student_elective_subjects
-            WHERE student_id = $1 AND year = $2 AND semester = $3
-        )
-        "#,
-        student_id,
-        get_current_academic_year(None),
-        get_current_semester(None),
-    )
-    .fetch_one(pool)
-    .await?;
-    let has_enrolled = has_enrolled.exists.unwrap_or(false);
-    if has_enrolled {
-        return Err(Error::InvalidPermission(
-            "Student has already enrolled in an elective this semester".to_string(),
-            format!("/subjects/electives/{elective_id}/enroll"),
-        ));
-    }
-
     query!(
         r#"
-        INSERT INTO student_elective_subjects (
-            student_id, elective_subject_id, year, semester
-        ) VALUES ($1, $2, $3, $4)
+        UPDATE student_elective_subjects SET elective_subject_id = $1 WHERE student_id = $2
         "#,
-        student_id,
         elective_id,
-        get_current_academic_year(None),
-        get_current_semester(None),
+        student_id,
     )
     .execute(pool)
     .await?;

@@ -73,7 +73,10 @@ impl DbElectiveSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT student_id FROM student_elective_subjects WHERE elective_subject_id = $1 and year = $2"#,
+            r#"
+            SELECT student_id FROM student_elective_subjects
+            WHERE elective_subject_id = $1 and year = $2
+            "#,
             self.id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None))
         )

@@ -19,13 +19,13 @@ use crate::AppState;
 #[get("/{id}")]
 pub async fn query_elective_details(
     data: web::Data<AppState>,
-    path: web::Path<(Uuid,)>,
+    path: web::Path<Uuid>,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
     _: HaveApiKey,
 ) -> Result<impl Responder> {
     let pool = &data.db;
 
-    let id = path.into_inner().0;
+    let id = path.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
