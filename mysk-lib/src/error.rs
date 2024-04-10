@@ -11,6 +11,7 @@ use crate::models::common::response::{ErrorResponseType, ErrorType};
 pub enum Error {
     InvalidRequest(String, String),
     EntityNotFound(String, String),
+    InvalidPermission(String, String),
     InternalSeverError(String, String),
     // Auth errors
     InvalidToken(String, String),
@@ -33,6 +34,13 @@ impl From<&Error> for ErrorType {
                 id: Uuid::new_v4(),
                 code: 404,
                 error_type: "entity_not_found".to_string(),
+                detail: detail.to_string(),
+                source: source.to_string(),
+            },
+            Error::InvalidPermission(detail, source) => ErrorType {
+                id: Uuid::new_v4(),
+                code: 403,
+                error_type: "invalid_permission".to_string(),
                 detail: detail.to_string(),
                 source: source.to_string(),
             },
@@ -87,6 +95,7 @@ impl From<&Error> for HttpResponse {
         match val {
             Error::InvalidRequest(_, _) => HttpResponse::BadRequest().json(res_val),
             Error::EntityNotFound(_, _) => HttpResponse::NotFound().json(res_val),
+            Error::InvalidPermission(_, _) => HttpResponse::Forbidden().json(res_val),
             Error::InternalSeverError(_, _) => HttpResponse::InternalServerError().json(res_val),
             Error::InvalidToken(_, _) => HttpResponse::Unauthorized().json(res_val),
             Error::MissingToken(_, _) => HttpResponse::Unauthorized().json(res_val),
@@ -134,6 +143,9 @@ impl Display for Error {
             }
             Error::EntityNotFound(detail, source) => {
                 format!("Entity not found: {} (source: {})", detail, source)
+            }
+            Error::InvalidPermission(detail, source) => {
+                format!("Invalid permission: {} (source: {})", detail, source)
             }
             Error::InternalSeverError(detail, source) => {
                 format!("Internal server error: {} (source: {})", detail, source)
