@@ -1,8 +1,8 @@
-pub(crate) mod create_api_key;
-pub(crate) mod google_login;
-pub(crate) mod user;
-
 use actix_web::web;
+
+mod create_api_key;
+mod google_login;
+mod user;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(google_login::google_oauth_handler);

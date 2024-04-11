@@ -1,21 +1,19 @@
-use std::fmt::Display;
-
-use actix_web::{dev::Payload, FromRequest, HttpRequest};
-use serde::{Deserialize, Serialize};
-
-use sqlx::Encode;
-use utoipa::ToSchema;
-
 use crate::prelude::*;
+use actix_web::{dev::Payload, FromRequest, HttpRequest};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sqlx::{Encode, Postgres};
+use std::fmt::{Display, Formatter};
+use utoipa::ToSchema;
+use uuid::Uuid;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct QueryablePlaceholder;
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct SortablePlaceholder;
 
 impl Display for SortablePlaceholder {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "")
     }
 }
@@ -109,9 +107,9 @@ pub struct RequestType<T, Queryable, Sortable: Display> {
 // Implement from request for RequestType with any T, Queryable, and Sortable
 impl<T, Queryable, Sortable: Display> FromRequest for RequestType<T, Queryable, Sortable>
 where
-    T: serde::de::DeserializeOwned,
-    Queryable: serde::de::DeserializeOwned,
-    Sortable: serde::de::DeserializeOwned,
+    T: DeserializeOwned,
+    Queryable: DeserializeOwned,
+    Sortable: DeserializeOwned,
 {
     type Error = Error;
     type Future = futures::future::Ready<Result<Self>>;
@@ -138,27 +136,25 @@ pub enum QueryParam {
     Float(f64),
     String(String),
     Bool(bool),
-    Uuid(uuid::Uuid),
+    Uuid(Uuid),
     ArrayInt(Vec<i64>),
     ArrayFloat(Vec<f64>),
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
-    ArrayUuid(Vec<uuid::Uuid>),
+    ArrayUuid(Vec<Uuid>),
 }
 
-impl Encode<'_, sqlx::Postgres> for QueryParam {
+impl Encode<'_, Postgres> for QueryParam {
     fn encode_by_ref(
         &self,
-        buf: &mut <sqlx::Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
+        buf: &mut <Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
     ) -> sqlx::encode::IsNull {
         match self {
-            QueryParam::String(v) => {
-                <String as sqlx::Encode<sqlx::Postgres>>::encode(v.to_string(), buf)
-            }
-            QueryParam::Int(v) => <i64 as sqlx::Encode<sqlx::Postgres>>::encode(*v, buf),
-            QueryParam::Float(v) => <f64 as sqlx::Encode<sqlx::Postgres>>::encode(*v, buf),
-            QueryParam::Bool(v) => <bool as sqlx::Encode<sqlx::Postgres>>::encode(*v, buf),
-            QueryParam::Uuid(v) => <uuid::Uuid as sqlx::Encode<sqlx::Postgres>>::encode(*v, buf),
+            QueryParam::String(v) => <String as sqlx::Encode<Postgres>>::encode(v.to_string(), buf),
+            QueryParam::Int(v) => <i64 as sqlx::Encode<Postgres>>::encode(*v, buf),
+            QueryParam::Float(v) => <f64 as sqlx::Encode<Postgres>>::encode(*v, buf),
+            QueryParam::Bool(v) => <bool as sqlx::Encode<Postgres>>::encode(*v, buf),
+            QueryParam::Uuid(v) => <Uuid as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::ArrayInt(v) => v.encode_by_ref(buf),
             QueryParam::ArrayFloat(v) => v.encode_by_ref(buf),
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),

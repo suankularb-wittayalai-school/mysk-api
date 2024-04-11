@@ -1,9 +1,8 @@
+use super::health::{HealthCheckResponse, __path_health_check};
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
 };
-
-use super::health::{HealthCheckResponse, __path_health_check};
 
 struct SecurityAddon;
 

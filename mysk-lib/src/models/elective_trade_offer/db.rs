@@ -1,12 +1,12 @@
+use crate::models::common::enums::submission_status::SubmissionStatus;
 use chrono::{DateTime, Utc};
-use uuid::Uuid;
-
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
+use uuid::Uuid;
 
-use crate::models::common::enums::submission_status::SubmissionStatus;
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
 #[base_query(query = "SELECT * FROM elective_subject_trade_offers")]
 pub struct DbElectiveTradeOffer {
     pub id: Uuid,

@@ -1,7 +1,7 @@
-use actix_web::web;
+use actix_web::web::{scope, ServiceConfig};
 
 pub mod electives;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/electives").configure(electives::config));
+pub fn config(cfg: &mut ServiceConfig) {
+    cfg.service(scope("/electives").configure(electives::config));
 }

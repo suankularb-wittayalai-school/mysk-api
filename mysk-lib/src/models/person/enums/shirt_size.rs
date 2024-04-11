@@ -1,8 +1,9 @@
-use std::fmt::{Display, Formatter};
-
 use serde::{Deserialize, Serialize};
-
-use sqlx::Type;
+use sqlx::{
+    postgres::{PgTypeInfo, PgValueRef},
+    Postgres,
+};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "UPPERCASE")]
@@ -41,28 +42,27 @@ impl Display for ShirtSize {
     }
 }
 
-impl Type<sqlx::Postgres> for ShirtSize {
-    fn type_info() -> sqlx::postgres::PgTypeInfo {
-        sqlx::postgres::PgTypeInfo::with_name("shirt_size")
+impl sqlx::Type<Postgres> for ShirtSize {
+    fn type_info() -> PgTypeInfo {
+        PgTypeInfo::with_name("shirt_size")
     }
 }
 
-impl sqlx::Encode<'_, sqlx::Postgres> for ShirtSize {
+impl sqlx::Encode<'_, Postgres> for ShirtSize {
     fn encode_by_ref(
         &self,
-        buf: &mut <sqlx::Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
+        buf: &mut <Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
     ) -> sqlx::encode::IsNull {
         let s: String = self.to_string();
-        <String as sqlx::Encode<sqlx::Postgres>>::encode(s, buf)
+        <String as sqlx::Encode<Postgres>>::encode(s, buf)
     }
 }
 
-impl<'r> sqlx::Decode<'r, sqlx::Postgres> for ShirtSize {
+impl<'r> sqlx::Decode<'r, Postgres> for ShirtSize {
     fn decode(
-        value: sqlx::postgres::PgValueRef<'r>,
+        value: PgValueRef<'r>,
     ) -> Result<Self, Box<dyn std::error::Error + 'static + Send + Sync>> {
-        let s: String = <String as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
-        match s.as_str() {
+        match <String as sqlx::Decode<Postgres>>::decode(value)?.as_str() {
             "XS" => Ok(ShirtSize::XS),
             "S" => Ok(ShirtSize::S),
             "M" => Ok(ShirtSize::M),
@@ -73,7 +73,7 @@ impl<'r> sqlx::Decode<'r, sqlx::Postgres> for ShirtSize {
             "4XL" => Ok(ShirtSize::X4L),
             "5XL" => Ok(ShirtSize::X5L),
             "6XL" => Ok(ShirtSize::X6L),
-            _ => Err(Box::new(sqlx::Error::Decode(
+            s => Err(Box::new(sqlx::Error::Decode(
                 format!("Unknown shirt size: {}", s).into(),
             ))),
         }

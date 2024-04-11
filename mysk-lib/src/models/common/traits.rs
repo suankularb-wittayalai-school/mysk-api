@@ -1,16 +1,17 @@
-use std::fmt::Display;
-
-use mysk_lib_macros::traits::db::BaseQuery;
-use sqlx::{pool, PgPool};
-use uuid::Uuid;
+#![allow(async_fn_in_trait)]
 
 use super::{
     requests::{FetchLevel, FilterConfig, PaginationConfig, SortingConfig, SqlSection},
     response::PaginationType,
 };
 use crate::prelude::*;
+use mysk_lib_macros::traits::db::BaseQuery;
+use sqlx::PgPool;
+use std::fmt::Display;
+use uuid::Uuid;
 
-/// A trait for Fetch Level Variants of a database entity with ability to convert to be converted from DB variant
+/// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
+/// from DB variant.
 pub trait FetchLevelVariant<T> {
     async fn from_table(
         pool: &PgPool,
@@ -21,10 +22,10 @@ pub trait FetchLevelVariant<T> {
         Self: Sized;
 }
 
-/// A trait for the actual database entity with ability to convert to be converted from DB variant
+/// A trait for the actual database entity with ability to convert to be converted from DB variant.
 pub trait TopLevelFromTable<T> {
     async fn from_table(
-        pool: &pool::Pool<sqlx::Postgres>,
+        pool: &PgPool,
         table: T,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -35,7 +36,7 @@ pub trait TopLevelFromTable<T> {
 
 pub trait TopLevelGetById {
     async fn get_by_id(
-        pool: &pool::Pool<sqlx::Postgres>,
+        pool: &PgPool,
         id: Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -44,7 +45,7 @@ pub trait TopLevelGetById {
         Self: Sized;
 
     async fn get_by_ids(
-        pool: &pool::Pool<sqlx::Postgres>,
+        pool: &PgPool,
         ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -60,7 +61,7 @@ pub trait TopLevelQuery<
 >
 {
     async fn query(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
         filter: Option<&FilterConfig<QueryableObject>>,
@@ -83,7 +84,7 @@ pub trait TopLevelQuery<
     }
 
     async fn response_pagination(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         filter: Option<&FilterConfig<QueryableObject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<PaginationType>
@@ -94,17 +95,16 @@ pub trait TopLevelQuery<
     }
 }
 
-/// A trait for Queryable objects with ability to convert to query string conditions
+/// A trait for Queryable objects with ability to convert to query string conditions.
 pub trait Queryable {
     // Convert to query string conditions
     fn to_query_string(&self) -> Vec<SqlSection>;
 }
 
-/// A trait for DB variant to allow querying and creating pagination response
+/// A trait for DB variant to allow querying and creating pagination response.
 pub trait QueryDb<QueryableObject: Queryable, SortableObject: Display> {
-    /// Query from DB
     async fn query(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         filter: Option<&FilterConfig<QueryableObject>>,
         sort: Option<&SortingConfig<SortableObject>>,
         pagination: Option<&PaginationConfig>,
@@ -112,7 +112,6 @@ pub trait QueryDb<QueryableObject: Queryable, SortableObject: Display> {
     where
         Self: BaseQuery + Sized;
 
-    /// Create pagination response
     async fn response_pagination(
         pool: &sqlx::PgPool,
         filter: Option<&FilterConfig<QueryableObject>>,

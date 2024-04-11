@@ -1,18 +1,19 @@
+use crate::{
+    models::{
+        common::{
+            enums::submission_status::SubmissionStatus,
+            requests::FetchLevel,
+            traits::{FetchLevelVariant, TopLevelGetById},
+        },
+        elective_subject::ElectiveSubject,
+        elective_trade_offer::db::DbElectiveTradeOffer,
+        student::Student,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{
-        enums::submission_status::SubmissionStatus,
-        requests::FetchLevel,
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    elective_subject::ElectiveSubject,
-    elective_trade_offer::db::DbElectiveTradeOffer,
-    student::Student,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultElectiveTradeOffer {

@@ -1,10 +1,9 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use crate::models::common::{
     requests::{QueryParam, SqlSection},
     traits::Queryable,
 };
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryableElectiveSubject {
@@ -140,9 +139,8 @@ impl Queryable for QueryableElectiveSubject {
             // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE classroom_id IN ANY($1))
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE classroom_id = ANY("
-                        .to_string(),
-                    "))".to_string(),
+                    "id IN (SELECT elective_subject_id FROM".to_string(),
+                    " elective_subject_classrooms WHERE classroom_id = ANY())".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(applicable_classroom_ids.clone())],
             });
@@ -160,9 +158,8 @@ impl Queryable for QueryableElectiveSubject {
             // WHERE id IN (SELECT elective_subject_id FROM student_elective_subjects WHERE student_id IN ANY($1))
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT elective_subject_id FROM student_elective_subjects WHERE student_id = ANY("
-                        .to_string(),
-                    "))".to_string(),
+                    "id IN (SELECT elective_subject_id FROM student_elective_subjects".to_string(),
+                    " WHERE student_id = ANY())".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(student_ids.clone())],
             });

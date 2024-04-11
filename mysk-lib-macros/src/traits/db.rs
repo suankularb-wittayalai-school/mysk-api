@@ -1,6 +1,5 @@
-use std::future::Future;
-
 use sqlx::PgPool;
+use std::future::Future;
 use uuid::Uuid;
 
 pub trait BaseQuery {

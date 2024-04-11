@@ -1,19 +1,18 @@
-pub mod db;
-pub mod enums;
-
-use chrono::{DateTime, Utc};
-use mysk_lib_macros::traits::db::GetById;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use self::{db::DbContact, enums::contact_type::ContactType};
-
 use super::common::{
     requests::FetchLevel,
     string::FlexibleMultiLangString,
     traits::{TopLevelFromTable, TopLevelGetById},
 };
 use crate::prelude::*;
+use chrono::{DateTime, Utc};
+use mysk_lib_macros::traits::db::GetById;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use sqlx::PgPool;
+
+pub mod db;
+pub mod enums;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Contact {
@@ -29,8 +28,8 @@ pub struct Contact {
 
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
-        _pool: &sqlx::PgPool,
-        table: db::DbContact,
+        _pool: &PgPool,
+        table: DbContact,
         _fetch_level: Option<&FetchLevel>,
         _descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
@@ -63,7 +62,7 @@ impl TopLevelFromTable<DbContact> for Contact {
 
 impl TopLevelGetById for Contact {
     async fn get_by_id(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         id: Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -74,7 +73,7 @@ impl TopLevelGetById for Contact {
     }
 
     async fn get_by_ids(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,

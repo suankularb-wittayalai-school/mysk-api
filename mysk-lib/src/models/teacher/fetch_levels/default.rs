@@ -1,25 +1,25 @@
-// use async_trait::async_trait;
+use crate::{
+    models::{
+        classroom::Classroom,
+        common::{
+            requests::FetchLevel,
+            string::MultiLangString,
+            traits::{FetchLevelVariant, TopLevelGetById},
+        },
+        contact::Contact,
+        person::enums::sex::Sex,
+        subject::Subject,
+        subject_group::SubjectGroup,
+        teacher::db::DbTeacher,
+        user::User,
+    },
+    prelude::*,
+};
 use chrono::NaiveDate;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    classroom::Classroom,
-    common::{
-        requests::FetchLevel,
-        string::MultiLangString,
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    contact::Contact,
-    person::enums::sex::Sex,
-    subject::Subject,
-    subject_group::SubjectGroup,
-    teacher::db::DbTeacher,
-    user::User,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultTeacher {
@@ -40,7 +40,6 @@ pub struct DefaultTeacher {
     pub subjects_in_charge: Vec<Subject>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
     async fn from_table(
         pool: &PgPool,
@@ -48,7 +47,6 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
         let contact_ids = DbTeacher::get_teacher_contacts(pool, table.id).await?;
-
         let classroom_id = DbTeacher::get_teacher_advisor_at(pool, table.id, None).await?;
         let subject_id = DbTeacher::get_subject_in_charge(pool, table.id, None).await?;
 

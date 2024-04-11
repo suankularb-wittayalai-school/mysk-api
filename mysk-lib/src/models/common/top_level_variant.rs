@@ -1,16 +1,15 @@
-use std::marker::PhantomData;
-
-use actix_web::{HttpResponse, Responder};
-use serde::{Deserialize, Serialize};
-
-use crate::prelude::*;
-use mysk_lib_macros::traits::db::GetById;
-
 use super::{
     requests::FetchLevel,
     response::ResponseType,
     traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
 };
+use crate::prelude::*;
+use actix_web::{HttpResponse, Responder};
+use mysk_lib_macros::traits::db::GetById;
+use serde::{Deserialize, Serialize, Serializer};
+use sqlx::PgPool;
+use std::marker::PhantomData;
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize)]
 pub enum TopLevelVariant<
@@ -41,7 +40,7 @@ where
     Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     async fn from_table(
-        pool: &sqlx::pool::Pool<sqlx::Postgres>,
+        pool: &PgPool,
         table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -86,10 +85,10 @@ where
     Default: Serialize + FetchLevelVariant<DbVariant>,
     Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
-    fn serialize<S: serde::Serializer>(
+    fn serialize<S: Serializer>(
         &self,
         serializer: S,
-    ) -> std::result::Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error> {
+    ) -> std::result::Result<<S as Serializer>::Ok, <S as Serializer>::Error> {
         match self {
             TopLevelVariant::IdOnly(variant, _) => variant.serialize(serializer),
             TopLevelVariant::Compact(variant, _) => variant.serialize(serializer),
@@ -113,8 +112,8 @@ where
     Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     async fn get_by_id(
-        pool: &sqlx::pool::Pool<sqlx::Postgres>,
-        id: uuid::Uuid,
+        pool: &PgPool,
+        id: Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
@@ -134,8 +133,8 @@ where
     }
 
     async fn get_by_ids(
-        pool: &sqlx::pool::Pool<sqlx::Postgres>,
-        ids: Vec<uuid::Uuid>,
+        pool: &PgPool,
+        ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>> {

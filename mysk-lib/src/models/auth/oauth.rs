@@ -1,10 +1,7 @@
-use jsonwebtoken::Validation;
+use crate::{models::common::config::Config, prelude::*};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-
-use crate::models::common::config::Config;
-use crate::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
@@ -129,8 +126,6 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
         },
     );
 
-    // dbg!(&public_keys);
-
     let header = jsonwebtoken::decode_header(id_token);
 
     let header = match header {
@@ -167,7 +162,7 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
         }
     };
 
-    let mut validation = Validation::new(header.alg);
+    let mut validation = jsonwebtoken::Validation::new(header.alg);
 
     validation.set_audience(&[env.google_oauth_client_id.to_owned()]);
     validation.iss = Some(HashSet::from(["https://accounts.google.com".to_owned()]));

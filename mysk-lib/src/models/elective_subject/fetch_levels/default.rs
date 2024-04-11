@@ -1,19 +1,20 @@
+use crate::{
+    models::{
+        common::{
+            requests::FetchLevel,
+            string::{FlexibleMultiLangString, MultiLangString},
+            traits::{FetchLevelVariant, TopLevelGetById},
+        },
+        elective_subject::db::DbElectiveSubject,
+        subject::{db::DbSubject, enums::subject_type::SubjectType},
+        subject_group::SubjectGroup,
+        teacher::Teacher,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{
-        requests::FetchLevel,
-        string::{FlexibleMultiLangString, MultiLangString},
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    elective_subject::db::DbElectiveSubject,
-    subject::{db::DbSubject, enums::subject_type::SubjectType},
-    subject_group::SubjectGroup,
-    teacher::Teacher,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultElectiveSubject {
@@ -34,7 +35,6 @@ pub struct DefaultElectiveSubject {
     pub semester: Option<i64>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
     async fn from_table(
         pool: &PgPool,

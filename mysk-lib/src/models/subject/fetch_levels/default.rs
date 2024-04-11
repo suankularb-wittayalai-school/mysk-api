@@ -1,17 +1,18 @@
+use crate::{
+    models::{
+        common::{
+            requests::FetchLevel,
+            string::{FlexibleMultiLangString, MultiLangString},
+            traits::FetchLevelVariant,
+        },
+        subject::{db::DbSubject, enums::subject_type::SubjectType},
+        subject_group::SubjectGroup,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{
-        requests::FetchLevel,
-        string::{FlexibleMultiLangString, MultiLangString},
-        traits::FetchLevelVariant,
-    },
-    subject::{db::DbSubject, enums::subject_type::SubjectType},
-    subject_group::SubjectGroup,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultSubject {
@@ -27,7 +28,6 @@ pub struct DefaultSubject {
     pub syllabus: Option<String>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbSubject> for DefaultSubject {
     async fn from_table(
         pool: &PgPool,

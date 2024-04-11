@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use std::fmt::{Display, Formatter};
 
 #[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
 pub struct MultiLangString {
@@ -15,8 +16,8 @@ pub struct FlexibleMultiLangString {
     pub th: Option<String>,
 }
 
-impl std::fmt::Display for MultiLangString {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for MultiLangString {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{{ en: {:?}, th: {} }}", self.en, self.th)
     }
 }
@@ -27,14 +28,17 @@ impl MultiLangString {
     }
 }
 
-impl std::fmt::Display for FlexibleMultiLangString {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for FlexibleMultiLangString {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{{ en: {:?}, th: {:?} }}", self.en, self.th)
     }
 }
 
 impl FlexibleMultiLangString {
-    pub fn new(th: Option<String>, en: Option<String>) -> FlexibleMultiLangString {
+    pub fn new(
+        th: Option<String>,
+        en: Option<String>,
+    ) -> FlexibleMultiLangString {
         FlexibleMultiLangString { en, th }
     }
 }

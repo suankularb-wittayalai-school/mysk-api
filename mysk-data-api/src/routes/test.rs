@@ -1,35 +1,30 @@
-use actix_web::HttpRequest;
-use actix_web::{get, web, HttpResponse, Responder};
-
-// use mysk_lib::models::common::requests::FetchLevel;
-use mysk_lib::models::common::requests::RequestType;
-use mysk_lib::models::common::traits::QueryDb;
-use mysk_lib::models::common::traits::TopLevelGetById;
-use mysk_lib::models::elective_subject::request::queryable::QueryableElectiveSubject;
-use mysk_lib::models::elective_subject::request::sortable::SortableElectiveSubject;
-use mysk_lib::models::elective_subject::ElectiveSubject;
-use mysk_lib::models::*;
-use mysk_lib::prelude::*;
-// use mysk_lib_macros::traits::db::GetById;
-use uuid::Uuid;
+#![allow(unused_variables)]
 
 use crate::AppState;
+use actix_web::{get, web::Data, HttpResponse, Responder};
+use mysk_lib::{
+    models::{
+        common::{requests::RequestType, traits::QueryDb},
+        elective_subject::{
+            request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
+            ElectiveSubject,
+        },
+        *,
+    },
+    prelude::*,
+};
+use uuid::Uuid;
 
 #[utoipa::path(path = "/test", tag = "Global")]
 #[get("/test")]
-pub async fn test(data: web::Data<AppState>, request: HttpRequest) -> Result<impl Responder> {
-    let pool: &sqlx::PgPool = &data.db;
-    let request_query = serde_qs::from_str::<
-        RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
-    >(request.query_string())
-    .unwrap();
-
+pub async fn test(
+    data: Data<AppState>,
+    request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
+) -> Result<impl Responder> {
+    let pool = &data.db;
     let model_id = Uuid::parse_str("d05c155a-ebe0-456b-b289-7b0eb1487f04").unwrap();
-
     let fetch_level = request_query.fetch_level.as_ref();
-
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-
     let filter = request_query.filter.as_ref();
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();

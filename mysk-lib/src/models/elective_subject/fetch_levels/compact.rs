@@ -1,13 +1,13 @@
-use crate::prelude::*;
-
+use crate::{
+    models::{
+        common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+        elective_subject::db::DbElectiveSubject,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
-    elective_subject::db::DbElectiveSubject,
-};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactElectiveSubject {

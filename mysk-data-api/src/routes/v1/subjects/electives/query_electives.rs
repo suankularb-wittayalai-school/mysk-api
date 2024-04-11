@@ -1,26 +1,27 @@
-use actix_web::{get, web, HttpResponse, Responder};
-
-use mysk_lib::prelude::*;
-
-use mysk_lib::models::common::response::MetadataType;
-use mysk_lib::models::common::traits::TopLevelQuery;
-use mysk_lib::models::common::{requests::RequestType, response::ResponseType};
-use mysk_lib::models::elective_subject::request::{
-    queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
+use crate::{middlewares::api_key::HaveApiKey, AppState};
+use actix_web::{get, web::Data, HttpResponse, Responder};
+use mysk_lib::{
+    models::{
+        common::{
+            requests::RequestType,
+            response::{MetadataType, ResponseType},
+            traits::TopLevelQuery as _,
+        },
+        elective_subject::{
+            request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
+            ElectiveSubject,
+        },
+    },
+    prelude::*,
 };
-use mysk_lib::models::elective_subject::ElectiveSubject;
-
-use crate::middlewares::api_key::HaveApiKey;
-use crate::AppState;
 
 #[get("/")]
 pub async fn query_elective_subject(
-    data: web::Data<AppState>,
+    data: Data<AppState>,
     request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
     _: HaveApiKey,
 ) -> Result<impl Responder> {
-    let pool: &sqlx::PgPool = &data.db;
-
+    let pool = &data.db;
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
     let filter = request_query.filter.as_ref();

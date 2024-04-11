@@ -1,14 +1,14 @@
-use actix_web::dev::Payload;
-use actix_web::{web, FromRequest, HttpRequest};
+use crate::AppState;
+use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
-use mysk_lib::models::auth::key::{ApiKey, PrefixedApiKey};
-use mysk_lib::prelude::*;
+use mysk_lib::{
+    models::auth::key::{ApiKey, PrefixedApiKey},
+    prelude::*,
+};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::Error as SqlxError;
+use sqlx::query_as;
 use std::pin::Pin;
-
-use crate::AppState;
 
 #[derive(Serialize)]
 pub struct HaveApiKey(ApiKey);
@@ -18,7 +18,7 @@ impl FromRequest for HaveApiKey {
     type Future = Pin<Box<dyn FutureTrait<Output = Result<Self>>>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let app_state = match req.app_data::<web::Data<AppState>>() {
+        let app_state = match req.app_data::<Data<AppState>>() {
             Some(state) => state,
             None => {
                 return Box::pin(async {
@@ -34,14 +34,11 @@ impl FromRequest for HaveApiKey {
 
         let x_api_key_header = req.headers().get("X-API-KEY");
 
-        // dbg!(x_api_key_header);
-
         let token = match x_api_key_header {
             Some(token) => match token.to_str() {
                 Ok(token) => token,
                 Err(_) => {
                     return Box::pin(async {
-                        // return 401 unauthorized if the token is not a string as ResponseType
                         Err(Error::InvalidApiKey(
                             "Invalid API Key".to_string(),
                             "HaveApiKey Middleware".to_string(),
@@ -63,11 +60,7 @@ impl FromRequest for HaveApiKey {
 
         let mut hasher = Sha256::new();
         hasher.update(token.get_long_token().as_bytes());
-        let hashed_token = hasher.finalize();
-        // let hash = String::from_utf8(hashed_token.to_vec());
-        let hash = bs58::encode(hashed_token).into_string();
-
-        // dbg!(&token, &hash);
+        let hash = bs58::encode(hasher.finalize()).into_string();
 
         // let hash = match hash {
         //     Ok(hash) => hash,
@@ -82,20 +75,22 @@ impl FromRequest for HaveApiKey {
         // };
 
         Box::pin(async move {
-            let api_key = match sqlx::query_as!(
+            let api_key = match query_as!(
                 ApiKey,
                 r#"
-                SELECT * FROM user_api_keys WHERE long_token_hash = $1 AND short_token = $2 AND (expire_at > NOW() OR expire_at IS NULL)
+                SELECT * FROM user_api_keys
+                WHERE long_token_hash = $1 AND short_token = $2
+                AND (expire_at > NOW() OR expire_at IS NULL)
                 "#,
                 hash,
-                token.get_short_token()
+                token.get_short_token(),
             )
             .fetch_one(&pool)
             .await
             {
                 Ok(api_key) => api_key,
                 Err(err) => match err {
-                    SqlxError::RowNotFound => {
+                    sqlx::Error::RowNotFound => {
                         return Err(Error::InvalidApiKey(
                             "Invalid API Key".to_string(),
                             "HaveApiKey Middleware".to_string(),

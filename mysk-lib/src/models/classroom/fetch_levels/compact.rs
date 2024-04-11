@@ -1,13 +1,13 @@
-use crate::prelude::*;
-
+use crate::{
+    models::{
+        classroom::db::DbClassroom,
+        common::{requests::FetchLevel, traits::FetchLevelVariant},
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    classroom::db::DbClassroom,
-    common::{requests::FetchLevel, traits::FetchLevelVariant},
-};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactClassroom {

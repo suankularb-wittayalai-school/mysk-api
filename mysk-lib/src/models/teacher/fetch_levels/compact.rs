@@ -1,13 +1,14 @@
+use crate::{
+    models::{
+        common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
+        subject_group::SubjectGroup,
+        teacher::db::DbTeacher,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
-    subject_group::SubjectGroup,
-    teacher::db::DbTeacher,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactTeacher {

@@ -1,12 +1,12 @@
+use crate::AppState;
 use actix_web::{
     cookie::{time::Duration as ActixWebDuration, Cookie},
-    post, web, HttpResponse, Responder,
+    post,
+    web::{Data, Json},
+    HttpResponse, Responder,
 };
 use chrono::{prelude::*, Duration};
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::{Deserialize, Serialize};
-
-use mysk_lib::prelude::*;
 use mysk_lib::{
     error::Error,
     models::{
@@ -14,9 +14,9 @@ use mysk_lib::{
         common::response::ResponseType,
         user::User,
     },
+    prelude::*,
 };
-
-use crate::AppState;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct OAuthRequest {
@@ -33,12 +33,10 @@ struct GoogleTokenResponse {
 
 #[post("/oauth/google")]
 async fn google_oauth_handler(
-    data: web::Data<AppState>,
-    query: web::Json<OAuthRequest>,
+    data: Data<AppState>,
+    query: Json<OAuthRequest>,
 ) -> Result<impl Responder> {
     let id_token: String = query.credential.to_owned();
-
-    // dbg!(id_token.as_str());
 
     if id_token.is_empty() {
         return Err(Error::InvalidToken(
@@ -57,11 +55,8 @@ async fn google_oauth_handler(
             ));
         }
     };
-    // dbg!(&query);
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-
-    // dbg!(&google_user);
 
     let user = User::get_by_email(&data.db, &google_user.email).await;
 

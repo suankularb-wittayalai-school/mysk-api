@@ -1,12 +1,10 @@
+use crate::prelude::*;
 use chrono::{DateTime, Utc};
-use rand::rngs::OsRng;
-use rand::RngCore;
+use rand::{rngs::OsRng, RngCore};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::{prelude::FromRow, PgPool};
 use uuid::Uuid;
-
-use crate::prelude::*;
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct ApiKey {
@@ -31,7 +29,7 @@ fn generate_api_key(length: usize) -> String {
     let key = &key[..length];
     let bytes = key.to_vec();
 
-    bs58::encode(&bytes).into_string() // Encode bytes to Base58 string
+    bs58::encode(&bytes).into_string()
 }
 
 impl ApiKey {
@@ -43,11 +41,7 @@ impl ApiKey {
         // Hash the API key with SHA256
         let mut hasher = Sha256::new();
         hasher.update(long_token.as_bytes());
-        let hash = hasher.finalize();
-        // // make sure the hash is a valid UTF-8 string
-        // let hash = String::from_utf8(hash.to_vec());
-        // base58 encode the hash
-        let hash = bs58::encode(hash).into_string();
+        let hash = bs58::encode(hasher.finalize()).into_string();
 
         // let hash = match hash {
         //     Ok(hash) => hash,
@@ -71,7 +65,7 @@ impl ApiKey {
             match expire_days {
                 Some(days) => Some(days as f64),
                 None => None,
-            }
+            },
         )
         .execute(pool)
         .await;

@@ -2,7 +2,11 @@ use crate::{
     middlewares::{api_key::HaveApiKey, student::StudentOnly},
     AppState,
 };
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{
+    post,
+    web::{Data, Path},
+    HttpResponse, Responder,
+};
 use mysk_lib::{
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
@@ -10,22 +14,23 @@ use mysk_lib::{
         common::{
             requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
             response::ResponseType,
-            traits::TopLevelGetById,
+            traits::TopLevelGetById as _,
         },
         elective_subject::ElectiveSubject,
         student::Student,
     },
     prelude::*,
 };
-use sqlx::{query, types::Uuid};
+use sqlx::query;
+use uuid::Uuid;
 
 #[post("/{id}/enroll")]
 pub async fn enroll_elective_subject(
-    data: web::Data<AppState>,
-    id: web::Path<Uuid>,
+    data: Data<AppState>,
+    id: Path<Uuid>,
     student_id: StudentOnly,
-    _: HaveApiKey,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
+    _: HaveApiKey,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
@@ -35,26 +40,27 @@ pub async fn enroll_elective_subject(
 
     // Checks if the elective the student is trying to enroll in is available
     let elective =
-        ElectiveSubject::get_by_id(pool, elective_id, fetch_level, descendant_fetch_level).await;
-    if elective.is_err() {
-        return Err(Error::InvalidRequest(
-            "Elective subject not found".to_string(),
-            format!("/subjects/electives/{elective_id}/enroll"),
-        ));
-    }
-    let elective = match elective {
-        Ok(ElectiveSubject::Detailed(elective, _)) => {
-            if elective.class_size == elective.cap_size {
-                return Err(Error::InvalidPermission(
-                    "The elective is already full".to_string(),
+        match ElectiveSubject::get_by_id(pool, elective_id, fetch_level, descendant_fetch_level)
+            .await
+        {
+            Ok(ElectiveSubject::Detailed(elective, _)) => {
+                if elective.class_size == elective.cap_size {
+                    return Err(Error::InvalidPermission(
+                        "The elective is already full".to_string(),
+                        format!("/subjects/electives/{elective_id}/enroll"),
+                    ));
+                }
+
+                elective
+            }
+            Err(Error::InternalSeverError(_, _)) => {
+                return Err(Error::InvalidRequest(
+                    "Elective subject not found".to_string(),
                     format!("/subjects/electives/{elective_id}/enroll"),
                 ));
             }
-
-            elective
-        }
-        _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
-    };
+            _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
+        };
 
     // Checks if the student is in a class available for the elective
     let student = Student::get_by_id(pool, student_id, Some(&FetchLevel::Default), None).await?;
@@ -143,5 +149,6 @@ pub async fn enroll_elective_subject(
     .await?;
 
     let response = ResponseType::new(elective, None);
+
     Ok(HttpResponse::Ok().json(response))
 }

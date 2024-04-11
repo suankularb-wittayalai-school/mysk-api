@@ -1,24 +1,22 @@
 use actix_cors::Cors;
-use actix_web::middleware::Logger;
-use actix_web::{http::header, web, App, HttpServer};
+use actix_web::{http::header, middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 use mysk_lib::models::common::config::Config;
-// use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use sqlx::postgres::PgPoolOptions;
-use std::env;
+use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::{env, io, process};
 
 mod middlewares;
 mod routes;
 
 pub struct AppState {
-    db: sqlx::PgPool,
+    db: PgPool,
     env: Config,
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "actix_web=info");
+async fn main() -> io::Result<()> {
+    if env::var_os("RUST_LOG").is_none() {
+        env::set_var("RUST_LOG", "actix_web=info");
     }
     dotenv().ok();
     env_logger::init();
@@ -38,7 +36,7 @@ async fn main() -> std::io::Result<()> {
         }
         Err(err) => {
             println!("🔥 Failed to connect to the database: {:?}", err);
-            std::process::exit(1);
+            process::exit(1);
         }
     };
 
@@ -55,21 +53,18 @@ async fn main() -> std::io::Result<()> {
                 header::AUTHORIZATION,
                 header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 header::ACCEPT,
-                // Custom headers
                 header::HeaderName::from_lowercase(b"x-api-key").unwrap(),
             ])
             .supports_credentials();
         App::new()
-            .app_data(web::Data::new(AppState {
+            .app_data(Data::new(AppState {
                 db: pool.clone(),
                 env: env.clone(),
             }))
-            // .service(web::scope("/api/v1").configure(routes::config))
             .configure(routes::config)
             .wrap(cors)
             .wrap(Logger::default())
     })
-    // .bind_openssl(("0.0.0.0", 4430), builder)?
     .bind(("0.0.0.0", 8000))?
     .run()
     .await

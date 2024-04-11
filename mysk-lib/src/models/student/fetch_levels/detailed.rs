@@ -1,23 +1,23 @@
-// use async_trait::async_trait;
+use crate::{
+    models::{
+        classroom::Classroom,
+        common::{
+            requests::FetchLevel,
+            string::MultiLangString,
+            traits::{FetchLevelVariant, TopLevelGetById},
+        },
+        contact::Contact,
+        person::enums::{blood_group::BloodGroup, sex::Sex},
+        student::db::DbStudent,
+        user::User,
+    },
+    prelude::*,
+};
 use chrono::NaiveDate;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    classroom::Classroom,
-    common::{
-        requests::FetchLevel,
-        string::MultiLangString,
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    contact::Contact,
-    person::enums::{blood_group::BloodGroup, sex::Sex},
-    student::db::DbStudent,
-    user::User,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DetailedStudent {
@@ -28,7 +28,6 @@ pub struct DetailedStudent {
     pub last_name: MultiLangString,
     pub nickname: Option<MultiLangString>,
     pub student_id: String,
-
     pub profile_url: Option<String>,
     pub birthdate: Option<NaiveDate>,
     pub sex: Sex,
@@ -36,9 +35,7 @@ pub struct DetailedStudent {
     pub classroom: Option<Classroom>,
     pub class_no: Option<i64>,
     pub user: Option<User>,
-
     pub citizen_id: Option<String>,
-    // pub passport_id: Option<String>,
     pub blood_group: Option<BloodGroup>,
 }
 
@@ -93,7 +90,6 @@ impl FetchLevelVariant<DbStudent> for DetailedStudent {
             },
             class_no: classroom.map(|c| c.class_no),
             user,
-
             citizen_id: table.citizen_id,
             blood_group: table.blood_group,
         })

@@ -1,16 +1,15 @@
-use actix_web::dev::Payload;
-use actix_web::{http, web, FromRequest, HttpRequest};
+use crate::AppState;
+use actix_web::{dev::Payload, http::header, web::Data, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use mysk_lib::models::auth::oauth::TokenClaims;
-use mysk_lib::models::user::User;
-use mysk_lib::prelude::*;
+use mysk_lib::{
+    models::{auth::oauth::TokenClaims, user::User},
+    prelude::*,
+};
 use mysk_lib_macros::traits::db::GetById;
 use serde::Serialize;
 use std::pin::Pin;
 use uuid::Uuid;
-
-use crate::AppState;
 
 #[derive(Serialize)]
 pub struct LoggedIn(pub User);
@@ -20,7 +19,7 @@ impl FromRequest for LoggedIn {
     type Future = Pin<Box<dyn FutureTrait<Output = Result<Self>>>>;
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        let app_state = match req.app_data::<web::Data<AppState>>() {
+        let app_state = match req.app_data::<Data<AppState>>() {
             Some(state) => state,
             None => {
                 return Box::pin(async {
@@ -35,7 +34,7 @@ impl FromRequest for LoggedIn {
         let pool = app_state.db.clone();
         let jwt_secret = app_state.env.jwt_secret.clone();
 
-        let auth_header = req.headers().get(http::header::AUTHORIZATION);
+        let auth_header = req.headers().get(header::AUTHORIZATION);
 
         let token = match auth_header {
             Some(token) => match token.to_str() {

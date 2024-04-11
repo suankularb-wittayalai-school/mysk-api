@@ -1,13 +1,13 @@
-use crate::prelude::*;
-
+use crate::{
+    models::{
+        common::{requests::FetchLevel, traits::FetchLevelVariant},
+        student::db::DbStudent,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{requests::FetchLevel, traits::FetchLevelVariant},
-    student::db::DbStudent,
-};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdOnlyStudent {

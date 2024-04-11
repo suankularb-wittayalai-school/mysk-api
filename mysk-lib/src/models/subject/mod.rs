@@ -5,7 +5,6 @@ use self::{
         id_only::IdOnlySubject,
     },
 };
-
 use super::common::top_level_variant::TopLevelVariant;
 
 pub mod db;

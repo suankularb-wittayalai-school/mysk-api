@@ -1,10 +1,13 @@
+use crate::{
+    models::{
+        common::{requests::FetchLevel, traits::FetchLevelVariant},
+        elective_subject::db::DbElectiveSubject,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::common::{requests::FetchLevel, traits::FetchLevelVariant};
-use crate::models::elective_subject::db::DbElectiveSubject;
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdOnlyElectiveSubject {

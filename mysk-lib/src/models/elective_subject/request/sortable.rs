@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -21,14 +21,16 @@ impl Default for SortableElectiveSubject {
 }
 
 impl Display for SortableElectiveSubject {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             SortableElectiveSubject::Id => write!(f, "id"),
             SortableElectiveSubject::CodeTh => write!(f, "code_th"),
             SortableElectiveSubject::CodeEn => write!(f, "code_en"),
             SortableElectiveSubject::NameTh => write!(f, "name_th"),
             SortableElectiveSubject::NameEn => write!(f, "name_en"),
-            SortableElectiveSubject::SubjectGroupId => write!(f, "subject_group_id"),
+            SortableElectiveSubject::SubjectGroupId => {
+                write!(f, "subject_group_id")
+            }
             SortableElectiveSubject::CapSize => write!(f, "cap_size"),
             SortableElectiveSubject::ClassSize => write!(f, "class_size"),
         }

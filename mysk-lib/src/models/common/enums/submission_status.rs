@@ -1,7 +1,9 @@
-use std::fmt::{Display, Formatter};
-
 use serde::{Deserialize, Serialize};
-use sqlx::{Decode, Encode, Postgres, Type};
+use sqlx::{
+    postgres::{PgTypeInfo, PgValueRef},
+    Postgres,
+};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -21,35 +23,32 @@ impl Display for SubmissionStatus {
     }
 }
 
-impl Type<Postgres> for SubmissionStatus {
-    fn type_info() -> sqlx::postgres::PgTypeInfo {
-        sqlx::postgres::PgTypeInfo::with_name("submission_status")
+impl sqlx::Type<Postgres> for SubmissionStatus {
+    fn type_info() -> PgTypeInfo {
+        PgTypeInfo::with_name("submission_status")
     }
 }
 
-impl Encode<'_, Postgres> for SubmissionStatus {
+impl sqlx::Encode<'_, Postgres> for SubmissionStatus {
     fn encode_by_ref(
         &self,
-        buf: &mut <sqlx::Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
+        buf: &mut <Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
     ) -> sqlx::encode::IsNull {
         let s = self.to_string();
-        <String as sqlx::Encode<sqlx::Postgres>>::encode(s, buf)
+        <String as sqlx::Encode<Postgres>>::encode(s, buf)
     }
 }
 
-impl Decode<'_, Postgres> for SubmissionStatus {
+impl<'r> sqlx::Decode<'r, Postgres> for SubmissionStatus {
     fn decode(
-        value: <Postgres as sqlx::database::HasValueRef<'_>>::ValueRef,
-    ) -> Result<Self, sqlx::error::BoxDynError> {
-        let s = <String as Decode<Postgres>>::decode(value)?;
-
-        match s.as_str() {
+        value: PgValueRef<'r>,
+    ) -> Result<Self, Box<dyn std::error::Error + 'static + Send + Sync>> {
+        match <String as sqlx::Decode<Postgres>>::decode(value)?.as_str() {
             "pending" => Ok(SubmissionStatus::Pending),
             "approved" => Ok(SubmissionStatus::Approved),
             "declined" => Ok(SubmissionStatus::Declined),
-            _ => Err(sqlx::error::BoxDynError::from(format!(
-                "Unknown submission status: {}",
-                s
+            s => Err(Box::new(sqlx::Error::Decode(
+                format!("Unknown submission status: {}", s).into(),
             ))),
         }
     }

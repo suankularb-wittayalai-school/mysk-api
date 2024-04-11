@@ -1,21 +1,22 @@
+use crate::{
+    models::{
+        classroom::Classroom,
+        common::{
+            requests::FetchLevel,
+            string::{FlexibleMultiLangString, MultiLangString},
+            traits::{FetchLevelVariant, TopLevelGetById},
+        },
+        elective_subject::db::DbElectiveSubject,
+        student::Student,
+        subject::{db::DbSubject, enums::subject_type::SubjectType},
+        subject_group::SubjectGroup,
+        teacher::Teacher,
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    classroom::Classroom,
-    common::{
-        requests::FetchLevel,
-        string::{FlexibleMultiLangString, MultiLangString},
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    elective_subject::db::DbElectiveSubject,
-    student::Student,
-    subject::{db::DbSubject, enums::subject_type::SubjectType},
-    subject_group::SubjectGroup,
-    teacher::Teacher,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DetailedElectiveSubject {
@@ -38,7 +39,6 @@ pub struct DetailedElectiveSubject {
     pub students: Vec<Student>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
     async fn from_table(
         pool: &PgPool,

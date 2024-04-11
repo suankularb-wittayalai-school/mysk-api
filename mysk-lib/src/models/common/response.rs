@@ -1,16 +1,15 @@
 use actix_web::{
-    error,
+    error::ResponseError,
     http::{header::ContentType, StatusCode},
+    HttpResponse,
 };
-
 use chrono::{DateTime, Utc};
-use sqlx::{prelude::FromRow, PgPool};
-use utoipa::ToSchema;
-
 use serde::{Deserialize, Serialize};
+use sqlx::{prelude::FromRow, PgPool};
+use std::fmt::{Display, Formatter};
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-// use super::requests::PaginationConfig;
 #[derive(Serialize, Deserialize, Debug, ToSchema, FromRow)]
 pub struct ErrorType {
     pub id: Uuid,
@@ -51,8 +50,8 @@ impl ErrorType {
     }
 }
 
-impl std::fmt::Display for ErrorType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for ErrorType {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{{ id: {}, code: {}, error_type: {}, detail: {}, source: {} }}",
@@ -77,8 +76,8 @@ pub struct PaginationType {
     total: u32,
 }
 
-impl std::fmt::Display for PaginationType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for PaginationType {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{{ first: {}, last: {}, next: {:?}, prev: {:?}, size: {}, total: {} }}",
@@ -134,8 +133,8 @@ impl Default for MetadataType {
     }
 }
 
-impl std::fmt::Display for MetadataType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for MetadataType {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{{ timestamp: {}, pagination: {:?} }}",
@@ -148,7 +147,7 @@ impl std::fmt::Display for MetadataType {
 pub struct ResponseType<T> {
     api_version: String,
     data: Option<T>,
-    error: Option<String>, // Always None
+    error: Option<String>,
     meta: MetadataType,
 }
 
@@ -169,7 +168,7 @@ impl<T> ResponseType<T> {
 pub struct ErrorResponseType {
     api_version: String,
     error: ErrorType,
-    data: Option<String>, // always None
+    data: Option<String>,
     meta: Option<MetadataType>,
 }
 
@@ -186,8 +185,8 @@ impl ErrorResponseType {
     }
 }
 
-impl std::fmt::Display for ErrorResponseType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl Display for ErrorResponseType {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(
             f,
             "{{ api_version: {}, error: {}, data: {:?}, meta: {:?} }}",
@@ -196,18 +195,15 @@ impl std::fmt::Display for ErrorResponseType {
     }
 }
 
-// implement as Actix web error response type
-
-impl error::ResponseError for ErrorResponseType {
+impl ResponseError for ErrorResponseType {
     fn status_code(&self) -> StatusCode {
-        // convert error type to status code
         self.error.to_status_code()
     }
 
-    fn error_response(&self) -> actix_web::HttpResponse {
+    fn error_response(&self) -> HttpResponse {
         let body = serde_json::to_string(&self).unwrap();
 
-        actix_web::HttpResponse::build(self.status_code())
+        HttpResponse::build(self.status_code())
             .insert_header(ContentType::json())
             .body(body)
     }

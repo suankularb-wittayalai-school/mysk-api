@@ -1,25 +1,24 @@
+use super::request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject};
+use crate::{
+    helpers::date::get_current_academic_year,
+    models::{
+        common::{
+            requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
+            response::PaginationType,
+            traits::{QueryDb, Queryable},
+        },
+        subject::enums::subject_type::SubjectType,
+    },
+    prelude::*,
+};
 use chrono::{DateTime, Utc};
-use sqlx::Row;
-use sqlx::{query, QueryBuilder};
+use mysk_lib_derives::{BaseQuery, GetById};
+use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use serde::{Deserialize, Serialize};
+use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
-use crate::models::common::requests::{
-    FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
-};
-use crate::models::common::response::PaginationType;
-use crate::models::common::traits::{QueryDb, Queryable};
-use crate::prelude::*;
-use crate::{
-    helpers::date::get_current_academic_year, models::subject::enums::subject_type::SubjectType,
-};
-
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{self, BaseQuery, GetById};
-
-use super::request::queryable::QueryableElectiveSubject;
-use super::request::sortable::SortableElectiveSubject;
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
 #[base_query(
     query = "SELECT * FROM complete_elective_subjects_view",
     count_query = "SELECT COUNT(*) FROM complete_elective_subjects_view"
@@ -47,13 +46,13 @@ pub struct DbElectiveSubject {
 }
 
 impl DbElectiveSubject {
-    pub async fn get_subject_applicable_classrooms(
-        &self,
-        pool: &sqlx::PgPool,
-    ) -> Result<Vec<Uuid>> {
+    pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT classroom_id FROM elective_subject_classrooms WHERE elective_subject_id = $1"#,
-            self.id
+            r#"
+            SELECT classroom_id FROM elective_subject_classrooms
+            WHERE elective_subject_id = $1
+            "#,
+            self.id,
         )
         .fetch_all(pool)
         .await;
@@ -69,7 +68,7 @@ impl DbElectiveSubject {
 
     pub async fn get_enrolled_students(
         &self,
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
@@ -78,7 +77,7 @@ impl DbElectiveSubject {
             WHERE elective_subject_id = $1 and year = $2
             "#,
             self.id,
-            academic_year.unwrap_or_else(|| get_current_academic_year(None))
+            academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
         .await;
@@ -91,13 +90,11 @@ impl DbElectiveSubject {
             )),
         }
     }
-
-    // pub async fn enroll_student() {}
 }
 
 impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
     async fn query(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
         sort: Option<&SortingConfig<SortableElectiveSubject>>,
         pagination: Option<&PaginationConfig>,
@@ -105,7 +102,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
     where
         Self: Sized,
     {
-        let mut query = QueryBuilder::<'_, sqlx::Postgres>::new(DbElectiveSubject::base_query());
+        let mut query = QueryBuilder::<'_, Postgres>::new(DbElectiveSubject::base_query());
 
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
@@ -167,7 +164,6 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
 
         if let Some(pagination) = pagination {
             let limit_section = pagination.to_limit_clause();
-            // dbg!(&limit_section);
             query.push(" ");
             for (i, sql) in limit_section.sql.iter().enumerate() {
                 query.push(sql);
@@ -185,8 +181,6 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
             }
         }
 
-        // dbg!(&query.build().sql());
-
         query
             .build_query_as::<DbElectiveSubject>()
             .fetch_all(pool)
@@ -197,7 +191,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
     }
 
     async fn response_pagination(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<PaginationType> {
@@ -257,14 +251,17 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
             }
         }
 
-        let count = query.build().fetch_one(pool).await.map_err(|e| {
-            Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::response_pagination".to_string(),
-            )
-        })?;
-
-        let count = count.get::<i64, _>("count");
+        let count = query
+            .build()
+            .fetch_one(pool)
+            .await
+            .map_err(|e| {
+                Error::InternalSeverError(
+                    e.to_string(),
+                    "DbElectiveSubject::response_pagination".to_string(),
+                )
+            })?
+            .get::<i64, _>("count") as u32;
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,
@@ -272,7 +269,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
                 .unwrap_or(&PaginationConfig::default())
                 .size
                 .unwrap_or(50),
-            count as u32,
+            count,
         ))
     }
 }

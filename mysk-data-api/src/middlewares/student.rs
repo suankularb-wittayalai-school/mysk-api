@@ -1,17 +1,13 @@
-use actix_web::dev::Payload;
-use actix_web::{http, web, FromRequest, HttpRequest};
+use crate::{middlewares::logged_in::LoggedIn, AppState};
+use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use futures::Future as FutureTrait;
-use mysk_lib::models::student::Student;
-use mysk_lib::models::user::enums::user_role::UserRole;
-use mysk_lib::models::user::User;
-use mysk_lib::prelude::*;
-use mysk_lib_macros::traits::db::GetById;
+use mysk_lib::{
+    models::{student::Student, user::enums::user_role::UserRole},
+    prelude::*,
+};
 use serde::Serialize;
 use std::pin::Pin;
 use uuid::Uuid;
-
-use crate::middlewares::logged_in::LoggedIn;
-use crate::AppState;
 
 #[derive(Serialize)]
 pub struct StudentOnly(pub Uuid);
@@ -21,7 +17,7 @@ impl FromRequest for StudentOnly {
     type Future = Pin<Box<dyn FutureTrait<Output = Result<Self>>>>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let app_state = match req.app_data::<web::Data<AppState>>() {
+        let app_state = match req.app_data::<Data<AppState>>() {
             Some(state) => state,
             None => {
                 return Box::pin(async {

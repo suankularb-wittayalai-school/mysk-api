@@ -1,23 +1,34 @@
+use crate::models::common::response::{ErrorResponseType, ErrorType};
 use actix_web::{HttpResponse, ResponseError};
 use serde::Serialize;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
-use crate::models::common::response::{ErrorResponseType, ErrorType};
-
-// The first string is the detail, the second string is the source
+/// Error enums for MySK API responses.
+///
+/// The first string is the error detail and the second string is the source.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Error {
+    /// HTTP 400 - [Bad Request](https://developer.mozilla.org/docs/Web/HTTP/Status/400)
     InvalidRequest(String, String),
+    /// HTTP 404 - [Not Found](https://developer.mozilla.org/docs/Web/HTTP/Status/404)
     EntityNotFound(String, String),
+    /// HTTP 403 - [Forbidden](https://developer.mozilla.org/docs/Web/HTTP/Status/403)
     InvalidPermission(String, String),
+    /// HTTP 409 - [Conflict](https://developer.mozilla.org/docs/Web/HTTP/Status/409)
     Conflicted(String, String),
+    /// HTTP 500 - [Internal Server Error](https://developer.mozilla.org/docs/Web/HTTP/Status/500)
     InternalSeverError(String, String),
+
     // Auth errors
+    /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
     InvalidToken(String, String),
+    /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
     MissingToken(String, String),
+    /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
     MissingApiKey(String, String),
+    /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
     InvalidApiKey(String, String),
 }
 
@@ -145,7 +156,7 @@ impl From<Error> for ErrorResponseType {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let error = match self {
             Error::InvalidRequest(detail, source) => {
                 format!("Invalid request: {} (source: {})", detail, source)
