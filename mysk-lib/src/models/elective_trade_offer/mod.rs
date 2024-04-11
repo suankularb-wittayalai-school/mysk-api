@@ -2,7 +2,7 @@ use self::{
     db::DbElectiveTradeOffer,
     fetch_levels::{default::DefaultElectiveTradeOffer, id_only::IdOnlyElectiveTradeOffer},
 };
-use super::common::top_level_variant::TopLevelVariant;
+use crate::models::top_level_variant::TopLevelVariant;
 
 pub mod db;
 pub mod fetch_levels;

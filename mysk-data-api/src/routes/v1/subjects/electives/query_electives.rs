@@ -1,16 +1,16 @@
-use crate::{middlewares::api_key::HaveApiKey, AppState};
+use crate::{extractors::api_key::ApiKeyHeader, AppState};
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use mysk_lib::{
+    common::{
+        requests::RequestType,
+        response::{MetadataType, ResponseType},
+    },
     models::{
-        common::{
-            requests::RequestType,
-            response::{MetadataType, ResponseType},
-            traits::TopLevelQuery as _,
-        },
         elective_subject::{
             request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
             ElectiveSubject,
         },
+        traits::TopLevelQuery as _,
     },
     prelude::*,
 };
@@ -19,7 +19,7 @@ use mysk_lib::{
 pub async fn query_elective_subject(
     data: Data<AppState>,
     request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
-    _: HaveApiKey,
+    _api_key: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let fetch_level = request_query.fetch_level.as_ref();

@@ -1,6 +1,6 @@
-use crate::models::common::{
-    requests::{QueryParam, SqlSection},
-    traits::Queryable,
+use crate::{
+    common::requests::{QueryParam, SqlSection},
+    models::traits::Queryable,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

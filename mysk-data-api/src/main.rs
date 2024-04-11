@@ -1,13 +1,14 @@
 use actix_cors::Cors;
 use actix_web::{http::header, middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
-use mysk_lib::models::common::config::Config;
+use mysk_lib::common::config::Config;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{env, io, process};
 
-mod middlewares;
+mod extractors;
 mod routes;
 
+/// The shared state of the application.
 pub struct AppState {
     db: PgPool,
     env: Config,
@@ -20,14 +21,13 @@ async fn main() -> io::Result<()> {
     }
     dotenv().ok();
     env_logger::init();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    // let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let env = Config::init();
+    let config = Config::init();
+    let host = config.host.clone();
+    let port = config.port.clone();
 
     let pool = match PgPoolOptions::new()
         .max_connections(15)
-        .connect(&database_url)
+        .connect(&config.database_url)
         .await
     {
         Ok(pool) => {
@@ -40,10 +40,10 @@ async fn main() -> io::Result<()> {
         }
     };
 
-    println!("🚀 Server started successfully");
+    println!("🚀 MySK API Server started successfully");
 
     HttpServer::new(move || {
-        let cors = Cors::default()
+        let cors_middleware = Cors::default()
             .allowed_origin("http://localhost:3000")
             .allowed_origin("http://localhost:8000")
             .allowed_origin("https://mysk.school")
@@ -56,16 +56,24 @@ async fn main() -> io::Result<()> {
                 header::HeaderName::from_lowercase(b"x-api-key").unwrap(),
             ])
             .supports_credentials();
+
         App::new()
             .app_data(Data::new(AppState {
                 db: pool.clone(),
-                env: env.clone(),
+                env: config.clone(),
             }))
             .configure(routes::config)
-            .wrap(cors)
+            .wrap(cors_middleware)
             .wrap(Logger::default())
     })
-    .bind(("0.0.0.0", 8000))?
+    .bind((host, port))
+    .map_err(|_| {
+        panic!(
+            "Unable to bind to address {}:{}! Perhaps it is in use?",
+            host, port
+        )
+    })
+    .unwrap()
     .run()
     .await
 }

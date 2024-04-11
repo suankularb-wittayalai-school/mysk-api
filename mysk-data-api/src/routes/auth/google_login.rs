@@ -8,12 +8,10 @@ use actix_web::{
 use chrono::{prelude::*, Duration};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use mysk_lib::{
+    auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
+    common::response::ResponseType,
     error::Error,
-    models::{
-        auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
-        common::response::ResponseType,
-        user::User,
-    },
+    models::user::User,
     prelude::*,
 };
 use serde::{Deserialize, Serialize};
@@ -86,10 +84,10 @@ async fn google_oauth_handler(
         }
     };
 
-    let jwt_secret = data.env.jwt_secret.to_owned();
+    let jwt_secret = data.env.token_secret.to_owned();
     let now = Utc::now();
     let iat = now.timestamp() as usize;
-    let exp = (now + Duration::minutes(data.env.jwt_max_age)).timestamp() as usize;
+    let exp = (now + Duration::minutes(data.env.token_max_age as i64)).timestamp() as usize;
     let claims = TokenClaims {
         sub: user_id.to_string(),
         exp,
@@ -114,7 +112,7 @@ async fn google_oauth_handler(
             let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
                 GoogleTokenResponse {
                     access_token: token,
-                    expires_in: data.env.jwt_max_age * 60,
+                    expires_in: data.env.token_max_age as i64 * 60,
                     token_type: "Bearer".to_owned(),
                     scope: "email profile".to_owned(),
                     id_token,

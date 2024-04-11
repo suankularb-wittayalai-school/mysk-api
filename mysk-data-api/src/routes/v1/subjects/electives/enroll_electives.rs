@@ -1,5 +1,5 @@
 use crate::{
-    middlewares::{api_key::HaveApiKey, student::StudentOnly},
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -8,16 +8,14 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use mysk_lib::{
+    common::{
+        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        response::ResponseType,
+    },
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
-        classroom::Classroom,
-        common::{
-            requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
-            response::ResponseType,
-            traits::TopLevelGetById as _,
-        },
-        elective_subject::ElectiveSubject,
-        student::Student,
+        classroom::Classroom, elective_subject::ElectiveSubject, student::Student,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
@@ -28,9 +26,9 @@ use uuid::Uuid;
 pub async fn enroll_elective_subject(
     data: Data<AppState>,
     id: Path<Uuid>,
-    student_id: StudentOnly,
+    student_id: LoggedInStudent,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
-    _: HaveApiKey,
+    _api_key: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;

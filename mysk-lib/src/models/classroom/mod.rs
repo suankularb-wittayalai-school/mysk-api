@@ -4,7 +4,7 @@ use self::{
         compact::CompactClassroom, default::DefaultClassroom, id_only::IdOnlyClassroom,
     },
 };
-use super::common::top_level_variant::TopLevelVariant;
+use super::top_level_variant::TopLevelVariant;
 use serde::Deserialize;
 use sqlx::FromRow;
 use uuid::Uuid;

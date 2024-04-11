@@ -1,6 +1,9 @@
 use self::db::DbSubjectGroup;
-use super::common::{requests::FetchLevel, string::MultiLangString, traits::TopLevelFromTable};
-use crate::prelude::*;
+use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::traits::TopLevelFromTable,
+    prelude::*,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;

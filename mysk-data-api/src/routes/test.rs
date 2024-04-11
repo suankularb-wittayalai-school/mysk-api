@@ -3,13 +3,15 @@
 use crate::AppState;
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use mysk_lib::{
+    common::requests::RequestType,
+    common::response::ResponseType,
     models::{
-        common::{requests::RequestType, traits::QueryDb},
         elective_subject::{
+            db::DbElectiveSubject,
             request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
             ElectiveSubject,
         },
-        *,
+        traits::QueryDb,
     },
     prelude::*,
 };
@@ -36,10 +38,7 @@ pub async fn test(
     // )
     // .await?;
 
-    dbg!(&pagination);
-
-    let model =
-        elective_subject::db::DbElectiveSubject::query(pool, filter, sort, pagination).await?;
+    let model = DbElectiveSubject::query(pool, filter, sort, pagination).await?;
 
     // let model = elective_trade_offer::ElectiveTradeOffer::get_by_id(
     //     pool,
@@ -49,7 +48,7 @@ pub async fn test(
     // )
     // .await?;
 
-    let response = common::response::ResponseType::new(model, None);
+    let response = ResponseType::new(model, None);
 
     Ok(HttpResponse::Ok().json(response))
 }

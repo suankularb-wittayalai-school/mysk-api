@@ -1,8 +1,6 @@
 use crate::{
-    models::{
-        common::{requests::FetchLevel, traits::FetchLevelVariant},
-        student::db::DbStudent,
-    },
+    common::requests::FetchLevel,
+    models::{student::db::DbStudent, traits::FetchLevelVariant},
     prelude::*,
 };
 use serde::{Deserialize, Serialize};

@@ -1,4 +1,4 @@
-use crate::models::common::response::{ErrorResponseType, ErrorType};
+use crate::common::response::{ErrorResponseType, ErrorType};
 use actix_web::{HttpResponse, ResponseError};
 use serde::Serialize;
 use std::fmt::{Display, Formatter};

@@ -1,13 +1,11 @@
 use crate::{
+    common::requests::FetchLevel,
     models::{
         classroom::db::DbClassroom,
-        common::{
-            requests::FetchLevel,
-            traits::{FetchLevelVariant, TopLevelGetById},
-        },
         contact::Contact,
         student::Student,
         teacher::Teacher,
+        traits::{FetchLevelVariant, TopLevelGetById},
     },
     prelude::*,
 };

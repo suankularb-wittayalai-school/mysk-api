@@ -5,7 +5,7 @@ use self::{
         id_only::IdOnlySubject,
     },
 };
-use super::common::top_level_variant::TopLevelVariant;
+use crate::models::top_level_variant::TopLevelVariant;
 
 pub mod db;
 pub mod enums;

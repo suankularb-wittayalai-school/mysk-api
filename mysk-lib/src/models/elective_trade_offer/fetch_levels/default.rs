@@ -1,13 +1,11 @@
 use crate::{
+    common::requests::FetchLevel,
     models::{
-        common::{
-            enums::submission_status::SubmissionStatus,
-            requests::FetchLevel,
-            traits::{FetchLevelVariant, TopLevelGetById},
-        },
         elective_subject::ElectiveSubject,
         elective_trade_offer::db::DbElectiveTradeOffer,
+        enums::submission_status::SubmissionStatus,
         student::Student,
+        traits::{FetchLevelVariant, TopLevelGetById},
     },
     prelude::*,
 };

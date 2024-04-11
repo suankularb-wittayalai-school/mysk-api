@@ -1,21 +1,20 @@
 use crate::{
-    middlewares::{api_key::HaveApiKey, student::StudentOnly},
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
 };
-use actix_web::{put, web::{Data, Path}, HttpResponse, Responder};
+use actix_web::{
+    put,
+    web::{Data, Path},
+    HttpResponse, Responder,
+};
 use mysk_lib::{
+    common::{
+        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        response::ResponseType,
+    },
     models::{
-        classroom::Classroom,
-        common::{
-            requests::{
-                FetchLevel, QueryablePlaceholder, RequestType,
-                SortablePlaceholder,
-            },
-            response::ResponseType,
-            traits::TopLevelGetById as _,
-        },
-        elective_subject::ElectiveSubject,
-        student::Student,
+        classroom::Classroom, elective_subject::ElectiveSubject, student::Student,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
@@ -26,13 +25,9 @@ use uuid::Uuid;
 async fn modify_elective_subject(
     data: Data<AppState>,
     id: Path<Uuid>,
-    student_id: StudentOnly,
-    request_query: RequestType<
-        ElectiveSubject,
-        QueryablePlaceholder,
-        SortablePlaceholder,
-    >,
-    _: HaveApiKey,
+    student_id: LoggedInStudent,
+    request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
+    _api_key: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
@@ -65,9 +60,7 @@ async fn modify_elective_subject(
         };
 
     // Checks if the student is in a class available for the elective
-    let student =
-        Student::get_by_id(pool, student_id, Some(&FetchLevel::Default), None)
-            .await?;
+    let student = Student::get_by_id(pool, student_id, Some(&FetchLevel::Default), None).await?;
     match student {
         Student::Default(student, _) => match student.classroom {
             None => {
@@ -77,26 +70,24 @@ async fn modify_elective_subject(
                 ));
             }
             Some(classroom) => {
-                if !elective.applicable_classrooms.iter().any(|c| {
-                    match (c, &classroom) {
-                        (
-                            Classroom::IdOnly(c, _),
-                            Classroom::IdOnly(classroom, _),
-                        ) => c.id == classroom.id,
+                if !elective
+                    .applicable_classrooms
+                    .iter()
+                    .any(|c| match (c, &classroom) {
+                        (Classroom::IdOnly(c, _), Classroom::IdOnly(classroom, _)) => {
+                            c.id == classroom.id
+                        }
                         _ => false,
-                    }
-                }) {
+                    })
+                {
                     return Err(Error::InvalidPermission(
-                        "Student not in a class available for the elective"
-                            .to_string(),
+                        "Student not in a class available for the elective".to_string(),
                         format!("/subjects/electives/{elective_id}/enroll"),
                     ));
                 }
             }
         },
-        _ => unreachable!(
-            "Student::get_by_id should always return a Default variant"
-        ),
+        _ => unreachable!("Student::get_by_id should always return a Default variant"),
     }
 
     // Checks if the student has already enrolled in the elective before

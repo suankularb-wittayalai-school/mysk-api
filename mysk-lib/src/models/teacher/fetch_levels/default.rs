@@ -1,16 +1,13 @@
 use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
     models::{
         classroom::Classroom,
-        common::{
-            requests::FetchLevel,
-            string::MultiLangString,
-            traits::{FetchLevelVariant, TopLevelGetById},
-        },
         contact::Contact,
         person::enums::sex::Sex,
         subject::Subject,
         subject_group::SubjectGroup,
         teacher::db::DbTeacher,
+        traits::{FetchLevelVariant, TopLevelGetById},
         user::User,
     },
     prelude::*,

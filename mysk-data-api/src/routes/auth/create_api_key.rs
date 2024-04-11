@@ -1,13 +1,10 @@
-use crate::{middlewares::logged_in::LoggedIn, AppState};
+use crate::{extractors::logged_in::LoggedIn, AppState};
 use actix_web::{
     post,
     web::{Data, Json},
     HttpResponse, Responder,
 };
-use mysk_lib::{
-    models::{auth::key::ApiKey, common::response::ResponseType},
-    prelude::*,
-};
+use mysk_lib::{auth::key::ApiKey, common::response::ResponseType, prelude::*};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]

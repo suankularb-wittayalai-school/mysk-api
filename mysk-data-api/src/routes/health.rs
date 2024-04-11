@@ -1,7 +1,7 @@
 use crate::AppState;
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use chrono::{SecondsFormat, Utc};
-use mysk_lib::{models::common::response::ResponseType, prelude::*};
+use mysk_lib::{common::response::ResponseType, prelude::*};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::time;

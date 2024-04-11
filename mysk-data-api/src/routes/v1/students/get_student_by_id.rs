@@ -1,17 +1,12 @@
-use crate::{middlewares::api_key::HaveApiKey, AppState};
+use crate::{extractors::api_key::ApiKeyHeader, AppState};
 use actix_web::{
     get,
     web::{Data, Path},
     HttpResponse, Responder,
 };
 use mysk_lib::{
-    models::{
-        common::{
-            requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
-            traits::TopLevelGetById as _,
-        },
-        student::Student,
-    },
+    common::requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+    models::{student::Student, traits::TopLevelGetById as _},
     prelude::*,
 };
 use uuid::Uuid;
@@ -21,7 +16,7 @@ pub async fn get_student_by_id(
     data: Data<AppState>,
     id: Path<Uuid>,
     request_query: RequestType<Student, QueryablePlaceholder, SortablePlaceholder>,
-    _: HaveApiKey,
+    _api_key: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = id.into_inner();

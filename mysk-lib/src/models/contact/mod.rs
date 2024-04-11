@@ -1,15 +1,14 @@
 use self::{db::DbContact, enums::contact_type::ContactType};
-use super::common::{
-    requests::FetchLevel,
-    string::FlexibleMultiLangString,
-    traits::{TopLevelFromTable, TopLevelGetById},
+use crate::{
+    common::{requests::FetchLevel, string::FlexibleMultiLangString},
+    models::traits::{TopLevelFromTable, TopLevelGetById},
+    prelude::*,
 };
-use crate::prelude::*;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 pub mod db;
 pub mod enums;

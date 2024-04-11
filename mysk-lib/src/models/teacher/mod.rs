@@ -1,6 +1,3 @@
-pub mod db;
-pub mod fetch_levels;
-
 use self::{
     db::DbTeacher,
     fetch_levels::{
@@ -8,7 +5,10 @@ use self::{
         id_only::IdOnlyTeacher,
     },
 };
-use super::common::top_level_variant::TopLevelVariant;
+use crate::models::top_level_variant::TopLevelVariant;
+
+pub mod db;
+pub mod fetch_levels;
 
 pub type Teacher =
     TopLevelVariant<DbTeacher, IdOnlyTeacher, CompactTeacher, DefaultTeacher, DetailedTeacher>;

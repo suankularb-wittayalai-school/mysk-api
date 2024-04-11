@@ -1,14 +1,14 @@
 use crate::{
+    common::{
+        requests::FetchLevel,
+        string::{FlexibleMultiLangString, MultiLangString},
+    },
     models::{
-        common::{
-            requests::FetchLevel,
-            string::{FlexibleMultiLangString, MultiLangString},
-            traits::{FetchLevelVariant, TopLevelGetById},
-        },
         elective_subject::db::DbElectiveSubject,
         subject::{db::DbSubject, enums::subject_type::SubjectType},
         subject_group::SubjectGroup,
         teacher::Teacher,
+        traits::{FetchLevelVariant, TopLevelGetById},
     },
     prelude::*,
 };

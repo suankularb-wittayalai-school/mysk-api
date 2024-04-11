@@ -1,4 +1,4 @@
-use crate::models::common::enums::submission_status::SubmissionStatus;
+use crate::models::enums::submission_status::SubmissionStatus;
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};

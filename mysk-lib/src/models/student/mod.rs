@@ -5,8 +5,7 @@ use self::{
         id_only::IdOnlyStudent,
     },
 };
-use super::common::top_level_variant::TopLevelVariant;
-use crate::prelude::*;
+use crate::{models::top_level_variant::TopLevelVariant, prelude::*};
 use sqlx::PgPool;
 use uuid::Uuid;
 

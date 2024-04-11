@@ -1,8 +1,6 @@
 use crate::{
-    models::{
-        common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
-        student::db::DbStudent,
-    },
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::{student::db::DbStudent, traits::FetchLevelVariant},
     prelude::*,
 };
 use mysk_lib_macros::impl_fetch_level_variant_from;
