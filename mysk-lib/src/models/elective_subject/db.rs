@@ -66,6 +66,55 @@ impl DbElectiveSubject {
         })
     }
 
+    /// # Get elective subject by id with student context
+    /// This function is the extension of the `get_by_id` function
+    ///
+    /// Since an elective subject can be enrolled by students in different classrooms and taught in different sessions
+    ///
+    /// This function will return the elective subject object which is available for the student which will always be unique
+    ///
+    /// If the student is not eligible for the elective subject, it will return None
+    ///
+    /// If the student is not in any classroom, it will return an error
+    pub async fn get_by_id_with_student_context(
+        pool: &PgPool,
+        id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Option<Self>> {
+        // Checks if the student is in a class available for the elective
+        let student_class = DbStudent::get_student_classroom(pool, student_id, None).await?;
+
+        let student_classroom_id = match student_class {
+            Some(classroom) => classroom.id,
+            None => {
+                return Err(Error::InvalidPermission(
+                    "Student has no classroom".to_string(),
+                    "DbElectiveSubject::get_by_id_with_student_context".to_string(),
+                ))
+            }
+        };
+
+        query_as::<_, DbElectiveSubject>(
+            r#"
+            SELECT * FROM complete_elective_subjects_view
+            WHERE id = $1 AND session_code IN (
+                SELECT session_code FROM elective_subject_classrooms
+                WHERE classroom_id = $2
+            )
+            "#,
+        )
+        .bind(id)
+        .bind(student_classroom_id)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| {
+            Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::get_by_id_with_student_context".to_string(),
+            )
+        })
+    }
+
     /// Checks if the student is in a class available for the elective
     pub async fn is_student_eligible(
         pool: &PgPool,
