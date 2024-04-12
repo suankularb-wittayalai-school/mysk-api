@@ -15,7 +15,7 @@ use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, Execute, FromRow, PgPool, Postgres, QueryBuilder, Row};
+use sqlx::{query, query_as, FromRow, PgPool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -47,13 +47,31 @@ pub struct DbElectiveSubject {
 }
 
 impl DbElectiveSubject {
+    pub async fn get_by_session_code(pool: &PgPool, session_code: i64) -> Result<Option<Self>> {
+        query_as::<_, DbElectiveSubject>(
+            r#"
+            SELECT * FROM complete_elective_subjects_view
+            WHERE session_code = $1
+            "#,
+        )
+        .bind(session_code)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| {
+            Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::get_by_session_code".to_string(),
+            )
+        })
+    }
+
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             r#"
             SELECT classroom_id FROM elective_subject_classrooms
-            WHERE elective_subject_id = $1
+            WHERE session_code = $1
             "#,
-            self.id,
+            self.session_code
         )
         .fetch_all(pool)
         .await;
@@ -74,10 +92,16 @@ impl DbElectiveSubject {
     ) -> Result<Vec<Uuid>> {
         let res = query!(
             r#"
-            SELECT student_id FROM student_elective_subjects
-            WHERE elective_subject_id = $1 and year = $2
+            select
+                ses.student_id
+            from
+                elective_subject_classrooms esc
+                inner join student_elective_subjects ses on esc.elective_subject_id = ses.elective_subject_id
+                inner join classroom_students cs on cs.student_id = ses.student_id
+            where
+                cs.classroom_id = esc.classroom_id AND esc.session_code = $1 AND year = $2
             "#,
-            self.id,
+            self.session_code,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)

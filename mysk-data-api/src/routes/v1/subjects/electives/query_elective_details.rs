@@ -9,15 +9,14 @@ use mysk_lib::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{elective_subject::ElectiveSubject, traits::TopLevelGetById as _},
+    models::elective_subject::ElectiveSubject,
     prelude::*,
 };
-use uuid::Uuid;
 
-#[get("/{id}")]
+#[get("/{session_code}")]
 pub async fn query_elective_details(
     data: Data<AppState>,
-    path: Path<Uuid>,
+    path: Path<i64>,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
     _api_key: ApiKeyHeader,
 ) -> Result<impl Responder> {
@@ -27,7 +26,7 @@ pub async fn query_elective_details(
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
     let elective_subject =
-        ElectiveSubject::get_by_id(pool, id, fetch_level, descendant_fetch_level).await?;
+        ElectiveSubject::get_by_session_code(pool, id, fetch_level, descendant_fetch_level).await?;
     let response = ResponseType::new(elective_subject, None);
 
     Ok(HttpResponse::Ok().json(response))
