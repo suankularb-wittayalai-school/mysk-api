@@ -27,8 +27,8 @@ async fn main() -> io::Result<()> {
     dotenv().ok();
     env_logger::init();
     let config = Config::init();
-    let host = config.host.clone();
-    let port = config.port.clone();
+    let host = config.host;
+    let port = config.port;
 
     let pool = match PgPoolOptions::new()
         .max_connections(15)
