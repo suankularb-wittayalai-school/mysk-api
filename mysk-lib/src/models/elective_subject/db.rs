@@ -1,16 +1,14 @@
 use super::request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject};
 use crate::{
     common::{
-        requests::{
-            FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
-        },
+        requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
     },
     helpers::date::get_current_academic_year,
     models::{
-        student::{db::DbStudent, Student},
+        student::db::DbStudent,
         subject::enums::subject_type::SubjectType,
-        traits::{QueryDb, Queryable, TopLevelGetById},
+        traits::{QueryDb, Queryable},
     },
     prelude::*,
 };
