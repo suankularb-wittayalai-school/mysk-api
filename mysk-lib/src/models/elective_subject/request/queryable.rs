@@ -1,6 +1,6 @@
 use crate::{
     common::requests::{QueryParam, SqlSection},
-    helpers::date::get_current_academic_year,
+    helpers::date::{get_current_academic_year, get_current_semester},
     models::traits::Queryable,
 };
 use serde::{Deserialize, Serialize};
@@ -157,13 +157,16 @@ impl Queryable for QueryableElectiveSubject {
         }
 
         if let Some(student_ids) = &self.student_ids {
-            // WHERE id IN (SELECT elective_subject_id FROM student_elective_subjects WHERE student_id IN ANY($1))
+            // WHERE session_code IN (SELECT session_code from elective_subject_classrooms esc inner join student_elective_subjects ses on esc.elective_subject_id = ses.elective_subject_id inner join classroom_students cs on cs.student_id = ses.student_id where cs.classroom_id = esc.classroom_id AND ses.student_id = ANY($1) AND year = $2 AND semester = $3 )
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT elective_subject_id FROM student_elective_subjects".to_string(),
-                    " WHERE student_id = ANY())".to_string(),
+                    "session_code IN (SELECT session_code from elective_subject_classrooms esc inner join student_elective_subjects ses on esc.elective_subject_id = ses.elective_subject_id inner join classroom_students cs on cs.student_id = ses.student_id where cs.classroom_id = esc.classroom_id AND ses.student_id = ANY(".to_string(),
+                    ") AND year = ".to_string(),
+                    " AND semester = ".to_string(),
+                    ")".to_string(),
+
                 ],
-                params: vec![QueryParam::ArrayUuid(student_ids.clone())],
+                params: vec![QueryParam::ArrayUuid(student_ids.clone()), QueryParam::Int(get_current_academic_year(None)), QueryParam::Int(get_current_semester(None))],
             });
         }
 
