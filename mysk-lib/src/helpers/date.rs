@@ -19,7 +19,7 @@ pub fn get_current_semester(date: Option<NaiveDate>) -> i64 {
         .month();
 
     // If the month is less than july, then it is the first semester
-    if month >= 4 && month < 10 {
+    if (4..10).contains(&month) {
         1
     } else {
         2

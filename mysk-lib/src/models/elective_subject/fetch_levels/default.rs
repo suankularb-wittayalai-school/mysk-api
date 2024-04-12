@@ -33,6 +33,7 @@ pub struct DefaultElectiveSubject {
     pub room: String,
     pub r#type: SubjectType,
     pub semester: Option<i64>,
+    pub session_code: i64,
 }
 
 impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
@@ -95,6 +96,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
             class_size: table.class_size,
             cap_size: table.cap_size,
             room: table.room,
+            session_code: table.session_code,
         })
     }
 }

@@ -37,6 +37,7 @@ pub struct DetailedElectiveSubject {
     pub semester: Option<i64>,
     pub applicable_classrooms: Vec<Classroom>,
     pub students: Vec<Student>,
+    pub session_code: i64,
 }
 
 impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
@@ -115,6 +116,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 Some(&FetchLevel::IdOnly),
             )
             .await?,
+            session_code: table.session_code,
         })
     }
 }
