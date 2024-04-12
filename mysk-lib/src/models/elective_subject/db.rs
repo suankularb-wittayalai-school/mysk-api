@@ -1,13 +1,16 @@
 use super::request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject};
 use crate::{
     common::{
-        requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
+        requests::{
+            FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
+        },
         response::PaginationType,
     },
     helpers::date::get_current_academic_year,
     models::{
+        student::{db::DbStudent, Student},
         subject::enums::subject_type::SubjectType,
-        traits::{QueryDb, Queryable},
+        traits::{QueryDb, Queryable, TopLevelGetById},
     },
     prelude::*,
 };
@@ -63,6 +66,41 @@ impl DbElectiveSubject {
                 "DbElectiveSubject::get_by_session_code".to_string(),
             )
         })
+    }
+
+    /// Checks if the student is in a class available for the elective
+    pub async fn is_student_eligible(
+        pool: &PgPool,
+        session_code: i64,
+        student_id: Uuid,
+    ) -> Result<bool> {
+        // Checks if the student is in a class available for the elective
+        let student_class = DbStudent::get_student_classroom(pool, student_id, None).await?;
+
+        let student_classroom_id = match student_class {
+            Some(classroom) => classroom.id,
+            None => {
+                return Err(Error::InvalidPermission(
+                    "Student has no classroom".to_string(),
+                    "DbElectiveSubject::is_student_eligible".to_string(),
+                ))
+            }
+        };
+
+        let is_eligible = query!(
+            r#"
+            SELECT EXISTS (
+                SELECT FROM elective_subject_classrooms
+                WHERE session_code = $1 AND classroom_id = $2
+            )
+            "#,
+            session_code,
+            student_classroom_id
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(is_eligible.exists.unwrap_or(false))
     }
 
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {

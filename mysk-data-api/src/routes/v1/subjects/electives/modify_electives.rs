@@ -14,7 +14,8 @@ use mysk_lib::{
     },
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
-        classroom::Classroom, elective_subject::ElectiveSubject, student::Student,
+        elective_subject::{db::DbElectiveSubject, ElectiveSubject},
+        student::Student,
         traits::TopLevelGetById as _,
     },
     prelude::*,
@@ -63,35 +64,21 @@ async fn modify_elective_subject(
         _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
     };
 
+    let _student = Student::get_by_id(pool, student_id, Some(&FetchLevel::IdOnly), None)
+        .await
+        .map_err(|e| {
+            Error::InvalidPermission(
+                e.to_string(),
+                format!("/subjects/electives/{session_code}/enroll"),
+            )
+        })?;
+
     // Checks if the student is in a class available for the elective
-    let student = Student::get_by_id(pool, student_id, Some(&FetchLevel::Default), None).await?;
-    match student {
-        Student::Default(student, _) => match student.classroom {
-            None => {
-                return Err(Error::InvalidPermission(
-                    "Student is not in a class".to_string(),
-                    format!("/subjects/electives/{session_code}/enroll"),
-                ));
-            }
-            Some(classroom) => {
-                if !elective
-                    .applicable_classrooms
-                    .iter()
-                    .any(|c| match (c, &classroom) {
-                        (Classroom::IdOnly(c, _), Classroom::IdOnly(classroom, _)) => {
-                            c.id == classroom.id
-                        }
-                        _ => false,
-                    })
-                {
-                    return Err(Error::InvalidPermission(
-                        "Student not in a class available for the elective".to_string(),
-                        format!("/subjects/electives/{session_code}/enroll"),
-                    ));
-                }
-            }
-        },
-        _ => unreachable!("Student::get_by_id should always return a Default variant"),
+    if !DbElectiveSubject::is_student_eligible(pool, session_code, student_id).await? {
+        return Err(Error::InvalidPermission(
+            "Student is not eligible to enroll in this elective".to_string(),
+            format!("/subjects/electives/{session_code}/enroll"),
+        ));
     }
 
     // Check if the student already has an elective subject if they don't then throw an error
