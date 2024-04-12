@@ -1,5 +1,6 @@
 use crate::{
     common::requests::{QueryParam, SqlSection},
+    helpers::date::get_current_academic_year,
     models::traits::Queryable,
 };
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ pub struct QueryableElectiveSubject {
     pub applicable_classroom_ids: Option<Vec<Uuid>>,
     pub room: Option<String>,
     pub student_ids: Option<Vec<Uuid>>,
+    pub as_student_id: Option<Uuid>,
 }
 
 impl Queryable for QueryableElectiveSubject {
@@ -162,6 +164,19 @@ impl Queryable for QueryableElectiveSubject {
                     " WHERE student_id = ANY())".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(student_ids.clone())],
+            });
+        }
+
+        if let Some(as_student_id) = &self.as_student_id {
+            // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = $1 AND year = $2))
+            where_sections.push(SqlSection {
+                sql: vec![
+                    "id IN (SELECT elective_subject_id FROM elective_subject_classrooms".to_string(),
+                    " WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = ".to_string(),
+                    " AND year = ".to_string(),
+                    "))".to_string(),
+                ],
+                params: vec![QueryParam::Uuid(*as_student_id), QueryParam::Int(get_current_academic_year(None))],
             });
         }
 
