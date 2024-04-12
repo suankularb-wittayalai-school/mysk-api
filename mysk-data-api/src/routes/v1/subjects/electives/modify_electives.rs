@@ -12,6 +12,7 @@ use mysk_lib::{
         requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
+    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         classroom::Classroom, elective_subject::ElectiveSubject, student::Student,
         traits::TopLevelGetById as _,
@@ -93,6 +94,25 @@ async fn modify_elective_subject(
         _ => unreachable!("Student::get_by_id should always return a Default variant"),
     }
 
+    // Check if the student already has an elective subject if they don't then throw an error
+    let student_elective_subject = query!(
+        r#"
+        SELECT elective_subject_id FROM student_elective_subjects WHERE student_id = $1 and year = $2 AND semester = $3
+        "#,
+        student_id,
+        get_current_academic_year(None),
+        get_current_semester(None),
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    if student_elective_subject.is_none() {
+        return Err(Error::InvalidPermission(
+            "Student does not have an elective subject".to_string(),
+            format!("/subjects/electives/{session_code}/enroll"),
+        ));
+    }
+
     // Checks if the student has already enrolled in the elective before
     let enroll_count = query!(
         r#"
@@ -115,10 +135,12 @@ async fn modify_elective_subject(
 
     query!(
         r#"
-        UPDATE student_elective_subjects SET elective_subject_id = $1 WHERE student_id = $2
+        UPDATE student_elective_subjects SET elective_subject_id = $1 WHERE student_id = $2 AND year = $3 AND semester = $4
         "#,
         elective.id,
         student_id,
+        get_current_academic_year(None),
+        get_current_semester(None),
     )
     .execute(pool)
     .await?;
