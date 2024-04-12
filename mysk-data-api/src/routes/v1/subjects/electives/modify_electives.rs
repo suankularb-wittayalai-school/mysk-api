@@ -19,45 +19,48 @@ use mysk_lib::{
     prelude::*,
 };
 use sqlx::query;
-use uuid::Uuid;
 
-#[put("/{id}/enroll")]
+#[put("/{session_code}/enroll")]
 async fn modify_elective_subject(
     data: Data<AppState>,
-    id: Path<Uuid>,
+    session_code: Path<i64>,
     student_id: LoggedInStudent,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
     _api_key: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
-    let elective_id = id.into_inner();
+    let session_code = session_code.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
     // Checks if the elective the student is trying to enroll in is available
-    let elective =
-        match ElectiveSubject::get_by_id(pool, elective_id, fetch_level, descendant_fetch_level)
-            .await
-        {
-            Ok(ElectiveSubject::Detailed(elective, _)) => {
-                if elective.class_size == elective.cap_size {
-                    return Err(Error::InvalidPermission(
-                        "The elective is already full".to_string(),
-                        format!("/subjects/electives/{elective_id}/enroll"),
-                    ));
-                }
-
-                elective
-            }
-            Err(Error::InternalSeverError(_, _)) => {
-                return Err(Error::InvalidRequest(
-                    "Elective subject not found".to_string(),
-                    format!("/subjects/electives/{elective_id}/enroll"),
+    let elective = match ElectiveSubject::get_by_session_code(
+        pool,
+        session_code,
+        Some(&FetchLevel::Detailed),
+        None,
+    )
+    .await
+    {
+        Ok(ElectiveSubject::Detailed(elective, _)) => {
+            if elective.class_size == elective.cap_size {
+                return Err(Error::InvalidPermission(
+                    "The elective is already full".to_string(),
+                    format!("/subjects/electives/{session_code}/enroll"),
                 ));
             }
-            _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
-        };
+
+            elective
+        }
+        Err(Error::InternalSeverError(_, _)) => {
+            return Err(Error::InvalidRequest(
+                "Elective subject not found".to_string(),
+                format!("/subjects/electives/{session_code}/enroll"),
+            ));
+        }
+        _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
+    };
 
     // Checks if the student is in a class available for the elective
     let student = Student::get_by_id(pool, student_id, Some(&FetchLevel::Default), None).await?;
@@ -66,7 +69,7 @@ async fn modify_elective_subject(
             None => {
                 return Err(Error::InvalidPermission(
                     "Student is not in a class".to_string(),
-                    format!("/subjects/electives/{elective_id}/enroll"),
+                    format!("/subjects/electives/{session_code}/enroll"),
                 ));
             }
             Some(classroom) => {
@@ -82,7 +85,7 @@ async fn modify_elective_subject(
                 {
                     return Err(Error::InvalidPermission(
                         "Student not in a class available for the elective".to_string(),
-                        format!("/subjects/electives/{elective_id}/enroll"),
+                        format!("/subjects/electives/{session_code}/enroll"),
                     ));
                 }
             }
@@ -97,7 +100,7 @@ async fn modify_elective_subject(
         WHERE student_id = $1 AND elective_subject_id = $2
         "#,
         student_id,
-        elective_id
+        elective.id,
     )
     .fetch_one(pool)
     .await?;
@@ -106,7 +109,7 @@ async fn modify_elective_subject(
     if enroll_count > 0 {
         return Err(Error::InvalidPermission(
             "Student has already enrolled in this elective before".to_string(),
-            format!("/subjects/electives/{elective_id}/enroll"),
+            format!("/subjects/electives/{session_code}/enroll"),
         ));
     }
 
@@ -114,10 +117,19 @@ async fn modify_elective_subject(
         r#"
         UPDATE student_elective_subjects SET elective_subject_id = $1 WHERE student_id = $2
         "#,
-        elective_id,
+        elective.id,
         student_id,
     )
     .execute(pool)
+    .await?;
+
+    // Get the updated elective to return to the client
+    let elective = ElectiveSubject::get_by_session_code(
+        pool,
+        session_code,
+        fetch_level,
+        descendant_fetch_level,
+    )
     .await?;
 
     let response = ResponseType::new(elective, None);
