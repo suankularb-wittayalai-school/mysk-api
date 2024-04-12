@@ -15,6 +15,7 @@ pub struct CompactElectiveSubject {
     pub short_name: MultiLangString,
     pub class_size: i64,
     pub cap_size: i64,
+    pub session_code: i64,
 }
 
 impl From<DbElectiveSubject> for CompactElectiveSubject {
@@ -29,6 +30,7 @@ impl From<DbElectiveSubject> for CompactElectiveSubject {
             ),
             class_size: subject.class_size,
             cap_size: subject.cap_size,
+            session_code: subject.session_code,
         }
     }
 }
