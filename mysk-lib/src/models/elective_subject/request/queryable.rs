@@ -171,8 +171,7 @@ impl Queryable for QueryableElectiveSubject {
             // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = $1 AND year = $2))
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT elective_subject_id FROM elective_subject_classrooms".to_string(),
-                    " WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = ".to_string(),
+                    "session_code IN (SELECT session_code FROM elective_subject_classrooms WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = ".to_string(),
                     " AND year = ".to_string(),
                     "))".to_string(),
                 ],

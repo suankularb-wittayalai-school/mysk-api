@@ -15,7 +15,7 @@ use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row};
+use sqlx::{query, Execute, FromRow, PgPool, Postgres, QueryBuilder, Row};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -181,6 +181,8 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
                 }
             }
         }
+
+        // dbg!(&query.build_query_as::<DbElectiveSubject>().sql());
 
         query
             .build_query_as::<DbElectiveSubject>()
