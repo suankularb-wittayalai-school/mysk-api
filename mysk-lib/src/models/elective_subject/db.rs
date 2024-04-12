@@ -43,6 +43,7 @@ pub struct DbElectiveSubject {
     pub semester: Option<i64>,
     pub subject_group_id: i64,
     pub syllabus: Option<String>,
+    pub session_code: i64,
 }
 
 impl DbElectiveSubject {
