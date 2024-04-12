@@ -56,6 +56,7 @@ impl ElectiveSubject {
             )),
         }
     }
+
     /// # Get elective subject by id with student context
     /// This function is the extension of the `get_by_id` function
     ///
