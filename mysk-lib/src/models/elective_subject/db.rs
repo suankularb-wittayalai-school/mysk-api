@@ -8,7 +8,7 @@ use crate::{
     models::{
         student::db::DbStudent,
         subject::enums::subject_type::SubjectType,
-        traits::{QueryDb, Queryable},
+        traits::{QueryDb, Queryable as _},
     },
     prelude::*,
 };
@@ -213,7 +213,6 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         Self: Sized,
     {
         let mut query = QueryBuilder::<'_, Postgres>::new(DbElectiveSubject::base_query());
-
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
         if let Some(filter) = filter {
@@ -242,27 +241,16 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         }
 
         for (i, section) in where_sections.iter().enumerate() {
-            // add WHERE or AND before each section
-            query.push(if i == 0 { " WHERE " } else { "AND " });
-            // len of sql should be len of params + 1
-            // loop through index of sql
-            //   push sql[i]
-            //   if i < len of params
-            //     push params[i]
+            query.push(if i == 0 { " WHERE " } else { " AND " });
             for (j, sql) in section.sql.iter().enumerate() {
                 query.push(sql);
                 if j < section.params.len() {
                     match &section.params[j] {
-                        QueryParam::Int(v) => query.push_bind(v),
                         QueryParam::Float(v) => query.push_bind(v),
                         QueryParam::String(v) => query.push_bind(v),
-                        QueryParam::Bool(v) => query.push_bind(v),
-                        QueryParam::Uuid(v) => query.push_bind(v),
                         QueryParam::ArrayInt(v) => query.push_bind(v),
-                        QueryParam::ArrayFloat(v) => query.push_bind(v),
-                        QueryParam::ArrayString(v) => query.push_bind(v),
-                        QueryParam::ArrayBool(v) => query.push_bind(v),
                         QueryParam::ArrayUuid(v) => query.push_bind(v),
+                        _ => unreachable!(),
                     };
                 }
             }
@@ -337,27 +325,16 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         }
 
         for (i, section) in where_sections.iter().enumerate() {
-            // add WHERE or AND before each section
-            query.push(if i == 0 { " WHERE " } else { "AND " });
-            // len of sql should be len of params + 1
-            // loop through index of sql
-            //   push sql[i]
-            //   if i < len of params
-            //     push params[i]
+            query.push(if i == 0 { " WHERE " } else { " AND " });
             for (j, sql) in section.sql.iter().enumerate() {
                 query.push(sql);
                 if j < section.params.len() {
                     match &section.params[j] {
-                        QueryParam::Int(v) => query.push_bind(v),
                         QueryParam::Float(v) => query.push_bind(v),
                         QueryParam::String(v) => query.push_bind(v),
-                        QueryParam::Bool(v) => query.push_bind(v),
-                        QueryParam::Uuid(v) => query.push_bind(v),
                         QueryParam::ArrayInt(v) => query.push_bind(v),
-                        QueryParam::ArrayFloat(v) => query.push_bind(v),
-                        QueryParam::ArrayString(v) => query.push_bind(v),
-                        QueryParam::ArrayBool(v) => query.push_bind(v),
                         QueryParam::ArrayUuid(v) => query.push_bind(v),
+                        _ => unreachable!(),
                     };
                 }
             }

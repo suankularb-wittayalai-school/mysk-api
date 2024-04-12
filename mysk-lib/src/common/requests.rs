@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::{models::enums::submission_status::SubmissionStatus, prelude::*};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -35,12 +35,15 @@ pub struct FilterConfig<T> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct SortingConfig<T: Display> {
+pub struct SortingConfig<T> {
     pub by: Vec<T>,
     pub ascending: Option<bool>,
 }
 
-impl<SortingObject: Display> SortingConfig<SortingObject> {
+impl<SortingObject> SortingConfig<SortingObject>
+where
+    SortingObject: Display,
+{
     pub fn new(by: Vec<SortingObject>, ascending: Option<bool>) -> Self {
         Self { by, ascending }
     }
@@ -96,7 +99,10 @@ impl PaginationConfig {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct RequestType<T, Queryable, Sortable: Display> {
+pub struct RequestType<T, Queryable, Sortable>
+where
+    Sortable: Display,
+{
     pub data: Option<T>,
     pub pagination: Option<PaginationConfig>,
     pub filter: Option<FilterConfig<Queryable>>,
@@ -106,11 +112,11 @@ pub struct RequestType<T, Queryable, Sortable: Display> {
 }
 
 // Implement from request for RequestType with any T, Queryable, and Sortable
-impl<T, Queryable, Sortable: Display> FromRequest for RequestType<T, Queryable, Sortable>
+impl<T, Queryable, Sortable> FromRequest for RequestType<T, Queryable, Sortable>
 where
     T: DeserializeOwned,
     Queryable: DeserializeOwned,
-    Sortable: DeserializeOwned,
+    Sortable: DeserializeOwned + Display,
 {
     type Error = Error;
     type Future = future::Ready<Result<Self>>;
@@ -140,6 +146,7 @@ pub enum QueryParam {
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
+    SubmissionStatus(SubmissionStatus),
 }
 
 impl Encode<'_, Postgres> for QueryParam {
@@ -158,6 +165,7 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
+            QueryParam::SubmissionStatus(v) => v.encode_by_ref(buf),
         }
     }
 }
