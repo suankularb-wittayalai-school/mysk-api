@@ -15,7 +15,7 @@ use mysk_lib::{
     prelude::*,
 };
 
-#[get("/")]
+#[get("")]
 pub async fn query_elective_subject(
     data: Data<AppState>,
     request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,

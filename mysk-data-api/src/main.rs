@@ -1,5 +1,10 @@
 use actix_cors::Cors;
-use actix_web::{http::header, middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{
+    http::header,
+    middleware::{Logger, NormalizePath},
+    web::Data,
+    App, HttpServer,
+};
 use dotenv::dotenv;
 use mysk_lib::common::config::Config;
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -64,6 +69,7 @@ async fn main() -> io::Result<()> {
             }))
             .configure(routes::config)
             .wrap(cors_middleware)
+            .wrap(NormalizePath::trim())
             .wrap(Logger::default())
     })
     .bind((host, port))

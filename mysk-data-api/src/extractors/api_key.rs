@@ -1,6 +1,7 @@
 use super::ExtractorFuture;
 use crate::AppState;
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
+use futures::future;
 use mysk_lib::{
     auth::key::{ApiKey, PrefixedApiKey},
     prelude::*,
@@ -21,12 +22,10 @@ impl FromRequest for ApiKeyHeader {
         let app_state = match req.app_data::<Data<AppState>>() {
             Some(state) => state,
             None => {
-                return Box::pin(async {
-                    Err(Error::InternalSeverError(
-                        "App state not found".to_string(),
-                        "HaveApiKey Middleware".to_string(),
-                    ))
-                })
+                return Box::pin(future::err(Error::InternalSeverError(
+                    "App state not found".to_string(),
+                    "HaveApiKey Middleware".to_string(),
+                )))
             }
         };
 
@@ -37,12 +36,10 @@ impl FromRequest for ApiKeyHeader {
             Some(token) => match token.to_str() {
                 Ok(token) => token,
                 Err(_) => {
-                    return Box::pin(async {
-                        Err(Error::InvalidApiKey(
-                            "Invalid API Key".to_string(),
-                            "HaveApiKey Middleware".to_string(),
-                        ))
-                    });
+                    return Box::pin(future::err(Error::InvalidApiKey(
+                        "Invalid API Key".to_string(),
+                        "HaveApiKey Middleware".to_string(),
+                    )));
                 }
             },
             None => {

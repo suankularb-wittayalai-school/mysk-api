@@ -122,11 +122,8 @@ where
             qs_parser.deserialize_str::<RequestType<T, Queryable, Sortable>>(query_string);
 
         match request_query {
-            Ok(query) => future::ready(Ok(query)),
-            Err(e) => future::ready(Err(Error::InvalidRequest(
-                e.to_string(),
-                req.path().to_string(),
-            ))),
+            Ok(query) => future::ok(query),
+            Err(e) => future::err(Error::InvalidRequest(e.to_string(), req.path().to_string())),
         }
     }
 }
