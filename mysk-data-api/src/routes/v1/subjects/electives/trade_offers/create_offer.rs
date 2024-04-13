@@ -1,6 +1,6 @@
 use crate::{extractors::student::LoggedInStudent, AppState};
 use actix_web::{
-    put,
+    post,
     web::{Data, Json, Path},
     HttpResponse, Responder,
 };
