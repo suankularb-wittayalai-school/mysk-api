@@ -48,7 +48,7 @@ impl<'r> sqlx::Decode<'r, Postgres> for SubmissionStatus {
             "approved" => Ok(SubmissionStatus::Approved),
             "declined" => Ok(SubmissionStatus::Declined),
             s => Err(Box::new(sqlx::Error::Decode(
-                format!("Unknown submission status: {}", s).into(),
+                format!("Unknown submission status: {s}").into(),
             ))),
         }
     }

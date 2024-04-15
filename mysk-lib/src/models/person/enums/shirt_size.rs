@@ -74,7 +74,7 @@ impl<'r> sqlx::Decode<'r, Postgres> for ShirtSize {
             "5XL" => Ok(ShirtSize::X5L),
             "6XL" => Ok(ShirtSize::X6L),
             s => Err(Box::new(sqlx::Error::Decode(
-                format!("Unknown shirt size: {}", s).into(),
+                format!("Unknown shirt size: {s}").into(),
             ))),
         }
     }

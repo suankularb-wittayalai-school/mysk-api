@@ -23,7 +23,7 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
     async fn from_table(
         pool: &PgPool,
         table: DbTeacher,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
