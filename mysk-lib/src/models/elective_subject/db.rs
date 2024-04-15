@@ -16,7 +16,7 @@ use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, FromRow, PgPool, Postgres, QueryBuilder, Row};
+use sqlx::{query, query_as, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -205,16 +205,12 @@ impl DbElectiveSubject {
 }
 
 impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
-    async fn query(
-        pool: &PgPool,
+    fn build_shared_query(
+        query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
-        sort: Option<&SortingConfig<SortableElectiveSubject>>,
-        pagination: Option<&PaginationConfig>,
-    ) -> Result<Vec<Self>>
-    where
+    ) where
         Self: Sized,
     {
-        let mut query = QueryBuilder::<'_, Postgres>::new(DbElectiveSubject::base_query());
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
         if let Some(filter) = filter {
@@ -244,20 +240,33 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         }
 
         for (i, section) in where_sections.iter().enumerate() {
-            query.push(if i == 0 { " WHERE " } else { " AND " });
+            query_builder.push(if i == 0 { " WHERE " } else { " AND " });
             for (j, sql) in section.sql.iter().enumerate() {
-                query.push(sql);
+                query_builder.push(sql);
                 if j < section.params.len() {
                     match section.params.get(j) {
-                        Some(QueryParam::Float(v)) => query.push_bind(v),
-                        Some(QueryParam::String(v)) => query.push_bind(v),
-                        Some(QueryParam::ArrayInt(v)) => query.push_bind(v),
-                        Some(QueryParam::ArrayUuid(v)) => query.push_bind(v),
+                        Some(QueryParam::Float(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::String(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::ArrayInt(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
                         _ => unreachable!(),
                     };
                 }
             }
         }
+    }
+
+    async fn query(
+        pool: &PgPool,
+        filter: Option<&FilterConfig<QueryableElectiveSubject>>,
+        sort: Option<&SortingConfig<SortableElectiveSubject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<Vec<Self>>
+    where
+        Self: Sized,
+    {
+        let mut query = QueryBuilder::new(DbElectiveSubject::base_query());
+        Self::build_shared_query(&mut query, filter);
 
         if let Some(sorting) = sort {
             query.push(sorting.to_order_by_clause());
@@ -296,51 +305,8 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<PaginationType> {
-        let mut query = QueryBuilder::<'_, sqlx::Postgres>::new(DbElectiveSubject::count_query());
-
-        let mut where_sections: Vec<SqlSection> = Vec::new();
-
-        if let Some(filter) = filter {
-            if let Some(q) = &filter.q {
-                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR code_th ILIKE '%q%' OR code_en
-                // ILIKE '%q%')
-                where_sections.push(SqlSection {
-                    sql: vec![
-                        "(name_th ILIKE concat('%', ".to_string(),
-                        ", '%') OR name_en ILIKE concat('%', ".to_string(),
-                        ", '%') OR code_th ILIKE concat('%', ".to_string(),
-                        ", '%') OR code_en ILIKE concat('%', ".to_string(),
-                        ", '%'))".to_string(),
-                    ],
-                    params: vec![
-                        QueryParam::String(q.to_string()),
-                        QueryParam::String(q.to_string()),
-                        QueryParam::String(q.to_string()),
-                        QueryParam::String(q.to_string()),
-                    ],
-                });
-            }
-            if let Some(data) = &filter.data {
-                let mut data_sections = data.to_query_string();
-                where_sections.append(&mut data_sections);
-            }
-        }
-
-        for (i, section) in where_sections.iter().enumerate() {
-            query.push(if i == 0 { " WHERE " } else { " AND " });
-            for (j, sql) in section.sql.iter().enumerate() {
-                query.push(sql);
-                if j < section.params.len() {
-                    match section.params.get(j) {
-                        Some(QueryParam::Float(v)) => query.push_bind(v),
-                        Some(QueryParam::String(v)) => query.push_bind(v),
-                        Some(QueryParam::ArrayInt(v)) => query.push_bind(v),
-                        Some(QueryParam::ArrayUuid(v)) => query.push_bind(v),
-                        _ => unreachable!(),
-                    };
-                }
-            }
-        }
+        let mut query = QueryBuilder::new(DbElectiveSubject::count_query());
+        Self::build_shared_query(&mut query, filter);
 
         let count = u32::try_from(
             query
@@ -357,13 +323,17 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         )
         .unwrap();
 
-        Ok(PaginationType::new(
-            pagination.unwrap_or(&PaginationConfig::default()).p,
-            pagination
-                .unwrap_or(&PaginationConfig::default())
-                .size
-                .unwrap_or(50),
-            count,
-        ))
+        match pagination {
+            Some(pagination) => Ok(PaginationType::new(
+                pagination.p,
+                pagination.size.unwrap(),
+                count,
+            )),
+            None => Ok(PaginationType::new(
+                PaginationConfig::default().p,
+                PaginationConfig::default().size.unwrap(),
+                count,
+            )),
+        }
     }
 }
