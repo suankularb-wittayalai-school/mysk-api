@@ -5,11 +5,11 @@ use actix_cors::Cors;
 use actix_web::{
     http::header,
     middleware::{Logger, NormalizePath},
-    web::Data,
+    web::{Data, JsonConfig},
     App, HttpServer,
 };
 use dotenv::dotenv;
-use mysk_lib::common::config::Config;
+use mysk_lib::{common::config::Config, prelude::*};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{env, io, process};
 
@@ -69,6 +69,9 @@ async fn main() -> io::Result<()> {
             .app_data(Data::new(AppState {
                 db: pool.clone(),
                 env: config.clone(),
+            }))
+            .app_data(JsonConfig::default().error_handler(|err, req| {
+                Error::InvalidRequest(format!("{err}"), req.path().into()).into()
             }))
             .configure(routes::config)
             .wrap(cors_middleware)
