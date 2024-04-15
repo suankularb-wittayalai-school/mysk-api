@@ -24,6 +24,7 @@ pub struct QueryableElectiveSubject {
 }
 
 impl Queryable for QueryableElectiveSubject {
+    #[allow(clippy::too_many_lines)]
     fn to_query_string(&self) -> Vec<SqlSection> {
         let mut where_sections = Vec::<SqlSection>::new();
 

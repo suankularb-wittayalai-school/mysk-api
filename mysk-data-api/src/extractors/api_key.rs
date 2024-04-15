@@ -19,14 +19,11 @@ impl FromRequest for ApiKeyHeader {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let app_state = match req.app_data::<Data<AppState>>() {
-            Some(state) => state,
-            None => {
-                return Box::pin(future::err(Error::InternalSeverError(
-                    "App state not found".to_string(),
-                    "HaveApiKey Middleware".to_string(),
-                )))
-            }
+        let Some(app_state) = req.app_data::<Data<AppState>>() else {
+            return Box::pin(future::err(Error::InternalSeverError(
+                "App state not found".to_string(),
+                "HaveApiKey Middleware".to_string(),
+            )));
         };
 
         let pool = app_state.db.clone();

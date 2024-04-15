@@ -126,9 +126,7 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
         },
     );
 
-    let header = jsonwebtoken::decode_header(id_token);
-
-    let header = match header {
+    let header = match jsonwebtoken::decode_header(id_token) {
         Ok(header) => header,
         Err(err) => {
             return Err(Error::InternalSeverError(
@@ -138,14 +136,11 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
         }
     };
 
-    let kid = match header.kid {
-        Some(kid) => kid,
-        None => {
-            return Err(Error::InternalSeverError(
-                "No kid in header".to_string(),
-                "verify_id_token".to_string(),
-            ))
-        }
+    let Some(kid) = header.kid else {
+        return Err(Error::InternalSeverError(
+            "No kid in header".to_string(),
+            "verify_id_token".to_string(),
+        ));
     };
 
     let public_key = public_keys[kid.as_str()].as_str();
@@ -164,10 +159,8 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
 
     let mut validation = jsonwebtoken::Validation::new(header.alg);
 
-    validation.set_audience(&[env.google_oauth_client_id.to_owned()]);
+    validation.set_audience(&[env.google_oauth_client_id.clone()]);
     validation.iss = Some(HashSet::from(["https://accounts.google.com".to_owned()]));
-
-    // dbg!(&validation);
 
     let token_payload = jsonwebtoken::decode::<TokenPayload>(id_token, &public_key, &validation);
     let token_payload = match token_payload {

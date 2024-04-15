@@ -4,7 +4,7 @@ use crate::{
 };
 use actix_web::{
     put,
-    web::{Data, Path},
+    web::{Data, Json, Path},
     HttpResponse, Responder,
 };
 use mysk_lib::{
@@ -27,14 +27,14 @@ async fn modify_elective_subject(
     data: Data<AppState>,
     session_code: Path<i64>,
     student_id: LoggedInStudent,
-    request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
-    _api_key: ApiKeyHeader,
+    request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
     let session_code = session_code.into_inner();
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level.as_ref();
+    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
     // Checks if the elective the student is trying to enroll in is available
     let elective = match ElectiveSubject::get_by_session_code(

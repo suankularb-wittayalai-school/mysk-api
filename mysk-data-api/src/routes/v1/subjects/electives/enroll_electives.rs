@@ -4,7 +4,7 @@ use crate::{
 };
 use actix_web::{
     post,
-    web::{Data, Path},
+    web::{Data, Json, Path},
     HttpResponse, Responder,
 };
 use mysk_lib::{
@@ -13,11 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     helpers::date::{get_current_academic_year, get_current_semester},
-    models::{
-        elective_subject::{db::DbElectiveSubject, ElectiveSubject},
-        student::Student,
-        traits::TopLevelGetById as _,
-    },
+    models::elective_subject::{db::DbElectiveSubject, ElectiveSubject},
     prelude::*,
 };
 use sqlx::query;
@@ -27,18 +23,16 @@ pub async fn enroll_elective_subject(
     data: Data<AppState>,
     session_code: Path<i64>,
     student_id: LoggedInStudent,
-    request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
-    _api_key: ApiKeyHeader,
+    request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
     let session_code = session_code.into_inner();
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level.as_ref();
+    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
     // Checks if the elective the student is trying to enroll in is available
-
-    // Get the elective subject by session code with hardcoded fetch levels to get allow the property we need
     let elective = match ElectiveSubject::get_by_session_code(
         pool,
         session_code,
@@ -58,22 +52,13 @@ pub async fn enroll_elective_subject(
             elective
         }
         Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::InvalidRequest(
+            return Err(Error::EntityNotFound(
                 "Elective subject not found".to_string(),
                 format!("/subjects/electives/{session_code}/enroll"),
             ));
         }
         _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
     };
-
-    let _student = Student::get_by_id(pool, student_id, Some(&FetchLevel::IdOnly), None)
-        .await
-        .map_err(|e| {
-            Error::InvalidPermission(
-                e.to_string(),
-                format!("/subjects/electives/{session_code}/enroll"),
-            )
-        })?;
 
     // Checks if the student is in a class available for the elective
     if !DbElectiveSubject::is_student_eligible(pool, session_code, student_id).await? {
@@ -93,8 +78,9 @@ pub async fn enroll_elective_subject(
         elective.id
     )
     .fetch_one(pool)
-    .await?;
-    let enroll_count: i64 = enroll_count.count.unwrap_or(0);
+    .await?
+    .count
+    .unwrap_or(0);
     if enroll_count > 0 {
         return Err(Error::InvalidPermission(
             "Student has already enrolled in this elective before".to_string(),
@@ -115,8 +101,9 @@ pub async fn enroll_elective_subject(
         get_current_semester(None),
     )
     .fetch_one(pool)
-    .await?;
-    let has_enrolled = has_enrolled.exists.unwrap_or(false);
+    .await?
+    .exists
+    .unwrap_or(false);
     if has_enrolled {
         return Err(Error::InvalidPermission(
             "Student has already enrolled in an elective this semester".to_string(),

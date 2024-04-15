@@ -5,7 +5,7 @@ use crate::{
         elective_trade_offer::db::DbElectiveTradeOffer,
         enums::submission_status::SubmissionStatus,
         student::Student,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
     },
     prelude::*,
 };

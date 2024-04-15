@@ -4,6 +4,7 @@ use serde::Serialize;
 use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
+#[allow(clippy::doc_markdown)]
 /// Error enums for MySK API responses.
 ///
 /// The first string is the error detail and the second string is the source.
@@ -117,10 +118,10 @@ impl From<&Error> for HttpResponse {
             Error::InvalidPermission(_, _) => HttpResponse::Forbidden().json(res_val),
             Error::Conflicted(_, _) => HttpResponse::Conflict().json(res_val),
             Error::InternalSeverError(_, _) => HttpResponse::InternalServerError().json(res_val),
-            Error::InvalidToken(_, _) => HttpResponse::Unauthorized().json(res_val),
-            Error::MissingToken(_, _) => HttpResponse::Unauthorized().json(res_val),
-            Error::MissingApiKey(_, _) => HttpResponse::Unauthorized().json(res_val),
-            Error::InvalidApiKey(_, _) => HttpResponse::Unauthorized().json(res_val),
+            Error::InvalidToken(_, _)
+            | Error::MissingToken(_, _)
+            | Error::MissingApiKey(_, _)
+            | Error::InvalidApiKey(_, _) => HttpResponse::Unauthorized().json(res_val),
         }
     }
 }
@@ -159,34 +160,34 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let error = match self {
             Error::InvalidRequest(detail, source) => {
-                format!("Invalid request: {} (source: {})", detail, source)
+                format!("Invalid request: {detail} (source: {source})")
             }
             Error::EntityNotFound(detail, source) => {
-                format!("Entity not found: {} (source: {})", detail, source)
+                format!("Entity not found: {detail} (source: {source})")
             }
             Error::InvalidPermission(detail, source) => {
-                format!("Invalid permission: {} (source: {})", detail, source)
+                format!("Invalid permission: {detail} (source: {source})")
             }
             Error::Conflicted(detail, source) => {
-                format!("Conflicted: {} (source: {})", detail, source)
+                format!("Conflicted: {detail} (source: {source})")
             }
             Error::InternalSeverError(detail, source) => {
-                format!("Internal server error: {} (source: {})", detail, source)
+                format!("Internal server error: {detail} (source: {source})")
             }
             Error::InvalidToken(detail, source) => {
-                format!("Invalid token: {} (source: {})", detail, source)
+                format!("Invalid token: {detail} (source: {source})")
             }
             Error::MissingToken(detail, source) => {
-                format!("Missing token: {} (source: {})", detail, source)
+                format!("Missing token: {detail} (source: {source})")
             }
             Error::MissingApiKey(detail, source) => {
-                format!("Missing API key: {} (source: {})", detail, source)
+                format!("Missing API key: {detail} (source: {source})")
             }
             Error::InvalidApiKey(detailed, source) => {
-                format!("Invalid API key: {} (source: {})", detailed, source)
+                format!("Invalid API key: {detailed} (source: {source})")
             }
         };
-        write!(f, "{}", error)
+        write!(f, "{error}")
     }
 }
 

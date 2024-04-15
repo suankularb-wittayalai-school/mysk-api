@@ -57,16 +57,12 @@ impl ElectiveSubject {
         }
     }
 
-    /// # Get elective subject by id with student context
-    /// This function is the extension of the `get_by_id` function
-    ///
-    /// Since an elective subject can be enrolled by students in different classrooms and taught in different sessions
-    ///
-    /// This function will return the elective subject object which is available for the student which will always be unique
-    ///
-    /// If the student is not eligible for the elective subject, it will return None
-    ///
-    /// If the student is not in any classroom, it will return an error
+    /// # Get elective subject by ID with student context
+    /// This function is the extension of the `get_by_id` function. Since an elective subject can
+    /// be enrolled by students in different classrooms and taught in different sessions, this
+    /// function will return the elective subject object which is available for the student which
+    /// will always be unique. If the student is not eligible for the elective subject, it will
+    /// return `None`. If the student is not in any classroom, it will return an `Error`.
     pub async fn get_by_id_with_student_context(
         pool: &sqlx::PgPool,
         id: Uuid,

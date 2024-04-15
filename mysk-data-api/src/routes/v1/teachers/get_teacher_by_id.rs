@@ -16,7 +16,7 @@ pub async fn get_teacher_by_id(
     data: Data<AppState>,
     id: Path<Uuid>,
     request_query: RequestType<Teacher, QueryablePlaceholder, SortablePlaceholder>,
-    _api_key: ApiKeyHeader,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool: &sqlx::Pool<sqlx::Postgres> = &data.db;
     let teacher_id = id.into_inner();

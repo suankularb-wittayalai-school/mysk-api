@@ -1,3 +1,6 @@
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+
 use actix_cors::Cors;
 use actix_web::{
     http::header,
@@ -40,7 +43,7 @@ async fn main() -> io::Result<()> {
             pool
         }
         Err(err) => {
-            println!("🔥 Failed to connect to the database: {:?}", err);
+            println!("🔥 Failed to connect to the database: {err:?}");
             process::exit(1);
         }
     };
@@ -73,12 +76,7 @@ async fn main() -> io::Result<()> {
             .wrap(Logger::default())
     })
     .bind((host, port))
-    .map_err(|_| {
-        panic!(
-            "Unable to bind to address {}:{}! Perhaps it is in use?",
-            host, port
-        )
-    })
+    .map_err(|_| panic!("Unable to bind to address {host}:{port}! Perhaps it is in use?"))
     .unwrap()
     .run()
     .await
