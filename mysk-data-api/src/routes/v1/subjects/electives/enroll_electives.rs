@@ -70,10 +70,10 @@ pub async fn enroll_elective_subject(
 
     // Checks if the student has already enrolled in the elective before
     let enroll_count = query!(
-        r#"
+        r"
         SELECT COUNT(*) FROM student_elective_subjects
         WHERE student_id = $1 AND elective_subject_id = $2
-        "#,
+        ",
         student_id,
         elective.id
     )
@@ -90,12 +90,12 @@ pub async fn enroll_elective_subject(
 
     // Checks if the student is already enrolled in an elective this semester
     let has_enrolled = query!(
-        r#"
+        r"
         SELECT EXISTS (
             SELECT FROM student_elective_subjects
             WHERE student_id = $1 AND year = $2 AND semester = $3
         )
-        "#,
+        ",
         student_id,
         get_current_academic_year(None),
         get_current_semester(None),
@@ -112,11 +112,11 @@ pub async fn enroll_elective_subject(
     }
 
     query!(
-        r#"
+        r"
         INSERT INTO student_elective_subjects (
             student_id, elective_subject_id, year, semester
         ) VALUES ($1, $2, $3, $4)
-        "#,
+        ",
         student_id,
         elective.id,
         get_current_academic_year(None),
@@ -133,7 +133,6 @@ pub async fn enroll_elective_subject(
         descendant_fetch_level,
     )
     .await?;
-
     let response = ResponseType::new(elective, None);
 
     Ok(HttpResponse::Ok().json(response))

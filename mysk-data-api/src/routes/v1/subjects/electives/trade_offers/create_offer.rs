@@ -1,29 +1,220 @@
-use crate::{extractors::student::LoggedInStudent, AppState};
+use crate::{
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    AppState,
+};
 use actix_web::{
-    put,
-    web::{Data, Json, Path},
+    post,
+    web::{Data, Json},
     HttpResponse, Responder,
 };
 use mysk_lib::{
-    common::{requests::RequestType, response::ResponseType},
+    common::{
+        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        response::ResponseType,
+    },
+    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
-        elective_subject::request::{
-            queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
-        },
+        elective_subject::{db::DbElectiveSubject, ElectiveSubject},
         elective_trade_offer::ElectiveTradeOffer,
+        enums::submission_status::SubmissionStatus,
+        traits::TopLevelGetById,
     },
     prelude::*,
 };
+use serde::Deserialize;
+use sqlx::query;
 use uuid::Uuid;
 
+#[derive(Debug, Deserialize)]
+pub struct ElectiveTradeOfferRequest {
+    pub receiver_id: Uuid,
+}
+
+#[allow(clippy::too_many_lines)]
 #[post("")]
 async fn create_trade_offer(
     data: Data<AppState>,
-    trade_offer_id: Path<Uuid>,
     request_body: Json<
-        RequestType<ElectiveTradeOffer, QueryableElectiveSubject, SortableElectiveSubject>,
+        RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
     student_id: LoggedInStudent,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
-    Ok(HttpResponse::Ok())
+    let pool = &data.db;
+    let receiver_student_id = match &request_body.data {
+        Some(request_data) => request_data.receiver_id,
+        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+    };
+    let sender_student_id = student_id.0;
+    let fetch_level = request_body.fetch_level.as_ref();
+    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+
+    // Check if the receiving student has an elective subject
+    let Some(receiver_elective_subject_id) = query!(
+        r"
+        SELECT elective_subject_id FROM student_elective_subjects
+        WHERE student_id = $1 and year = $2 AND semester = $3
+        ",
+        receiver_student_id,
+        get_current_academic_year(None),
+        get_current_semester(None),
+    )
+    .fetch_optional(pool)
+    .await?
+    else {
+        return Err(Error::InvalidPermission(
+            "Receiving student does not have an elective subject".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    };
+    let receiver_elective_subject_id = receiver_elective_subject_id.elective_subject_id;
+
+    // Gets the elective subject of the receiver, and also checks whether they're in a classroom
+    let receiver_elective_subject = match ElectiveSubject::get_by_id_with_student_context(
+        pool,
+        receiver_elective_subject_id,
+        receiver_student_id,
+        Some(&FetchLevel::Compact),
+        None,
+    )
+    .await
+    {
+        Ok(ElectiveSubject::Compact(receiver_elective_subject, _)) => receiver_elective_subject,
+        Err(Error::InvalidPermission(err, _)) => {
+            return Err(Error::InvalidPermission(
+                err,
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        Err(Error::EntityNotFound(err, _)) => {
+            return Err(Error::EntityNotFound(
+                err,
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        Err(Error::InternalSeverError(err, _)) => {
+            return Err(Error::InternalSeverError(
+                err,
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        _ => unreachable!(),
+    };
+
+    // Checks if the sender is eligible to enroll in the receiver's elective session, also checks
+    // whether they're in a classroom
+    match DbElectiveSubject::is_student_eligible(
+        pool,
+        receiver_elective_subject.session_code,
+        sender_student_id,
+    )
+    .await
+    {
+        Ok(true) => (),
+        Ok(false) => {
+            return Err(Error::InvalidPermission(
+                "Student is not eligible to enroll in this elective".to_string(),
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        Err(Error::InvalidPermission(err, _)) => {
+            return Err(Error::InvalidPermission(
+                err,
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        _ => unreachable!(),
+    };
+
+    // Check if the sending student has an elective subject
+    let Some(sender_elective_subject_id) = query!(
+        r"
+        SELECT elective_subject_id FROM student_elective_subjects
+        WHERE student_id = $1 and year = $2 AND semester = $3
+        ",
+        sender_student_id,
+        get_current_academic_year(None),
+        get_current_semester(None),
+    )
+    .fetch_optional(pool)
+    .await?
+    else {
+        return Err(Error::InvalidPermission(
+            "Student does not have an elective subject".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    };
+    let sender_elective_subject_id = sender_elective_subject_id.elective_subject_id;
+
+    // Gets the elective subject of the sender
+    let sender_elective_subject = match ElectiveSubject::get_by_id_with_student_context(
+        pool,
+        sender_elective_subject_id,
+        sender_student_id,
+        Some(&FetchLevel::Compact),
+        None,
+    )
+    .await
+    {
+        Ok(ElectiveSubject::Compact(sender_elective_subject, _)) => sender_elective_subject,
+        Err(Error::EntityNotFound(err, _)) => {
+            return Err(Error::EntityNotFound(
+                err,
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        Err(Error::InternalSeverError(err, _)) => {
+            return Err(Error::InternalSeverError(
+                err,
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        _ => unreachable!(),
+    };
+
+    // Checks if the receiver is eligible to enroll in the sender's elective session
+    match DbElectiveSubject::is_student_eligible(
+        pool,
+        sender_elective_subject.session_code,
+        sender_student_id,
+    )
+    .await
+    {
+        Ok(true) => (),
+        Ok(false) => {
+            return Err(Error::InvalidPermission(
+                "Student is not eligible to enroll in this elective".to_string(),
+                "/subjects/electives/trade-offers".to_string(),
+            ));
+        }
+        _ => unreachable!(),
+    };
+
+    let trade_offer_id = query!(
+        r"
+        INSERT INTO elective_subject_trade_offers (
+            sender_id,
+            receiver_id,
+            status,
+            sender_elective_subject_id,
+            receiver_elective_subject_id
+        ) VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+        ",
+        sender_student_id,
+        receiver_student_id,
+        SubmissionStatus::Pending as SubmissionStatus,
+        sender_elective_subject.id,
+        receiver_elective_subject.id,
+    )
+    .fetch_one(pool)
+    .await?
+    .id;
+
+    let elective_trade_offer =
+        ElectiveTradeOffer::get_by_id(pool, trade_offer_id, fetch_level, descendant_fetch_level)
+            .await?;
+    let response = ResponseType::new(elective_trade_offer, None);
+
+    Ok(HttpResponse::Ok().json(response))
 }

@@ -81,7 +81,7 @@ impl ElectiveSubject {
             )
             .await?),
             None => Err(Error::EntityNotFound(
-                "Elective subject with given id does not exist or is not eligible for the student"
+                "Elective subject with given ID does not exist or is not eligible for the student"
                     .to_string(),
                 "ElectiveSubject::get_by_id".to_string(),
             )),

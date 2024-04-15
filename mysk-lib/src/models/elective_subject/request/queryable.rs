@@ -82,7 +82,8 @@ impl Queryable for QueryableElectiveSubject {
             });
         }
 
-        // WHERE subject_id IN (SELECT subject_id FROM subject_teachers WHERE teacher_id IN ANY($1))
+        // WHERE subject_id IN (SELECT subject_id FROM subject_teachers WHERE teacher_id IN
+        // ANY($1))
         if let Some(teacher_ids) = &self.teacher_ids {
             where_sections.push(SqlSection {
                 sql: vec![
@@ -94,12 +95,16 @@ impl Queryable for QueryableElectiveSubject {
             });
         }
 
-        // WHERE subject_id IN (SELECT subject_id FROM subject_co_teachers WHERE teacher_id IN ANY($1))
+        // WHERE subject_id IN (SELECT subject_id FROM subject_co_teachers WHERE teacher_id IN
+        // ANY($1))
         if let Some(co_teacher_ids) = &self.co_teacher_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "subject_id IN (SELECT subject_id FROM subject_co_teachers WHERE teacher_id = ANY("
-                        .to_string(),
+                    concat!(
+                        "subject_id IN (SELECT subject_id FROM subject_co_teachers WHERE",
+                        " teacher_id = ANY(",
+                    )
+                    .to_string(),
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(co_teacher_ids.clone())],
@@ -138,7 +143,8 @@ impl Queryable for QueryableElectiveSubject {
             }
         }
 
-        // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE classroom_id IN ANY($1))
+        // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE
+        // classroom_id IN ANY($1))
         if let Some(applicable_classroom_ids) = &self.applicable_classroom_ids {
             where_sections.push(SqlSection {
                 sql: vec![
@@ -157,30 +163,57 @@ impl Queryable for QueryableElectiveSubject {
             });
         }
 
-        // WHERE id IN (SELECT elective_subject_id FROM student_elective_subjects WHERE student_id IN ANY($1))
+        // WHERE id IN (SELECT elective_subject_id FROM student_elective_subjects WHERE student_id
+        // IN ANY($1))
         if let Some(student_ids) = &self.student_ids {
-            // WHERE session_code IN (SELECT session_code from elective_subject_classrooms esc inner join student_elective_subjects ses on esc.elective_subject_id = ses.elective_subject_id inner join classroom_students cs on cs.student_id = ses.student_id where cs.classroom_id = esc.classroom_id AND ses.student_id = ANY($1) AND year = $2 AND semester = $3 )
+            // WHERE session_code IN (SELECT session_code FROM elective_subject_classrooms AS esc
+            // INNER JOIN student_elective_subjects AS ses ON
+            // esc.elective_subject_id = ses.elective_subject_id INNER JOIN classroom_students AS
+            // cs ON cs.student_id = ses.student_id WHERE cs.classroom_id = esc.classroom_id AND
+            // ses.student_id = ANY($1) AND year = $2 AND semester = $3)
             where_sections.push(SqlSection {
                 sql: vec![
-                    "session_code IN (SELECT session_code from elective_subject_classrooms esc inner join student_elective_subjects ses on esc.elective_subject_id = ses.elective_subject_id inner join classroom_students cs on cs.student_id = ses.student_id where cs.classroom_id = esc.classroom_id AND ses.student_id = ANY(".to_string(),
+                    concat!(
+                        "session_code IN (SELECT session_code FROM elective_subject_classrooms AS",
+                        " esc INNER JOIN student_elective_subjects AS ses ON",
+                        " esc.elective_subject_id = ses.elective_subject_id INNER JOIN",
+                        " classroom_students AS cs ON cs.student_id = ses.student_id WHERE",
+                        " cs.classroom_id = esc.classroom_id AND ses.student_id = ANY(",
+                    )
+                    .to_string(),
                     ") AND year = ".to_string(),
                     " AND semester = ".to_string(),
                     ")".to_string(),
-
                 ],
-                params: vec![QueryParam::ArrayUuid(student_ids.clone()), QueryParam::Int(get_current_academic_year(None)), QueryParam::Int(get_current_semester(None))],
+                params: vec![
+                    QueryParam::ArrayUuid(student_ids.clone()),
+                    QueryParam::Int(get_current_academic_year(None)),
+                    QueryParam::Int(get_current_semester(None)),
+                ],
             });
         }
 
         if let Some(as_student_id) = &self.as_student_id {
-            // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = $1 AND year = $2))
+            // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE
+            // classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms
+            // ON classrooms.id = classroom_students.classroom_id WHERE student_id = $1 AND
+            // year = $2))
             where_sections.push(SqlSection {
                 sql: vec![
-                    "session_code IN (SELECT session_code FROM elective_subject_classrooms WHERE classroom_id IN (SELECT classroom_id FROM classroom_students INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id WHERE student_id = ".to_string(),
+                    concat!(
+                        "session_code IN (SELECT session_code FROM elective_subject_classrooms",
+                        " WHERE classroom_id IN (SELECT classroom_id FROM classroom_students",
+                        " INNER JOIN classrooms ON classrooms.id = classroom_students.classroom_id",
+                        " WHERE student_id = ",
+                    )
+                    .to_string(),
                     " AND year = ".to_string(),
                     "))".to_string(),
                 ],
-                params: vec![QueryParam::Uuid(*as_student_id), QueryParam::Int(get_current_academic_year(None))],
+                params: vec![
+                    QueryParam::Uuid(*as_student_id),
+                    QueryParam::Int(get_current_academic_year(None)),
+                ],
             });
         }
 

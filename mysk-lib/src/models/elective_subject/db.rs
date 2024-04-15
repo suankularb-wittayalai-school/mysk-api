@@ -66,16 +66,12 @@ impl DbElectiveSubject {
         })
     }
 
-    /// # Get elective subject by id with student context
-    /// This function is the extension of the `get_by_id` function
-    ///
-    /// Since an elective subject can be enrolled by students in different classrooms and taught in different sessions
-    ///
-    /// This function will return the elective subject object which is available for the student which will always be unique
-    ///
-    /// If the student is not eligible for the elective subject, it will return None
-    ///
-    /// If the student is not in any classroom, it will return an error
+    /// # Get elective subject by ID with student context
+    /// This function is the extension of the `get_by_id` function. Since an elective subject can
+    /// be enrolled by students in different classrooms and taught in different sessions, this
+    /// function will return the elective subject object which is available for the student which
+    /// will always be unique. If the student is not eligible for the elective subject, it will
+    /// return `None`. If the student is not in any classroom, it will return an `Error`.
     pub async fn get_by_id_with_student_context(
         pool: &PgPool,
         id: Uuid,
@@ -245,7 +241,9 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
                 query_builder.push(sql);
                 if j < section.params.len() {
                     match section.params.get(j) {
+                        Some(QueryParam::Int(v)) => query_builder.push_bind(*v),
                         Some(QueryParam::Float(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::Uuid(v)) => query_builder.push_bind(*v),
                         Some(QueryParam::String(v)) => query_builder.push_bind(v.clone()),
                         Some(QueryParam::ArrayInt(v)) => query_builder.push_bind(v.clone()),
                         Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
