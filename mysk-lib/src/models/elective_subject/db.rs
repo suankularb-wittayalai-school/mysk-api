@@ -289,6 +289,8 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
             }
         }
 
+        // dbg!(&query.build_query_as::<DbElectiveSubject>().sql());
+
         query
             .build_query_as::<DbElectiveSubject>()
             .fetch_all(pool)
