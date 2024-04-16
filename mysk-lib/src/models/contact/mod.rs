@@ -1,7 +1,10 @@
-use self::{db::DbContact, enums::contact_type::ContactType};
+use self::db::DbContact;
 use crate::{
     common::{requests::FetchLevel, string::FlexibleMultiLangString},
-    models::traits::{TopLevelFromTable, TopLevelGetById},
+    models::{
+        enums::ContactType,
+        traits::{TopLevelFromTable, TopLevelGetById},
+    },
     prelude::*,
 };
 use chrono::{DateTime, Utc};
@@ -11,9 +14,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 pub mod db;
-pub mod enums;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Contact {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -27,10 +29,10 @@ pub struct Contact {
 
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
-        _pool: &PgPool,
+        _: &PgPool,
         table: DbContact,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -82,7 +84,8 @@ impl TopLevelGetById for Contact {
         let mut result = vec![];
 
         for contact in contacts {
-            result.push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?)
+            result
+                .push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?);
         }
 
         Ok(result)

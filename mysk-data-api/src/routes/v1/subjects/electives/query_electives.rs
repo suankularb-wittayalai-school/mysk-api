@@ -15,11 +15,11 @@ use mysk_lib::{
     prelude::*,
 };
 
-#[get("/")]
+#[get("")]
 pub async fn query_elective_subject(
     data: Data<AppState>,
     request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
-    _api_key: ApiKeyHeader,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let fetch_level = request_query.fetch_level.as_ref();
@@ -39,7 +39,6 @@ pub async fn query_elective_subject(
     .await?;
 
     let pagination = ElectiveSubject::response_pagination(pool, filter, pagination).await?;
-
     let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))

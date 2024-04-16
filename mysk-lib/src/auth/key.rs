@@ -33,6 +33,7 @@ fn generate_api_key(length: usize) -> String {
 }
 
 impl ApiKey {
+    #[allow(clippy::cast_precision_loss)]
     pub async fn create(pool: &PgPool, user_id: Uuid, expire_days: Option<i64>) -> Result<String> {
         // Generate a new API key
         let short_token = generate_api_key(8);
@@ -43,17 +44,6 @@ impl ApiKey {
         hasher.update(long_token.as_bytes());
         let hash = bs58::encode(hasher.finalize()).into_string();
 
-        // let hash = match hash {
-        //     Ok(hash) => hash,
-        //     Err(_) => {
-        //         return Err(Error::InternalSeverError(
-        //             "Failed to hash the API key".to_string(),
-        //             "ApiKey Model".to_string(),
-        //         ))
-        //     }
-        // };
-
-        // Insert the API key into the database
         let res = sqlx::query!(
             r#"
             INSERT INTO user_api_keys (user_id, short_token, long_token_hash, expire_at)
@@ -71,7 +61,7 @@ impl ApiKey {
         .await;
 
         match res {
-            Ok(_) => Ok(format!("mysk_{}_{}", short_token, long_token)),
+            Ok(_) => Ok(format!("mysk_{short_token}_{long_token}")),
             Err(err) => Err(Error::InternalSeverError(
                 err.to_string(),
                 "ApiKey Model".to_string(),
@@ -97,6 +87,7 @@ impl PrefixedApiKey {
         &self.long_token
     }
 
+    #[must_use]
     pub fn get_prefix(&self) -> &str {
         &self.prefix
     }

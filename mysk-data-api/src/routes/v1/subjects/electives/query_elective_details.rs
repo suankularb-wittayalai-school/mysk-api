@@ -18,7 +18,7 @@ pub async fn query_elective_details(
     data: Data<AppState>,
     path: Path<i64>,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
-    _api_key: ApiKeyHeader,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let id = path.into_inner();

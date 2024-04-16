@@ -1,15 +1,14 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use std::fmt::{Display, Formatter};
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,
     pub th: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, Clone)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FlexibleMultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,
@@ -35,10 +34,7 @@ impl Display for FlexibleMultiLangString {
 }
 
 impl FlexibleMultiLangString {
-    pub fn new(
-        th: Option<String>,
-        en: Option<String>,
-    ) -> FlexibleMultiLangString {
+    pub fn new(th: Option<String>, en: Option<String>) -> FlexibleMultiLangString {
         FlexibleMultiLangString { en, th }
     }
 }

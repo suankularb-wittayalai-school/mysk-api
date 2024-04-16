@@ -5,7 +5,10 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use mysk_lib::{
-    common::requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+    common::{
+        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        response::ResponseType,
+    },
     models::{teacher::Teacher, traits::TopLevelGetById as _},
     prelude::*,
 };
@@ -16,7 +19,7 @@ pub async fn get_teacher_by_id(
     data: Data<AppState>,
     id: Path<Uuid>,
     request_query: RequestType<Teacher, QueryablePlaceholder, SortablePlaceholder>,
-    _api_key: ApiKeyHeader,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool: &sqlx::Pool<sqlx::Postgres> = &data.db;
     let teacher_id = id.into_inner();
@@ -24,6 +27,7 @@ pub async fn get_teacher_by_id(
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
     let teacher = Teacher::get_by_id(pool, teacher_id, fetch_level, descendant_fetch_level).await?;
+    let response = ResponseType::new(teacher, None);
 
-    Ok(HttpResponse::Ok().json(teacher))
+    Ok(HttpResponse::Ok().json(response))
 }

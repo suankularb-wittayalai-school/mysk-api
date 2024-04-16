@@ -32,7 +32,7 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
     async fn from_table(
         pool: &PgPool,
         table: DbSubject,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
@@ -58,7 +58,7 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
             name: MultiLangString::new(table.name_th, Some(table.name_en)),
             code: MultiLangString::new(table.code_th, Some(table.code_en)),
             short_name: MultiLangString::new(
-                table.short_name_th.unwrap_or("".to_string()),
+                table.short_name_th.unwrap_or_default(),
                 table.short_name_en,
             ),
             r#type: table.r#type,

@@ -29,12 +29,13 @@ struct GoogleTokenResponse {
     id_token: String,
 }
 
+#[allow(clippy::cast_possible_wrap)]
 #[post("/oauth/google")]
 async fn google_oauth_handler(
     data: Data<AppState>,
     query: Json<OAuthRequest>,
 ) -> Result<impl Responder> {
-    let id_token: String = query.credential.to_owned();
+    let id_token: String = query.credential.clone();
 
     if id_token.is_empty() {
         return Err(Error::InvalidToken(
@@ -84,10 +85,11 @@ async fn google_oauth_handler(
         }
     };
 
-    let jwt_secret = data.env.token_secret.to_owned();
+    let jwt_secret = data.env.token_secret.clone();
     let now = Utc::now();
-    let iat = now.timestamp() as usize;
-    let exp = (now + Duration::minutes(data.env.token_max_age as i64)).timestamp() as usize;
+    let iat = usize::try_from(now.timestamp()).unwrap();
+    let exp = usize::try_from((now + Duration::minutes(data.env.token_max_age as i64)).timestamp())
+        .unwrap();
     let claims = TokenClaims {
         sub: user_id.to_string(),
         exp,
@@ -102,7 +104,7 @@ async fn google_oauth_handler(
 
     match token {
         Ok(token) => {
-            let cookie = Cookie::build("token", token.to_owned())
+            let cookie = Cookie::build("token", token.clone())
                 .secure(true)
                 .http_only(true)
                 .max_age(ActixWebDuration::days(30))

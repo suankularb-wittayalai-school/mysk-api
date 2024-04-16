@@ -1,8 +1,9 @@
 use super::ExtractorFuture;
 use crate::{extractors::logged_in::LoggedIn, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
+use futures::future;
 use mysk_lib::{
-    models::{student::Student, user::enums::user_role::UserRole},
+    models::{student::Student, enums::UserRole},
     prelude::*,
 };
 use serde::Serialize;
@@ -17,16 +18,11 @@ impl FromRequest for LoggedInStudent {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let app_state = match req.app_data::<Data<AppState>>() {
-            Some(state) => state,
-            None => {
-                return Box::pin(async {
-                    Err(Error::InternalSeverError(
-                        "App state not found".to_string(),
-                        "extractors::StudentOnly".to_string(),
-                    ))
-                })
-            }
+        let Some(app_state) = req.app_data::<Data<AppState>>() else {
+            return Box::pin(future::err(Error::InternalSeverError(
+                "App state not found".to_string(),
+                "extractors::StudentOnly".to_string(),
+            )));
         };
 
         let pool = app_state.db.clone();

@@ -8,7 +8,7 @@ use crate::{
     models::{
         student::db::DbStudent,
         subject::enums::subject_type::SubjectType,
-        traits::{QueryDb, Queryable},
+        traits::{QueryDb, Queryable as _},
     },
     prelude::*,
 };
@@ -16,7 +16,7 @@ use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, FromRow, PgPool, Postgres, QueryBuilder, Row};
+use sqlx::{query, query_as, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -50,10 +50,10 @@ pub struct DbElectiveSubject {
 impl DbElectiveSubject {
     pub async fn get_by_session_code(pool: &PgPool, session_code: i64) -> Result<Option<Self>> {
         query_as::<_, DbElectiveSubject>(
-            r#"
+            r"
             SELECT * FROM complete_elective_subjects_view
             WHERE session_code = $1
-            "#,
+            ",
         )
         .bind(session_code)
         .fetch_optional(pool)
@@ -66,16 +66,12 @@ impl DbElectiveSubject {
         })
     }
 
-    /// # Get elective subject by id with student context
-    /// This function is the extension of the `get_by_id` function
-    ///
-    /// Since an elective subject can be enrolled by students in different classrooms and taught in different sessions
-    ///
-    /// This function will return the elective subject object which is available for the student which will always be unique
-    ///
-    /// If the student is not eligible for the elective subject, it will return None
-    ///
-    /// If the student is not in any classroom, it will return an error
+    /// # Get elective subject by ID with student context
+    /// This function is the extension of the `get_by_id` function. Since an elective subject can
+    /// be enrolled by students in different classrooms and taught in different sessions, this
+    /// function will return the elective subject object which is available for the student which
+    /// will always be unique. If the student is not eligible for the elective subject, it will
+    /// return `None`. If the student is not in any classroom, it will return an `Error`.
     pub async fn get_by_id_with_student_context(
         pool: &PgPool,
         id: Uuid,
@@ -95,13 +91,13 @@ impl DbElectiveSubject {
         };
 
         query_as::<_, DbElectiveSubject>(
-            r#"
+            r"
             SELECT * FROM complete_elective_subjects_view
             WHERE id = $1 AND session_code IN (
                 SELECT session_code FROM elective_subject_classrooms
                 WHERE classroom_id = $2
             )
-            "#,
+            ",
         )
         .bind(id)
         .bind(student_classroom_id)
@@ -135,12 +131,12 @@ impl DbElectiveSubject {
         };
 
         let is_eligible = query!(
-            r#"
+            r"
             SELECT EXISTS (
                 SELECT FROM elective_subject_classrooms
                 WHERE session_code = $1 AND classroom_id = $2
             )
-            "#,
+            ",
             session_code,
             student_classroom_id
         )
@@ -152,10 +148,10 @@ impl DbElectiveSubject {
 
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"
+            r"
             SELECT classroom_id FROM elective_subject_classrooms
             WHERE session_code = $1
-            "#,
+            ",
             self.session_code
         )
         .fetch_all(pool)
@@ -176,16 +172,18 @@ impl DbElectiveSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"
-            select
+            r"
+            SELECT
                 ses.student_id
-            from
-                elective_subject_classrooms esc
-                inner join student_elective_subjects ses on esc.elective_subject_id = ses.elective_subject_id
-                inner join classroom_students cs on cs.student_id = ses.student_id
-            where
+            FROM
+                elective_subject_classrooms AS esc
+                INNER JOIN student_elective_subjects AS ses
+                    ON esc.elective_subject_id = ses.elective_subject_id
+                INNER JOIN classroom_students AS cs
+                    ON cs.student_id = ses.student_id
+            WHERE
                 cs.classroom_id = esc.classroom_id AND esc.session_code = $1 AND year = $2
-            "#,
+            ",
             self.session_code,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
@@ -203,22 +201,18 @@ impl DbElectiveSubject {
 }
 
 impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
-    async fn query(
-        pool: &PgPool,
+    fn build_shared_query(
+        query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
-        sort: Option<&SortingConfig<SortableElectiveSubject>>,
-        pagination: Option<&PaginationConfig>,
-    ) -> Result<Vec<Self>>
-    where
+    ) where
         Self: Sized,
     {
-        let mut query = QueryBuilder::<'_, Postgres>::new(DbElectiveSubject::base_query());
-
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
         if let Some(filter) = filter {
             if let Some(q) = &filter.q {
-                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR code_th ILIKE '%q%' OR code_en ILIKE '%q%')
+                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR code_th ILIKE '%q%' OR code_en
+                // ILIKE '%q%')
                 where_sections.push(SqlSection {
                     sql: vec![
                         "(name_th ILIKE concat('%', ".to_string(),
@@ -242,31 +236,35 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         }
 
         for (i, section) in where_sections.iter().enumerate() {
-            // add WHERE or AND before each section
-            query.push(if i == 0 { " WHERE " } else { "AND " });
-            // len of sql should be len of params + 1
-            // loop through index of sql
-            //   push sql[i]
-            //   if i < len of params
-            //     push params[i]
+            query_builder.push(if i == 0 { " WHERE " } else { " AND " });
             for (j, sql) in section.sql.iter().enumerate() {
-                query.push(sql);
+                query_builder.push(sql);
                 if j < section.params.len() {
-                    match &section.params[j] {
-                        QueryParam::Int(v) => query.push_bind(v),
-                        QueryParam::Float(v) => query.push_bind(v),
-                        QueryParam::String(v) => query.push_bind(v),
-                        QueryParam::Bool(v) => query.push_bind(v),
-                        QueryParam::Uuid(v) => query.push_bind(v),
-                        QueryParam::ArrayInt(v) => query.push_bind(v),
-                        QueryParam::ArrayFloat(v) => query.push_bind(v),
-                        QueryParam::ArrayString(v) => query.push_bind(v),
-                        QueryParam::ArrayBool(v) => query.push_bind(v),
-                        QueryParam::ArrayUuid(v) => query.push_bind(v),
+                    match section.params.get(j) {
+                        Some(QueryParam::Int(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::Float(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::Uuid(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::String(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::ArrayInt(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
+                        _ => unreachable!(),
                     };
                 }
             }
         }
+    }
+
+    async fn query(
+        pool: &PgPool,
+        filter: Option<&FilterConfig<QueryableElectiveSubject>>,
+        sort: Option<&SortingConfig<SortableElectiveSubject>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<Vec<Self>>
+    where
+        Self: Sized,
+    {
+        let mut query = QueryBuilder::new(DbElectiveSubject::base_query());
+        Self::build_shared_query(&mut query, filter);
 
         if let Some(sorting) = sort {
             query.push(sorting.to_order_by_clause());
@@ -278,8 +276,8 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
             for (i, sql) in limit_section.sql.iter().enumerate() {
                 query.push(sql);
                 if i < limit_section.params.len() {
-                    match limit_section.params[i] {
-                        QueryParam::Int(v) => query.push_bind(v),
+                    match limit_section.params.get(i) {
+                        Some(&QueryParam::Int(v)) => query.push_bind(v),
                         _ => {
                             return Err(Error::InternalSeverError(
                                 "Invalid pagination params".to_string(),
@@ -307,81 +305,35 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<PaginationType> {
-        let mut query = QueryBuilder::<'_, sqlx::Postgres>::new(DbElectiveSubject::count_query());
+        let mut query = QueryBuilder::new(DbElectiveSubject::count_query());
+        Self::build_shared_query(&mut query, filter);
 
-        let mut where_sections: Vec<SqlSection> = Vec::new();
+        let count = u32::try_from(
+            query
+                .build()
+                .fetch_one(pool)
+                .await
+                .map_err(|e| {
+                    Error::InternalSeverError(
+                        e.to_string(),
+                        "DbElectiveSubject::response_pagination".to_string(),
+                    )
+                })?
+                .get::<i64, _>("count"),
+        )
+        .unwrap();
 
-        if let Some(filter) = filter {
-            if let Some(q) = &filter.q {
-                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR code_th ILIKE '%q%' OR code_en ILIKE '%q%')
-                where_sections.push(SqlSection {
-                    sql: vec![
-                        "(name_th ILIKE concat('%', ".to_string(),
-                        ", '%') OR name_en ILIKE concat('%', ".to_string(),
-                        ", '%') OR code_th ILIKE concat('%', ".to_string(),
-                        ", '%') OR code_en ILIKE concat('%', ".to_string(),
-                        ", '%'))".to_string(),
-                    ],
-                    params: vec![
-                        QueryParam::String(q.to_string()),
-                        QueryParam::String(q.to_string()),
-                        QueryParam::String(q.to_string()),
-                        QueryParam::String(q.to_string()),
-                    ],
-                });
-            }
-            if let Some(data) = &filter.data {
-                let mut data_sections = data.to_query_string();
-                where_sections.append(&mut data_sections);
-            }
+        match pagination {
+            Some(pagination) => Ok(PaginationType::new(
+                pagination.p,
+                pagination.size.unwrap(),
+                count,
+            )),
+            None => Ok(PaginationType::new(
+                PaginationConfig::default().p,
+                PaginationConfig::default().size.unwrap(),
+                count,
+            )),
         }
-
-        for (i, section) in where_sections.iter().enumerate() {
-            // add WHERE or AND before each section
-            query.push(if i == 0 { " WHERE " } else { "AND " });
-            // len of sql should be len of params + 1
-            // loop through index of sql
-            //   push sql[i]
-            //   if i < len of params
-            //     push params[i]
-            for (j, sql) in section.sql.iter().enumerate() {
-                query.push(sql);
-                if j < section.params.len() {
-                    match &section.params[j] {
-                        QueryParam::Int(v) => query.push_bind(v),
-                        QueryParam::Float(v) => query.push_bind(v),
-                        QueryParam::String(v) => query.push_bind(v),
-                        QueryParam::Bool(v) => query.push_bind(v),
-                        QueryParam::Uuid(v) => query.push_bind(v),
-                        QueryParam::ArrayInt(v) => query.push_bind(v),
-                        QueryParam::ArrayFloat(v) => query.push_bind(v),
-                        QueryParam::ArrayString(v) => query.push_bind(v),
-                        QueryParam::ArrayBool(v) => query.push_bind(v),
-                        QueryParam::ArrayUuid(v) => query.push_bind(v),
-                    };
-                }
-            }
-        }
-
-        let count = query
-            .build()
-            .fetch_one(pool)
-            .await
-            .map_err(|e| {
-                Error::InternalSeverError(
-                    e.to_string(),
-                    "DbElectiveSubject::response_pagination".to_string(),
-                )
-            })?
-            .get::<i64, _>("count") as u32;
-
-        Ok(PaginationType::new(
-            pagination.unwrap_or(&PaginationConfig::default()).p,
-            pagination
-                .unwrap_or(&PaginationConfig::default())
-                .size
-                .unwrap_or(50),
-            count,
-        ))
     }
 }

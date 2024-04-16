@@ -1,10 +1,10 @@
-use crate::prelude::*;
+use crate::{models::enums::SubmissionStatus, prelude::*};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{Encode, Postgres};
 use std::fmt::{Display, Formatter};
-use utoipa::ToSchema;
+use std::string::ToString;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -19,7 +19,7 @@ impl Display for SortablePlaceholder {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FetchLevel {
     IdOnly,
@@ -28,19 +28,22 @@ pub enum FetchLevel {
     Detailed,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FilterConfig<T> {
     pub data: Option<T>,
     pub q: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct SortingConfig<T: Display> {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct SortingConfig<T> {
     pub by: Vec<T>,
     pub ascending: Option<bool>,
 }
 
-impl<SortingObject: Display> SortingConfig<SortingObject> {
+impl<SortingObject> SortingConfig<SortingObject>
+where
+    SortingObject: Display,
+{
     pub fn new(by: Vec<SortingObject>, ascending: Option<bool>) -> Self {
         Self { by, ascending }
     }
@@ -50,7 +53,7 @@ impl<SortingObject: Display> SortingConfig<SortingObject> {
         let columns = self
             .by
             .iter()
-            .map(|x| x.to_string())
+            .map(ToString::to_string)
             .collect::<Vec<String>>()
             .join(", ");
         order_by.push_str(&columns);
@@ -63,7 +66,7 @@ impl<SortingObject: Display> SortingConfig<SortingObject> {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PaginationConfig {
     pub p: u32,
     pub size: Option<u32>,
@@ -88,15 +91,18 @@ impl PaginationConfig {
         SqlSection {
             sql: vec!["LIMIT ".to_string(), " OFFSET ".to_string()],
             params: vec![
-                QueryParam::Int(self.size.unwrap_or(50) as i64),
-                QueryParam::Int(((self.p - 1) * self.size.unwrap_or(50)) as i64),
+                QueryParam::Int(i64::from(self.size.unwrap_or(50))),
+                QueryParam::Int(i64::from((self.p - 1) * self.size.unwrap_or(50))),
             ],
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
-pub struct RequestType<T, Queryable, Sortable: Display> {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RequestType<T, Queryable, Sortable>
+where
+    Sortable: Display,
+{
     pub data: Option<T>,
     pub pagination: Option<PaginationConfig>,
     pub filter: Option<FilterConfig<Queryable>>,
@@ -106,11 +112,11 @@ pub struct RequestType<T, Queryable, Sortable: Display> {
 }
 
 // Implement from request for RequestType with any T, Queryable, and Sortable
-impl<T, Queryable, Sortable: Display> FromRequest for RequestType<T, Queryable, Sortable>
+impl<T, Queryable, Sortable> FromRequest for RequestType<T, Queryable, Sortable>
 where
     T: DeserializeOwned,
     Queryable: DeserializeOwned,
-    Sortable: DeserializeOwned,
+    Sortable: DeserializeOwned + Display,
 {
     type Error = Error;
     type Future = future::Ready<Result<Self>>;
@@ -122,16 +128,13 @@ where
             qs_parser.deserialize_str::<RequestType<T, Queryable, Sortable>>(query_string);
 
         match request_query {
-            Ok(query) => future::ready(Ok(query)),
-            Err(e) => future::ready(Err(Error::InvalidRequest(
-                e.to_string(),
-                req.path().to_string(),
-            ))),
+            Ok(query) => future::ok(query),
+            Err(e) => future::err(Error::InvalidRequest(e.to_string(), req.path().to_string())),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum QueryParam {
     Int(i64),
     Float(f64),
@@ -143,6 +146,7 @@ pub enum QueryParam {
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
+    SubmissionStatus(SubmissionStatus),
 }
 
 impl Encode<'_, Postgres> for QueryParam {
@@ -161,11 +165,12 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
+            QueryParam::SubmissionStatus(v) => v.encode_by_ref(buf),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct SqlSection {
     pub sql: Vec<String>,
     pub params: Vec<QueryParam>,

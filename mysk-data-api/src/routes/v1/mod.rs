@@ -1,8 +1,8 @@
 use actix_web::web::{scope, ServiceConfig};
 
-pub(crate) mod students;
-pub(crate) mod subjects;
-pub(crate) mod teachers;
+pub mod students;
+pub mod subjects;
+pub mod teachers;
 
 pub fn config(cfg: &mut ServiceConfig) {
     cfg.service(scope("/students").configure(students::config));
