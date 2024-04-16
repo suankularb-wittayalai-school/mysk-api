@@ -143,12 +143,12 @@ impl Queryable for QueryableElectiveSubject {
             }
         }
 
-        // WHERE id IN (SELECT elective_subject_id FROM elective_subject_classrooms WHERE
+        // WHERE session_code IN (SELECT session_code FROM elective_subject_classrooms WHERE
         // classroom_id IN ANY($1))
         if let Some(applicable_classroom_ids) = &self.applicable_classroom_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT elective_subject_id FROM".to_string(),
+                    "session_code IN (SELECT session_code FROM".to_string(),
                     " elective_subject_classrooms WHERE classroom_id = ANY())".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(applicable_classroom_ids.clone())],

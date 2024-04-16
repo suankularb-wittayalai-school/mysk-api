@@ -175,7 +175,7 @@ async fn create_trade_offer(
     // Checks if the receiver is eligible to enroll in the sender's elective session
     match DbElectiveSubject::is_student_eligible(
         pool,
-        receiver_elective_subject.session_code,
+        sender_elective_subject.session_code,
         receiver_student_id,
     )
     .await

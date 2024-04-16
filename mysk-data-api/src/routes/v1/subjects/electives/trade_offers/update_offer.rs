@@ -68,11 +68,9 @@ async fn update_trade_offer(
             status AS "status: SubmissionStatus",
             sender_elective_subject_id,
             receiver_elective_subject_id
-        FROM elective_subject_trade_offers
-        WHERE id = $1 AND status = $2
+        FROM elective_subject_trade_offers WHERE id = $1
         "#,
         trade_offer_id,
-        SubmissionStatus::Pending as SubmissionStatus,
     )
     .fetch_optional(pool)
     .await?
@@ -83,12 +81,27 @@ async fn update_trade_offer(
         ));
     };
 
+    // Check if trade offer is already approved or declined
+    match trade_offer.status {
+        SubmissionStatus::Approved | SubmissionStatus::Declined => {
+            return Err(Error::InvalidPermission(
+                format!("Trade offer has already been {}", trade_offer.status),
+                format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+            ));
+        }
+        SubmissionStatus::Pending => (),
+    }
+
     let mut updated_status: Option<SubmissionStatus> = None;
+    let mut other_student_id: Option<Uuid> = None;
 
     if client_student_id == trade_offer.sender_id {
         // Runs if the client is a sending student
         match trade_offer_status {
-            SubmissionStatus::Declined => updated_status = Some(SubmissionStatus::Declined),
+            SubmissionStatus::Declined => {
+                updated_status = Some(SubmissionStatus::Declined);
+                other_student_id = Some(trade_offer.receiver_id);
+            }
             SubmissionStatus::Approved => {
                 return Err(Error::InvalidPermission(
                     "Student is not allowed to approve own trade offer".to_string(),
@@ -100,44 +113,50 @@ async fn update_trade_offer(
     } else if client_student_id == trade_offer.receiver_id {
         // Runs if the client is a receiving student
         match trade_offer_status {
-            SubmissionStatus::Approved => updated_status = Some(SubmissionStatus::Approved),
-            SubmissionStatus::Declined => updated_status = Some(SubmissionStatus::Declined),
+            SubmissionStatus::Approved => {
+                updated_status = Some(SubmissionStatus::Approved);
+                other_student_id = Some(trade_offer.sender_id);
+            }
+            SubmissionStatus::Declined => {
+                updated_status = Some(SubmissionStatus::Declined);
+                other_student_id = Some(trade_offer.sender_id);
+            }
             SubmissionStatus::Pending => unreachable!(),
         }
     }
-    if updated_status.is_none() {
-        unreachable!("maybe this should be swapped for an internal server error");
-    }
 
-    // Accept or decline the trade offer
-    query!(
-        "UPDATE elective_subject_trade_offers SET status = $1 WHERE id = $2",
-        updated_status.unwrap() as SubmissionStatus,
-        trade_offer_id,
-    )
-    .execute(pool)
-    .await?;
+    // Checks if student is neither the sender or receiver
+    if updated_status.is_none() || other_student_id.is_none() {
+        return Err(Error::InvalidPermission(
+            "Student is not allowed to interact with this trade offer".to_string(),
+            format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+        ));
+    }
 
     if let SubmissionStatus::Approved = updated_status.unwrap() {
         // Set the status of all the other trade offers of the sending and receiving students to
         // "declined"
-        query!(
+        let f = query!(
             "
             UPDATE elective_subject_trade_offers SET status = $1
-            WHERE sender_id = $2 AND sender_id = $3 AND receiver_id = $3 AND receiver_id = $2
-            AND status = $4
+            WHERE
+                id != $2 AND status = $3 AND
+                (sender_id = $4 AND receiver_id = $5) OR
+                (sender_id = $5 AND receiver_id = $4)
             ",
             SubmissionStatus::Declined as SubmissionStatus,
-            client_student_id,
-            trade_offer.receiver_id,
+            trade_offer_id,
             SubmissionStatus::Pending as SubmissionStatus,
+            client_student_id,
+            other_student_id,
         )
         .execute(pool)
         .await?;
+        println!("First query: {} row(s) effected", f.rows_affected());
 
         // Swap the elective subjects of the sending and receiving students
         // https://dba.stackexchange.com/a/131128
-        query!(
+        let s = query!(
             "
             UPDATE student_elective_subjects
                 SET elective_subject_id = CASE student_id
@@ -150,14 +169,24 @@ async fn update_trade_offer(
                         WHERE student_id = $1
                     )
                 END
-            WHERE student_id = $1 OR student_id = $2
+            WHERE student_id IN ($1, $2)
             ",
             client_student_id,
-            trade_offer.receiver_id,
+            other_student_id,
         )
         .execute(pool)
         .await?;
+        println!("Second query: {} row(s) effected", s.rows_affected());
     }
+
+    // Accept or decline the trade offer
+    query!(
+        "UPDATE elective_subject_trade_offers SET status = $1 WHERE id = $2",
+        updated_status.unwrap() as SubmissionStatus,
+        trade_offer_id,
+    )
+    .execute(pool)
+    .await?;
 
     let elective_trade_offer =
         ElectiveTradeOffer::get_by_id(pool, trade_offer_id, fetch_level, descendant_fetch_level)
