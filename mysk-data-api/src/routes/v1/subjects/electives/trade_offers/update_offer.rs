@@ -136,7 +136,7 @@ async fn update_trade_offer(
     if let SubmissionStatus::Approved = updated_status.unwrap() {
         // Set the status of all the other trade offers of the sending and receiving students to
         // "declined"
-        let f = query!(
+        query!(
             "
             UPDATE elective_subject_trade_offers SET status = $1
             WHERE
@@ -152,11 +152,10 @@ async fn update_trade_offer(
         )
         .execute(pool)
         .await?;
-        println!("First query: {} row(s) effected", f.rows_affected());
 
         // Swap the elective subjects of the sending and receiving students
         // https://dba.stackexchange.com/a/131128
-        let s = query!(
+        query!(
             "
             UPDATE student_elective_subjects
                 SET elective_subject_id = CASE student_id
@@ -176,7 +175,6 @@ async fn update_trade_offer(
         )
         .execute(pool)
         .await?;
-        println!("Second query: {} row(s) effected", s.rows_affected());
     }
 
     // Accept or decline the trade offer
