@@ -8,7 +8,7 @@ use std::time;
 use utoipa::ToSchema;
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct HealthCheckResponse {
+struct HealthCheckResponse {
     server_time: String,
     database_connection: bool,
     database_response_time: u128,

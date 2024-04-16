@@ -27,10 +27,10 @@ pub struct Contact {
 
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
-        _pool: &PgPool,
+        _: &PgPool,
         table: DbContact,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -82,7 +82,8 @@ impl TopLevelGetById for Contact {
         let mut result = vec![];
 
         for contact in contacts {
-            result.push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?)
+            result
+                .push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?);
         }
 
         Ok(result)

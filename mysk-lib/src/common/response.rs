@@ -27,11 +27,11 @@ impl ErrorType {
             403 => StatusCode::FORBIDDEN,
             404 => StatusCode::NOT_FOUND,
             405 => StatusCode::METHOD_NOT_ALLOWED,
-            500 => StatusCode::INTERNAL_SERVER_ERROR,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub async fn log(&self, pool: &PgPool, api_key: Option<Uuid>) {
         let _ = sqlx::query!(
             r#"
@@ -87,8 +87,9 @@ impl Display for PaginationType {
 }
 
 impl PaginationType {
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     pub fn new(current_p: u32, size: u32, total: u32) -> Self {
-        let page_count = (total as f64 / size as f64).ceil() as u32;
+        let page_count = (f64::from(total) / f64::from(size)).ceil() as u32;
 
         PaginationType {
             first_p: 1,

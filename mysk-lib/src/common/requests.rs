@@ -4,6 +4,7 @@ use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{Encode, Postgres};
 use std::fmt::{Display, Formatter};
+use std::string::ToString;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -53,7 +54,7 @@ where
         let columns = self
             .by
             .iter()
-            .map(|x| x.to_string())
+            .map(ToString::to_string)
             .collect::<Vec<String>>()
             .join(", ");
         order_by.push_str(&columns);
@@ -91,8 +92,8 @@ impl PaginationConfig {
         SqlSection {
             sql: vec!["LIMIT ".to_string(), " OFFSET ".to_string()],
             params: vec![
-                QueryParam::Int(self.size.unwrap_or(50) as i64),
-                QueryParam::Int(((self.p - 1) * self.size.unwrap_or(50)) as i64),
+                QueryParam::Int(i64::from(self.size.unwrap_or(50))),
+                QueryParam::Int(i64::from((self.p - 1) * self.size.unwrap_or(50))),
             ],
         }
     }

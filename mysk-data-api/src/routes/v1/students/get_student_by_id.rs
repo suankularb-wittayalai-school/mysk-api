@@ -16,7 +16,7 @@ pub async fn get_student_by_id(
     data: Data<AppState>,
     id: Path<Uuid>,
     request_query: RequestType<Student, QueryablePlaceholder, SortablePlaceholder>,
-    _api_key: ApiKeyHeader,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = id.into_inner();

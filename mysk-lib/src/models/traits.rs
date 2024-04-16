@@ -8,7 +8,7 @@ use crate::{
     prelude::*,
 };
 use mysk_lib_macros::traits::db::BaseQuery;
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, QueryBuilder};
 use std::fmt::Display;
 use uuid::Uuid;
 
@@ -105,6 +105,13 @@ pub trait Queryable {
 
 /// A trait for DB variant to allow querying and creating pagination response.
 pub trait QueryDb<QueryableObject: Queryable, SortableObject: Display> {
+    fn build_shared_query(
+        query_builder: &mut QueryBuilder<'_, Postgres>,
+        filter: Option<&FilterConfig<QueryableObject>>,
+    )
+    where
+        Self: Sized;
+
     async fn query(
         pool: &PgPool,
         filter: Option<&FilterConfig<QueryableObject>>,

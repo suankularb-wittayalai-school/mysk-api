@@ -1,24 +1,31 @@
-use crate::{extractors::api_key::ApiKeyHeader, AppState};
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use crate::{
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    AppState,
+};
+use actix_web::{
+    get,
+    web::{Data, Json},
+    HttpResponse, Responder,
+};
 use mysk_lib::{
-    common::requests::RequestType,
+    common::{
+        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        response::ResponseType,
+    },
     models::elective_trade_offer::{
-        request::{queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer},
-        ElectiveTradeOffer,
+        request::updatable::UpdatableElectiveOffer, ElectiveTradeOffer,
     },
     prelude::*,
 };
 
-#[get("")]
+#[get("/{id}")]
 pub async fn query_trade_offers(
     data: Data<AppState>,
-    // queryable and sortable ElectiveTradeOffer hasn't been implemented yet
-    request_query: RequestType<
-        ElectiveTradeOffer,
-        QueryableElectiveTradeOffer,
-        SortableElectiveTradeOffer,
+    request_body: Json<
+        RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>,
     >,
-    _api_key: ApiKeyHeader,
+    student_id: LoggedInStudent,
+    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
 
