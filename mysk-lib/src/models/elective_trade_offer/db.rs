@@ -7,7 +7,7 @@ use crate::{
         response::PaginationType,
     },
     models::{
-        enums::submission_status::SubmissionStatus,
+        enums::SubmissionStatus,
         traits::{QueryDb, Queryable as _},
     },
     prelude::*,
@@ -15,11 +15,11 @@ use crate::{
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
     query = "SELECT * FROM elective_subject_trade_offers",
     count_query = "SELECT COUNT(*) FROM elective_subject_trade_offers"
@@ -29,9 +29,9 @@ pub struct DbElectiveTradeOffer {
     pub created_at: Option<DateTime<Utc>>,
     pub sender_id: Uuid,
     pub receiver_id: Uuid,
+    pub status: SubmissionStatus,
     pub sender_elective_subject_id: Uuid,
     pub receiver_elective_subject_id: Uuid,
-    pub status: SubmissionStatus,
 }
 
 impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElectiveTradeOffer {
@@ -57,7 +57,7 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
                 if j < section.params.len() {
                     match section.params.get(j) {
                         Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
-                        Some(QueryParam::SubmissionStatus(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::SubmissionStatus(v)) => query_builder.push_bind(*v),
                         _ => unreachable!(),
                     };
                 }

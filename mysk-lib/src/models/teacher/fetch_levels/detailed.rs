@@ -3,7 +3,7 @@ use crate::{
     models::{
         classroom::Classroom,
         contact::Contact,
-        person::enums::{blood_group::BloodGroup, sex::Sex},
+        enums::{BloodGroup, Sex},
         subject::Subject,
         subject_group::SubjectGroup,
         teacher::db::DbTeacher,
@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DetailedTeacher {
     pub id: Uuid,
     pub prefix: MultiLangString,

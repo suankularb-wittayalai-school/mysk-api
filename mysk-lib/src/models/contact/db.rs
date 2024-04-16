@@ -1,4 +1,4 @@
-use super::enums::contact_type::ContactType;
+use crate::models::enums::ContactType;
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
@@ -6,7 +6,7 @@ use serde::Deserialize;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, FromRow, BaseQuery, GetById)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(query = r#"
     SELECT
         id, created_at, name_th, name_en, type, value, include_students, include_teachers,

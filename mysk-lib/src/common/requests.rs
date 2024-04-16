@@ -1,11 +1,10 @@
-use crate::{models::enums::submission_status::SubmissionStatus, prelude::*};
+use crate::{models::enums::SubmissionStatus, prelude::*};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{Encode, Postgres};
 use std::fmt::{Display, Formatter};
 use std::string::ToString;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -20,7 +19,7 @@ impl Display for SortablePlaceholder {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FetchLevel {
     IdOnly,
@@ -29,13 +28,13 @@ pub enum FetchLevel {
     Detailed,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FilterConfig<T> {
     pub data: Option<T>,
     pub q: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SortingConfig<T> {
     pub by: Vec<T>,
     pub ascending: Option<bool>,
@@ -67,7 +66,7 @@ where
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PaginationConfig {
     pub p: u32,
     pub size: Option<u32>,
@@ -99,7 +98,7 @@ impl PaginationConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RequestType<T, Queryable, Sortable>
 where
     Sortable: Display,
@@ -135,7 +134,7 @@ where
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum QueryParam {
     Int(i64),
     Float(f64),
@@ -171,7 +170,7 @@ impl Encode<'_, Postgres> for QueryParam {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct SqlSection {
     pub sql: Vec<String>,
     pub params: Vec<QueryParam>,

@@ -1,5 +1,4 @@
-use self::enums::user_role::UserRole;
-use crate::prelude::*;
+use crate::{models::enums::UserRole, prelude::*};
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
@@ -7,9 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgPool};
 use uuid::Uuid;
 
-pub mod enums;
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
 #[base_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
 pub struct User {
     pub id: Uuid,

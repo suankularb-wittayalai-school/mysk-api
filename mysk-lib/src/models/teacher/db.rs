@@ -1,6 +1,6 @@
 use crate::{
     helpers::date::get_current_academic_year,
-    models::person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
+    models::enums::{BloodGroup, Sex, ShirtSize},
     prelude::*,
 };
 use chrono::{DateTime, NaiveDate, Utc};
@@ -10,7 +10,7 @@ use serde::Deserialize;
 use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, FromRow, BaseQuery, GetById)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(query = r#"
     SELECT
         teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,

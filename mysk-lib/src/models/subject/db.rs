@@ -7,13 +7,13 @@ use serde::Deserialize;
 use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(query = r#"
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
+#[base_query(query = r"
     SELECT
         id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type,
         credit, description_th, description_en, semester, subject_group_id, syllabus
     FROM subjects
-    "#)]
+")]
 pub struct DbSubject {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -39,7 +39,7 @@ impl DbSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT classroom_id FROM classroom_subjects WHERE subject_id = $1 AND year = $2"#,
+            r"SELECT classroom_id FROM classroom_subjects WHERE subject_id = $1 AND year = $2",
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
@@ -61,7 +61,7 @@ impl DbSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT teacher_id FROM subject_teachers WHERE subject_id = $1 AND year = $2"#,
+            r"SELECT teacher_id FROM subject_teachers WHERE subject_id = $1 AND year = $2",
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
@@ -83,7 +83,7 @@ impl DbSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT teacher_id FROM subject_co_teachers WHERE subject_id = $1 AND year = $2"#,
+            r"SELECT teacher_id FROM subject_co_teachers WHERE subject_id = $1 AND year = $2",
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
