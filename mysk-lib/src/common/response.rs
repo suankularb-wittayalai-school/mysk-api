@@ -7,10 +7,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, PgPool};
 use std::fmt::{Display, Formatter};
-use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, ToSchema, FromRow)]
+#[derive(Clone, Debug, Deserialize, FromRow, Serialize)]
 pub struct ErrorType {
     pub id: Uuid,
     pub code: i64,
@@ -66,7 +65,7 @@ impl std::error::Error for ErrorType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PaginationType {
     first_p: u32,
     last_p: u32,
@@ -110,7 +109,7 @@ impl PaginationType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MetadataType {
     timestamp: DateTime<Utc>,
     pagination: Option<PaginationType>,
@@ -144,7 +143,7 @@ impl Display for MetadataType {
     }
 }
 
-#[derive(Serialize, Deserialize, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ResponseType<T> {
     api_version: String,
     data: Option<T>,
@@ -165,7 +164,7 @@ impl<T> ResponseType<T> {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, ToSchema)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ErrorResponseType {
     api_version: String,
     error: ErrorType,

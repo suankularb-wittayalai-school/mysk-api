@@ -39,7 +39,6 @@ pub async fn query_elective_subject(
     .await?;
 
     let pagination = ElectiveSubject::response_pagination(pool, filter, pagination).await?;
-
     let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))

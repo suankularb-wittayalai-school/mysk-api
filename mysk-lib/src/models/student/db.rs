@@ -2,7 +2,7 @@ use crate::{
     helpers::date::get_current_academic_year,
     models::{
         classroom::ClassroomWClassNo,
-        person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
+        enums::{BloodGroup, Sex, ShirtSize},
     },
     prelude::*,
 };
@@ -13,15 +13,15 @@ use serde::Deserialize;
 use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(query = r#"
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
+#[base_query(query = r"
     SELECT
         students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
         last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
         birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, student_id,
         user_id
     FROM students INNER JOIN people ON students.person_id = people.id
-    "#)]
+")]
 #[get_by_id(table = "students")]
 pub struct DbStudent {
     pub id: Uuid,

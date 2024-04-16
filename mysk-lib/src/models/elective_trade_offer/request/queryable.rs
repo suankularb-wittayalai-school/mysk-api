@@ -1,11 +1,11 @@
 use crate::{
     common::requests::{QueryParam, SqlSection},
-    models::{enums::submission_status::SubmissionStatus, traits::Queryable},
+    models::{enums::SubmissionStatus, traits::Queryable},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct QueryableElectiveTradeOffer {
     pub ids: Option<Vec<Uuid>>,
     pub sender_ids: Option<Vec<Uuid>>,
@@ -45,7 +45,7 @@ impl Queryable for QueryableElectiveTradeOffer {
         if let Some(status) = &self.status {
             where_sections.push(SqlSection {
                 sql: vec!["status = ".to_string()],
-                params: vec![QueryParam::SubmissionStatus(status.clone())],
+                params: vec![QueryParam::SubmissionStatus(*status)],
             });
         }
 

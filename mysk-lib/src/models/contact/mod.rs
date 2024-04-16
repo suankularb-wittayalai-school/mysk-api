@@ -1,7 +1,10 @@
-use self::{db::DbContact, enums::contact_type::ContactType};
+use self::db::DbContact;
 use crate::{
     common::{requests::FetchLevel, string::FlexibleMultiLangString},
-    models::traits::{TopLevelFromTable, TopLevelGetById},
+    models::{
+        enums::ContactType,
+        traits::{TopLevelFromTable, TopLevelGetById},
+    },
     prelude::*,
 };
 use chrono::{DateTime, Utc};
@@ -11,9 +14,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 pub mod db;
-pub mod enums;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Contact {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

@@ -3,7 +3,7 @@ use crate::{
     models::{
         elective_subject::ElectiveSubject,
         elective_trade_offer::db::DbElectiveTradeOffer,
-        enums::submission_status::SubmissionStatus,
+        enums::SubmissionStatus,
         student::Student,
         traits::{FetchLevelVariant, TopLevelGetById as _},
     },
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DefaultElectiveTradeOffer {
     pub id: Uuid,
     pub sender: Student,
