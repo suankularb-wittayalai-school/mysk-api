@@ -1,2 +1,3 @@
 [workspace]
 members = ["mysk-data-api", "mysk-lib", "mysk-lib-derives", "mysk-lib-macros"]
+resolver = "2"
