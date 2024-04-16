@@ -12,7 +12,7 @@ use mysk_lib::{
             },
             ElectiveTradeOffer,
         },
-        traits::TopLevelQuery,
+        traits::TopLevelQuery as _,
     },
     prelude::*,
 };
@@ -34,7 +34,7 @@ pub async fn query_trade_offers(
     let sort = request_body.sort.as_ref();
     let pagination = request_body.pagination.as_ref();
 
-    let offers = ElectiveTradeOffer::query(
+    let trade_offers = ElectiveTradeOffer::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -44,9 +44,8 @@ pub async fn query_trade_offers(
     )
     .await?;
 
-    let pagniation = ElectiveTradeOffer::response_pagination(pool, filter, pagination).await?;
-
-    let response = ResponseType::new(offers, Some(MetadataType::new(Some(pagniation))));
+    let pagination = ElectiveTradeOffer::response_pagination(pool, filter, pagination).await?;
+    let response = ResponseType::new(trade_offers, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))
 }
