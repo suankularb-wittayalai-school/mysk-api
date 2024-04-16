@@ -12,6 +12,7 @@ pub enum SortableElectiveSubject {
     SubjectGroupId,
     CapSize,
     ClassSize,
+    SessionCode,
 }
 
 impl Default for SortableElectiveSubject {
@@ -33,6 +34,7 @@ impl Display for SortableElectiveSubject {
             }
             SortableElectiveSubject::CapSize => write!(f, "cap_size"),
             SortableElectiveSubject::ClassSize => write!(f, "class_size"),
+            SortableElectiveSubject::SessionCode => write!(f, "session_code"),
         }
     }
 }
