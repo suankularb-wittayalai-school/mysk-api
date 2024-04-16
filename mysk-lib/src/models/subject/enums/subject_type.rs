@@ -8,6 +8,7 @@ use std::fmt::{Display, Formatter};
 pub enum SubjectType {
     CoreCourse,
     AdditionalCourse,
+    #[sqlx(rename = "elective")]
     ElectiveCourse,
     LearnersDevelopmentActivities,
 }

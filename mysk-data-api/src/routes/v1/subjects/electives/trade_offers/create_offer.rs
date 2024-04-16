@@ -16,8 +16,8 @@ use mysk_lib::{
     models::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
         elective_trade_offer::ElectiveTradeOffer,
-        enums::submission_status::SubmissionStatus,
-        traits::TopLevelGetById,
+        enums::SubmissionStatus,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
@@ -26,7 +26,7 @@ use sqlx::query;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-pub struct ElectiveTradeOfferRequest {
+struct ElectiveTradeOfferRequest {
     pub receiver_id: Uuid,
 }
 
@@ -175,23 +175,59 @@ async fn create_trade_offer(
     // Checks if the receiver is eligible to enroll in the sender's elective session
     match DbElectiveSubject::is_student_eligible(
         pool,
-        sender_elective_subject.session_code,
-        sender_student_id,
+        receiver_elective_subject.session_code,
+        receiver_student_id,
     )
     .await
     {
         Ok(true) => (),
         Ok(false) => {
             return Err(Error::InvalidPermission(
-                "Student is not eligible to enroll in this elective".to_string(),
+                "Receiving student is not eligible to enroll in this elective".to_string(),
                 "/subjects/electives/trade-offers".to_string(),
             ));
         }
         _ => unreachable!(),
     };
 
-    let trade_offer_id = query!(
+    // Check if the elective subjects are the same
+    if (sender_elective_subject_id == receiver_elective_subject_id)
+        && (sender_elective_subject.session_code == receiver_elective_subject.session_code)
+    {
+        return Err(Error::InvalidRequest(
+            "Both the sender and receiver has the same elective subjects".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
+    // Check if a trade offer with same receiving student and same elective subject already exists
+    let trade_offer_already_exists = query!(
         r"
+        SELECT EXISTS (
+            SELECT FROM elective_subject_trade_offers
+            WHERE sender_id = $1 AND receiver_id = $2 AND status = $3
+            AND sender_elective_subject_id = $4 AND receiver_elective_subject_id = $5
+        )
+        ",
+        sender_student_id,
+        receiver_student_id,
+        SubmissionStatus::Pending as SubmissionStatus,
+        sender_elective_subject_id,
+        receiver_elective_subject_id,
+    )
+    .fetch_one(pool)
+    .await?
+    .exists
+    .unwrap_or(false);
+    if trade_offer_already_exists {
+        return Err(Error::InvalidRequest(
+            "Trade offer with the receiving student already exists".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
+    let trade_offer_id = query!(
+        "
         INSERT INTO elective_subject_trade_offers (
             sender_id,
             receiver_id,

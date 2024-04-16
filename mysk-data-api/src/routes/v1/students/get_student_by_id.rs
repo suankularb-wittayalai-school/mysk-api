@@ -5,7 +5,10 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use mysk_lib::{
-    common::requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+    common::{
+        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        response::ResponseType,
+    },
     models::{student::Student, traits::TopLevelGetById as _},
     prelude::*,
 };
@@ -24,6 +27,7 @@ pub async fn get_student_by_id(
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
     let student = Student::get_by_id(pool, student_id, fetch_level, descendant_fetch_level).await?;
+    let response = ResponseType::new(student, None);
 
-    Ok(HttpResponse::Ok().json(student))
+    Ok(HttpResponse::Ok().json(response))
 }

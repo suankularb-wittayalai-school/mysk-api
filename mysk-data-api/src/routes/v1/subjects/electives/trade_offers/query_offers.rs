@@ -12,18 +12,14 @@ use mysk_lib::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::elective_trade_offer::{
-        request::updatable::UpdatableElectiveOffer, ElectiveTradeOffer,
-    },
+    models::elective_trade_offer::ElectiveTradeOffer,
     prelude::*,
 };
 
-#[get("/{id}")]
+#[get("")]
 pub async fn query_trade_offers(
     data: Data<AppState>,
-    request_body: Json<
-        RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    request_body: Json<RequestType<ElectiveTradeOffer, QueryablePlaceholder, SortablePlaceholder>>,
     student_id: LoggedInStudent,
     _: ApiKeyHeader,
 ) -> Result<impl Responder> {
