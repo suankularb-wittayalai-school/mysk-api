@@ -1,16 +1,19 @@
+use crate::models::enums::ShirtSize;
 use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use serde::Deserialize;
+use sqlx::FromRow;
 use uuid::Uuid;
 
-// use crate::models::common::traits::GetById;
-
-use super::enums::shirt_size::ShirtSize;
-
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
-#[base_query(
-    query = "SELECT id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size FROM people"
-)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
+#[base_query(query = r"
+    SELECT
+        id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th,
+        last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate,
+        citizen_id, profile, pants_size, shirt_size
+    FROM people
+")]
 pub struct Person {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

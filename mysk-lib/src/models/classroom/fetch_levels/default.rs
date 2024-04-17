@@ -1,24 +1,23 @@
+use crate::{
+    common::requests::FetchLevel,
+    models::{
+        classroom::db::DbClassroom,
+        contact::Contact,
+        student::Student,
+        teacher::Teacher,
+        traits::{FetchLevelVariant, TopLevelGetById},
+    },
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    classroom::db::DbClassroom,
-    common::{
-        requests::FetchLevel,
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    contact::Contact,
-    student::Student,
-    teacher::Teacher,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultClassroom {
     pub id: Uuid,
     pub number: i64,
-    pub room: String,
+    pub room: Option<String>,
     pub class_advisor: Vec<Teacher>,
     pub students: Vec<Student>,
     pub contacts: Vec<Contact>,

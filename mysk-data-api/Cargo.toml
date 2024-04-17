@@ -1,36 +1,30 @@
 [package]
 name = "mysk-data-api"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dotenv = "0.15.0"
-actix-web = { version = "4.3.1" }
-actix-rt = "2.4.0"
 actix-cors = "0.7.0"
+actix-web = { version = "4.3.1" }
+dotenv = "0.15.0"
 env_logger = "0.11.0"
+futures = "0.3.17"
+bs58 = "0.5.0"
+chrono = { version = "0.4.37", features = ["serde"] }
+jsonwebtoken = "9.2.0"
+mysk-lib = { path = "../mysk-lib" }
+mysk-lib-macros = { path = "../mysk-lib-macros" }
+serde = "1.0.164"
 serde_qs = "0.12.0"
-utoipa = { version = "4", features = ["actix_extras"] }
-utoipa-swagger-ui = { version = "6", features = ["actix-web"] }
-# openssl={ version = "0.10", features = ["v110"] }
+sha2 = "0.10.8"
 sqlx = { version = "0.7", default-features = false, features = [
-    "postgres",
-    "uuid",
     "chrono",
     "json",
-    "runtime-async-std-native-tls",
     "macros",
+    "postgres",
+    "runtime-tokio-native-tls",
+    "uuid",
 ] }
-serde = "1.0.164"
-serde_json = "1.0.64"
-chrono = { version = "0.4.37", features = ["serde"] }
-mysk-lib = { path = "../mysk-lib" }
-reqwest = { version = "0.12.2", features = ["json"] }
-futures = "0.3.17"
-jsonwebtoken = "9.2.0"
 uuid = { version = "1.7.0", features = ["serde", "v4"] }
-sha2 = "0.10.8"
-bs58 = "0.5.0"
-mysk-lib-macros = { path = "../mysk-lib-macros" }

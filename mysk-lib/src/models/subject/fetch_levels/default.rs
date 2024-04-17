@@ -1,17 +1,18 @@
-use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
-use uuid::Uuid;
-
-use crate::models::{
+use crate::{
     common::{
         requests::FetchLevel,
         string::{FlexibleMultiLangString, MultiLangString},
+    },
+    models::{
+        subject::{db::DbSubject, enums::subject_type::SubjectType},
+        subject_group::SubjectGroup,
         traits::FetchLevelVariant,
     },
-    subject::{db::DbSubject, enums::subject_type::SubjectType},
-    subject_group::SubjectGroup,
+    prelude::*,
 };
-use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultSubject {
@@ -22,17 +23,16 @@ pub struct DefaultSubject {
     pub r#type: SubjectType,
     pub credit: f64,
     pub description: Option<FlexibleMultiLangString>,
-    pub semester: i64,
+    pub semester: Option<i64>,
     pub subject_group: SubjectGroup,
     pub syllabus: Option<String>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbSubject> for DefaultSubject {
     async fn from_table(
         pool: &PgPool,
         table: DbSubject,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
@@ -57,7 +57,10 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
             id: table.id,
             name: MultiLangString::new(table.name_th, Some(table.name_en)),
             code: MultiLangString::new(table.code_th, Some(table.code_en)),
-            short_name: MultiLangString::new(table.short_name_th, Some(table.short_name_en)),
+            short_name: MultiLangString::new(
+                table.short_name_th.unwrap_or_default(),
+                table.short_name_en,
+            ),
             r#type: table.r#type,
             credit: table.credit,
             description,

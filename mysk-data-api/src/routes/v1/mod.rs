@@ -1,10 +1,11 @@
-use actix_web::web;
+use actix_web::web::{scope, ServiceConfig};
 
-pub(crate) mod students;
-pub(crate) mod teachers;
+pub mod students;
+pub mod subjects;
+pub mod teachers;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/students").configure(students::config));
-
-    cfg.service(web::scope("/teachers").configure(teachers::config));
+pub fn config(cfg: &mut ServiceConfig) {
+    cfg.service(scope("/students").configure(students::config));
+    cfg.service(scope("/teachers").configure(teachers::config));
+    cfg.service(scope("/subjects").configure(subjects::config));
 }

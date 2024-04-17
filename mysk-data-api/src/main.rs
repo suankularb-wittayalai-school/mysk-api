@@ -1,35 +1,41 @@
-use actix_cors::Cors;
-use actix_web::middleware::Logger;
-use actix_web::{http::header, web, App, HttpServer};
-use dotenv::dotenv;
-use mysk_lib::models::common::config::Config;
-// use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use sqlx::postgres::PgPoolOptions;
-use std::env;
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 
-mod middlewares;
+use actix_cors::Cors;
+use actix_web::{
+    http::header,
+    middleware::{Logger, NormalizePath},
+    web::{Data, JsonConfig},
+    App, HttpServer,
+};
+use dotenv::dotenv;
+use mysk_lib::{common::config::Config, prelude::*};
+use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::{env, io, process};
+
+mod extractors;
 mod routes;
 
+/// The shared state of the application.
 pub struct AppState {
-    db: sqlx::PgPool,
+    db: PgPool,
     env: Config,
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "actix_web=info");
+async fn main() -> io::Result<()> {
+    if env::var_os("RUST_LOG").is_none() {
+        env::set_var("RUST_LOG", "actix_web=info");
     }
     dotenv().ok();
     env_logger::init();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    // let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let env = Config::init();
+    let config = Config::init();
+    let host = config.host;
+    let port = config.port;
 
     let pool = match PgPoolOptions::new()
         .max_connections(15)
-        .connect(&database_url)
+        .connect(&config.database_url)
         .await
     {
         Ok(pool) => {
@@ -37,15 +43,15 @@ async fn main() -> std::io::Result<()> {
             pool
         }
         Err(err) => {
-            println!("🔥 Failed to connect to the database: {:?}", err);
-            std::process::exit(1);
+            println!("🔥 Failed to connect to the database: {err:?}");
+            process::exit(1);
         }
     };
 
-    println!("🚀 Server started successfully");
+    println!("🚀 MySK API Server started successfully");
 
     HttpServer::new(move || {
-        let cors = Cors::default()
+        let cors_middleware = Cors::default()
             .allowed_origin("http://localhost:3000")
             .allowed_origin("http://localhost:8000")
             .allowed_origin("https://mysk.school")
@@ -55,22 +61,26 @@ async fn main() -> std::io::Result<()> {
                 header::AUTHORIZATION,
                 header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 header::ACCEPT,
-                // Custom headers
                 header::HeaderName::from_lowercase(b"x-api-key").unwrap(),
             ])
             .supports_credentials();
+
         App::new()
-            .app_data(web::Data::new(AppState {
+            .app_data(Data::new(AppState {
                 db: pool.clone(),
-                env: env.clone(),
+                env: config.clone(),
             }))
-            // .service(web::scope("/api/v1").configure(routes::config))
+            .app_data(JsonConfig::default().error_handler(|err, req| {
+                Error::InvalidRequest(format!("{err}"), req.path().into()).into()
+            }))
             .configure(routes::config)
-            .wrap(cors)
+            .wrap(cors_middleware)
+            .wrap(NormalizePath::trim())
             .wrap(Logger::default())
     })
-    // .bind_openssl(("0.0.0.0", 4430), builder)?
-    .bind(("0.0.0.0", 8000))?
+    .bind((host, port))
+    .map_err(|_| panic!("Unable to bind to address {host}:{port}! Perhaps it is in use?"))
+    .unwrap()
     .run()
     .await
 }

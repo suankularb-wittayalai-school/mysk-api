@@ -1,21 +1,21 @@
-pub mod db;
-pub mod enums;
-
+use self::db::DbContact;
+use crate::{
+    common::{requests::FetchLevel, string::FlexibleMultiLangString},
+    models::{
+        enums::ContactType,
+        traits::{TopLevelFromTable, TopLevelGetById},
+    },
+    prelude::*,
+};
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use self::{db::DbContact, enums::contact_type::ContactType};
+pub mod db;
 
-use super::common::{
-    requests::FetchLevel,
-    string::FlexibleMultiLangString,
-    traits::{TopLevelFromTable, TopLevelGetById},
-};
-use crate::prelude::*;
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Contact {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -29,10 +29,10 @@ pub struct Contact {
 
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
-        _pool: &sqlx::PgPool,
-        table: db::DbContact,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: &PgPool,
+        table: DbContact,
+        _: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -63,7 +63,7 @@ impl TopLevelFromTable<DbContact> for Contact {
 
 impl TopLevelGetById for Contact {
     async fn get_by_id(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         id: Uuid,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -74,7 +74,7 @@ impl TopLevelGetById for Contact {
     }
 
     async fn get_by_ids(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         ids: Vec<Uuid>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
@@ -84,7 +84,8 @@ impl TopLevelGetById for Contact {
         let mut result = vec![];
 
         for contact in contacts {
-            result.push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?)
+            result
+                .push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?);
         }
 
         Ok(result)

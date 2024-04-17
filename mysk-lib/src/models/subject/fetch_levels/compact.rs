@@ -1,13 +1,11 @@
-use crate::prelude::*;
-
+use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::{subject::db::DbSubject, traits::FetchLevelVariant},
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
-    subject::db::DbSubject,
-};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactSubject {
@@ -23,7 +21,10 @@ impl From<DbSubject> for CompactSubject {
             id: subject.id,
             name: MultiLangString::new(subject.name_th, Some(subject.name_en)),
             code: MultiLangString::new(subject.code_th, Some(subject.code_en)),
-            short_name: MultiLangString::new(subject.short_name_th, Some(subject.short_name_en)),
+            short_name: MultiLangString::new(
+                subject.short_name_th.unwrap_or_default(),
+                subject.short_name_en,
+            ),
         }
     }
 }

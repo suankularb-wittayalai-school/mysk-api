@@ -1,51 +1,39 @@
-use actix_web::{get, web, HttpResponse, Responder};
-
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
-use mysk_lib::models::common::response::ResponseType;
-
 use crate::AppState;
+use actix_web::{get, web::Data, HttpResponse, Responder};
+use chrono::{SecondsFormat, Utc};
+use mysk_lib::{common::response::ResponseType, prelude::*};
+use serde::Serialize;
+use sqlx::PgPool;
+use std::time;
 
-#[derive(Serialize, Deserialize, ToSchema)]
-pub struct HealthCheckResponse {
+#[derive(Serialize)]
+struct HealthCheckResponse {
     server_time: String,
     database_connection: bool,
     database_response_time: u128,
 }
 
 impl HealthCheckResponse {
-    pub async fn new(pool: &sqlx::PgPool) -> Self {
-        let start = std::time::Instant::now();
+    pub async fn new(pool: &PgPool) -> Self {
+        let start = time::Instant::now();
 
         let database_connection = sqlx::query("SELECT 1").execute(pool).await.is_ok();
-
         let database_response_time = start.elapsed().as_millis();
 
         HealthCheckResponse {
-            server_time: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            server_time: Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true),
             database_connection,
             database_response_time,
-            // memory_consumption: used_memory as f32 / 1024.0 / 1024.0,
         }
     }
 }
 
-#[utoipa::path(
-    responses(
-        (status=200, body=HealthCheckResponse, description="The server is healthy"),
-        (status=500, body=String, description="The server is not healthy")
-    ),
-    path="/health-check",
-    tag="Global"
-)]
 #[get("/health-check")]
-pub async fn health_check(data: web::Data<AppState>) -> impl Responder {
+pub async fn health_check(data: Data<AppState>) -> Result<impl Responder> {
     let pool = &data.db;
-
     let health_check_response = HealthCheckResponse::new(pool).await;
     let response: ResponseType<HealthCheckResponse> =
         ResponseType::new(health_check_response, None);
 
-    HttpResponse::Ok().json(response)
+    Ok(HttpResponse::Ok().json(response))
 }

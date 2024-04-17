@@ -1,22 +1,24 @@
-use chrono::{DateTime, NaiveDate, Utc};
-use sqlx::query;
-use uuid::Uuid;
-
-use crate::prelude::*;
 use crate::{
     helpers::date::get_current_academic_year,
-    models::{
-        // common::traits::{BaseQuery, GetById},
-        person::enums::{blood_group::BloodGroup, sex::Sex, shirt_size::ShirtSize},
-    },
+    models::enums::{BloodGroup, Sex, ShirtSize},
+    prelude::*,
 };
+use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use serde::Deserialize;
+use sqlx::{query, FromRow, PgPool};
+use uuid::Uuid;
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
-#[base_query(
-    query = r#"SELECT teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id, user_id, subject_group_id FROM teachers INNER JOIN people ON teachers.person_id = people.id"#
-)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
+#[base_query(query = r#"
+    SELECT
+        teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
+        last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
+        birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id,
+        user_id, subject_group_id
+    FROM teachers INNER JOIN people ON teachers.person_id = people.id
+    "#)]
 #[get_by_id(table = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
@@ -44,11 +46,19 @@ pub struct DbTeacher {
 }
 
 impl DbTeacher {
-    pub async fn get_teacher_contacts(pool: &sqlx::PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
+    pub async fn get_teacher_contacts(pool: &PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT contacts.id FROM contacts INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id INNER JOIN people ON person_contacts.person_id = people.id INNER JOIN teachers ON people.id = teachers.person_id WHERE teachers.id = $1"#,
-            teacher_id
-        ).fetch_all(pool).await;
+            r#"
+            SELECT contacts.id FROM contacts
+            INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id
+            INNER JOIN people ON person_contacts.person_id = people.id
+            INNER JOIN teachers ON people.id = teachers.person_id
+            WHERE teachers.id = $1
+            "#,
+            teacher_id,
+        )
+        .fetch_all(pool)
+        .await;
 
         match res {
             Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
@@ -60,17 +70,21 @@ impl DbTeacher {
     }
 
     pub async fn get_teacher_advisor_at(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         teacher_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Option<Uuid>> {
         let res = query!(
-            r#"SELECT classroom_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE teacher_id = $1 AND classrooms.year = $2"#,
+            r#"
+            SELECT classroom_id FROM classroom_advisors
+            INNER JOIN classrooms ON classrooms.id = classroom_id
+            WHERE teacher_id = $1 AND classrooms.year = $2
+            "#,
             teacher_id,
             match academic_year {
                 Some(year) => year,
                 None => get_current_academic_year(None),
-            }
+            },
         )
         .fetch_optional(pool)
         .await;
@@ -85,7 +99,7 @@ impl DbTeacher {
     }
 
     pub async fn get_subject_in_charge(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         teacher_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
@@ -95,7 +109,7 @@ impl DbTeacher {
             match academic_year {
                 Some(year) => year,
                 None => get_current_academic_year(None),
-            }
+            },
         )
         .fetch_all(pool)
         .await;
@@ -106,7 +120,7 @@ impl DbTeacher {
             match academic_year {
                 Some(year) => year,
                 None => get_current_academic_year(None),
-            }
+            },
         )
         .fetch_all(pool)
         .await;
@@ -117,26 +131,23 @@ impl DbTeacher {
                 return Err(Error::InternalSeverError(
                     e.to_string(),
                     "DbTeacher::get_subject_in_charge".to_string(),
-                ))
+                ));
             }
         };
-
         let res2 = match res2 {
             Ok(res) => res,
             Err(e) => {
                 return Err(Error::InternalSeverError(
                     e.to_string(),
                     "DbTeacher::get_subject_in_charge".to_string(),
-                ))
+                ));
             }
         };
-
         let mut result = vec![];
 
         for r in res {
             result.push(r.subject_id);
         }
-
         for r in res2 {
             result.push(r.subject_id);
         }

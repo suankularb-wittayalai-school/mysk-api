@@ -28,6 +28,8 @@ export async function fetchAPI<Data extends {} = {}>(
 > {
   const API_KEY = process.env.NEXT_PUBLIC_MYSK_API_KEY;
 
+  console.log(API_KEY);
+
   let res = await fetch(
     sift([
       process.env.NEXT_PUBLIC_API_URL,
@@ -46,7 +48,12 @@ export async function fetchAPI<Data extends {} = {}>(
                   "x-api-key": API_KEY ?? "",
                 },
               }
-            : {}),
+            : {
+                headers: {
+                  ...options.headers,
+                  "x-api-key": API_KEY ?? "",
+                },
+              }),
         }
       : undefined
   );
@@ -57,4 +64,3 @@ export async function fetchAPI<Data extends {} = {}>(
 
   return await res.json();
 }
-

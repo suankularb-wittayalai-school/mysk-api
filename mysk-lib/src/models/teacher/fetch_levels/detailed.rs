@@ -1,27 +1,24 @@
-// use async_trait::async_trait;
+use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::{
+        classroom::Classroom,
+        contact::Contact,
+        enums::{BloodGroup, Sex},
+        subject::Subject,
+        subject_group::SubjectGroup,
+        teacher::db::DbTeacher,
+        traits::{FetchLevelVariant, TopLevelGetById},
+        user::User,
+    },
+    prelude::*,
+};
 use chrono::NaiveDate;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{
-    classroom::Classroom,
-    common::{
-        requests::FetchLevel,
-        string::MultiLangString,
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    contact::Contact,
-    person::enums::{blood_group::BloodGroup, sex::Sex},
-    subject::Subject,
-    subject_group::SubjectGroup,
-    teacher::db::DbTeacher,
-    user::User,
-};
-use crate::prelude::*;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DetailedTeacher {
     pub id: Uuid,
     pub prefix: MultiLangString,
@@ -38,13 +35,10 @@ pub struct DetailedTeacher {
     pub user: Option<User>,
     pub subject_group: SubjectGroup,
     pub subjects_in_charge: Vec<Subject>,
-
     pub citizen_id: Option<String>,
-    // pub passport_id: Option<String>,
     pub blood_group: Option<BloodGroup>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
     async fn from_table(
         pool: &PgPool,
@@ -52,7 +46,6 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
         let contact_ids = DbTeacher::get_teacher_contacts(pool, table.id).await?;
-
         let classroom_id = DbTeacher::get_teacher_advisor_at(pool, table.id, None).await?;
         let subject_ids = DbTeacher::get_subject_in_charge(pool, table.id, None).await?;
 

@@ -1,13 +1,11 @@
+use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::{subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchLevelVariant},
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    common::{requests::FetchLevel, string::MultiLangString, traits::FetchLevelVariant},
-    subject_group::SubjectGroup,
-    teacher::db::DbTeacher,
-};
-use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactTeacher {
@@ -25,7 +23,7 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
     async fn from_table(
         pool: &PgPool,
         table: DbTeacher,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;

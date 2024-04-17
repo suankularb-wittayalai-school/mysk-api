@@ -1,19 +1,20 @@
-use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
-use uuid::Uuid;
-
-use crate::models::{
-    classroom::Classroom,
+use crate::{
     common::{
         requests::FetchLevel,
         string::{FlexibleMultiLangString, MultiLangString},
+    },
+    models::{
+        classroom::Classroom,
+        subject::{db::DbSubject, enums::subject_type::SubjectType},
+        subject_group::SubjectGroup,
+        teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
-    subject::{db::DbSubject, enums::subject_type::SubjectType},
-    subject_group::SubjectGroup,
-    teacher::Teacher,
+    prelude::*,
 };
-use crate::prelude::*;
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DetailedSubject {
@@ -24,7 +25,7 @@ pub struct DetailedSubject {
     pub r#type: SubjectType,
     pub credit: f64,
     pub description: Option<FlexibleMultiLangString>,
-    pub semester: i64,
+    pub semester: Option<i64>,
     pub subject_group: SubjectGroup,
     pub syllabus: Option<String>,
     pub teachers: Vec<Teacher>,
@@ -66,7 +67,10 @@ impl FetchLevelVariant<DbSubject> for DetailedSubject {
             id: table.id,
             name: MultiLangString::new(table.name_th, Some(table.name_en)),
             code: MultiLangString::new(table.code_th, Some(table.code_en)),
-            short_name: MultiLangString::new(table.short_name_th, Some(table.short_name_en)),
+            short_name: MultiLangString::new(
+                table.short_name_th.unwrap_or_default(),
+                table.short_name_en,
+            ),
             r#type: table.r#type,
             credit: table.credit,
             description,

@@ -1,22 +1,19 @@
-use chrono::{DateTime, Utc};
-use sqlx::query;
-use uuid::Uuid;
-
-use crate::prelude::*;
-use crate::{
-    helpers::date::get_current_academic_year,
-    // models::common::traits::{BaseQuery, GetById},
-};
-
 use super::enums::subject_type::SubjectType;
-
+use crate::{helpers::date::get_current_academic_year, prelude::*};
+use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use serde::Deserialize;
+use sqlx::{query, FromRow, PgPool};
+use uuid::Uuid;
 
-#[derive(Debug, Clone, serde::Deserialize, sqlx::FromRow, BaseQuery, GetById)]
-#[base_query(
-    query = "SELECT id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type, credit, description_th, description_en, semester, subject_group_id, syllabus FROM subjects"
-)]
+#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
+#[base_query(query = r"
+    SELECT
+        id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type,
+        credit, description_th, description_en, semester, subject_group_id, syllabus
+    FROM subjects
+")]
 pub struct DbSubject {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -24,27 +21,27 @@ pub struct DbSubject {
     pub name_en: String,
     pub code_th: String,
     pub code_en: String,
-    pub short_name_th: String,
-    pub short_name_en: String,
+    pub short_name_th: Option<String>,
+    pub short_name_en: Option<String>,
     pub r#type: SubjectType,
     pub credit: f64,
     pub description_th: Option<String>,
     pub description_en: Option<String>,
-    pub semester: i64,
+    pub semester: Option<i64>,
     pub subject_group_id: i64,
     pub syllabus: Option<String>,
 }
 
 impl DbSubject {
     pub async fn get_subject_classrooms(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         subject_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT classroom_id FROM classroom_subjects WHERE subject_id = $1 AND year = $2"#,
+            r"SELECT classroom_id FROM classroom_subjects WHERE subject_id = $1 AND year = $2",
             subject_id,
-            academic_year.unwrap_or_else(|| get_current_academic_year(None))
+            academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
         .await;
@@ -59,14 +56,14 @@ impl DbSubject {
     }
 
     pub async fn get_subject_teachers(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         subject_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT teacher_id FROM subject_teachers WHERE subject_id = $1 AND year = $2"#,
+            r"SELECT teacher_id FROM subject_teachers WHERE subject_id = $1 AND year = $2",
             subject_id,
-            academic_year.unwrap_or_else(|| get_current_academic_year(None))
+            academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
         .await;
@@ -81,14 +78,14 @@ impl DbSubject {
     }
 
     pub async fn get_subject_co_teachers(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         subject_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT teacher_id FROM subject_co_teachers WHERE subject_id = $1 AND year = $2"#,
+            r"SELECT teacher_id FROM subject_co_teachers WHERE subject_id = $1 AND year = $2",
             subject_id,
-            academic_year.unwrap_or_else(|| get_current_academic_year(None))
+            academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
         .await;

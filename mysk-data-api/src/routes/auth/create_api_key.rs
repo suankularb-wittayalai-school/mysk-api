@@ -1,9 +1,11 @@
-use actix_web::{post, web, HttpResponse, Responder};
-use mysk_lib::models::{auth::key::ApiKey, common::response::ResponseType};
-use mysk_lib::prelude::*;
+use crate::{extractors::logged_in::LoggedIn, AppState};
+use actix_web::{
+    post,
+    web::{Data, Json},
+    HttpResponse, Responder,
+};
+use mysk_lib::{auth::key::ApiKey, common::response::ResponseType, prelude::*};
 use serde::{Deserialize, Serialize};
-
-use crate::{middlewares::logged_in::LoggedIn, AppState};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateApiKeyRequest {
@@ -17,12 +19,11 @@ struct CreateApiKeyResponse {
 
 #[post("/keys")]
 pub async fn create_api_key(
-    data: web::Data<AppState>,
-    query: web::Json<CreateApiKeyRequest>,
+    data: Data<AppState>,
+    query: Json<CreateApiKeyRequest>,
     user: LoggedIn,
 ) -> Result<impl Responder> {
-    let pool: &sqlx::Pool<sqlx::Postgres> = &data.db;
-
+    let pool = &data.db;
     let api_key = ApiKey::create(pool, user.0.id, query.expire_days).await?;
 
     let response: ResponseType<CreateApiKeyResponse> = ResponseType::new(

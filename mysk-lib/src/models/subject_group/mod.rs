@@ -1,11 +1,14 @@
-pub mod db;
-
+use self::db::DbSubjectGroup;
+use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::traits::TopLevelFromTable,
+    prelude::*,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 
-use self::db::DbSubjectGroup;
-use super::common::{requests::FetchLevel, string::MultiLangString, traits::TopLevelFromTable};
-use crate::prelude::*;
+pub mod db;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SubjectGroup {
@@ -16,10 +19,10 @@ pub struct SubjectGroup {
 
 impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
     async fn from_table(
-        _pool: &sqlx::PgPool,
+        _: &PgPool,
         table: DbSubjectGroup,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
+        _: Option<&FetchLevel>,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -31,29 +34,28 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
 
 impl SubjectGroup {
     pub async fn get_by_id(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         id: i64,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
         let contact = DbSubjectGroup::get_by_id(pool, id).await?;
 
-        Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await
+        Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await
     }
 
     pub async fn get_by_ids(
-        pool: &sqlx::PgPool,
+        pool: &PgPool,
         ids: Vec<i64>,
-        _fetch_level: Option<&FetchLevel>,
-        _descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>> {
         let contacts = DbSubjectGroup::get_by_ids(pool, ids).await?;
 
         let mut result = vec![];
-
         for contact in contacts {
             result
-                .push(Self::from_table(pool, contact, _fetch_level, _descendant_fetch_level).await?)
+                .push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?);
         }
 
         Ok(result)

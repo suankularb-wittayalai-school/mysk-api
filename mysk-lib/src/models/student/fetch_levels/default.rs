@@ -1,25 +1,22 @@
-// use async_trait::async_trait;
+use crate::{
+    common::{requests::FetchLevel, string::MultiLangString},
+    models::{
+        classroom::Classroom,
+        contact::Contact,
+        enums::Sex,
+        student::db::DbStudent,
+        traits::{FetchLevelVariant, TopLevelGetById},
+        user::User,
+    },
+    prelude::*,
+};
 use chrono::NaiveDate;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{
-    classroom::Classroom,
-    common::{
-        requests::FetchLevel,
-        string::MultiLangString,
-        traits::{FetchLevelVariant, TopLevelGetById},
-    },
-    contact::Contact,
-    person::enums::sex::Sex,
-    student::db::DbStudent,
-    user::User,
-};
-use crate::prelude::*;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DefaultStudent {
     pub id: Uuid,
     pub prefix: MultiLangString,
@@ -37,7 +34,6 @@ pub struct DefaultStudent {
     pub user: Option<User>,
 }
 
-// #[async_trait]
 impl FetchLevelVariant<DbStudent> for DefaultStudent {
     async fn from_table(
         pool: &PgPool,

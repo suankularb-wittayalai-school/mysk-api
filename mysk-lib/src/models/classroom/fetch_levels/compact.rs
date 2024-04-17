@@ -1,19 +1,17 @@
-use crate::prelude::*;
-
+use crate::{
+    common::requests::FetchLevel,
+    models::{classroom::db::DbClassroom, traits::FetchLevelVariant},
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::models::{
-    classroom::db::DbClassroom,
-    common::{requests::FetchLevel, traits::FetchLevelVariant},
-};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompactClassroom {
     pub id: Uuid,
     pub number: i64,
-    pub room: String,
+    pub room: Option<String>,
 }
 
 impl From<DbClassroom> for CompactClassroom {
