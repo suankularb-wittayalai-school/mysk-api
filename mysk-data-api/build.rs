@@ -45,7 +45,7 @@ fn main() {
             "cargo::rustc-env=COMMIT_SHORT_HASH={}",
             git_commit_short_hash,
         );
-        println!("cargo::rustc-env=COMMIT_DATE{}", git_commit_date);
+        println!("cargo::rustc-env=COMMIT_DATE={}", git_commit_date);
     } else {
         let build_date = Local::now().format("%F");
 
