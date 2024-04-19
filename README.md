@@ -23,11 +23,10 @@ $ npm i
 ```
 
 ### :herb: Environment
-This project uses two environment files for configuration
 | File                                                                                                                             | Description                   |
 | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
 | [`.env`](.env.template)                                      | Global configuration file     |
-| [`.env.local`](mysk-api-test-web-server/.env.local.template) | Web server configuration file |
+| [`mysk-api-test-web-server/.env.local`](mysk-api-test-web-server/.env.local.template) | Web server configuration file |
 
 > [!CAUTION]
 > Do not commit `.env` and `.env.local` files to the repository. These files contain sensitive information and should be kept private.
@@ -35,7 +34,6 @@ This project uses two environment files for configuration
 <br />
 
 ## 🚀 Development
-
 ### 🛠️ Using mprocs
 If [mprocs](https://github.com/pvolok/mprocs) is installed, run the following command:
 ```sh
@@ -44,7 +42,7 @@ $ mprocs --config ./mprocs.yaml
 ```
 
 ### ⚙️  Manually
-To get started with developing on MySK API, run the following commands:
+To start services manually run the following commands:
 ```sh
 # Build and run cargo workspace at root
 $ cargo run
@@ -59,11 +57,15 @@ $ npm run dev
 This repository contains libraries and tools needed to get set up for developing on MySK's API. The basic structure of the monorepo are as follows:
 ```
 .
-├── mysk-api-test-web-server                                            // API testing client
+├── mysk-api-test-web-server                                            // testing client
 ├── mysk-data-api/                                                      // API
+│   └── src/
+│       ├── extractors/                                                 // extractor funtions
+│       └── routes/                                                     // route definitions
+│           └── v1
 ├── mysk-lib-derives/                                                   // derived traits
 ├── mysk-lib-macros/                                                    // macros
 ├── mysk-lib/                                                           // libraries
-└── Cargo.toml                                                          // cargo workspace definition
+└── Cargo.toml                                                          // cargo workspace
 ```
 
