@@ -9,12 +9,19 @@
 
 <br />
 
-## :zap: Setup
-After cloning this repository, run the following command at `/mysk-api-test-web-server`
+## 📦 Setup
+1) To get set up, clone the repository and ensure that hese tools & dependencies are installed on your system
+    - [rust](https://rustup.rs/)
+    - [npm](https://www.npmjs.com/)
+    - [mprocs](https://github.com/pvolok/mprocs) (see [using-mprocs](#🛠️-using-mprocs))
+    - git🙄
+
+2) Run the following command in `/mysk-api-test-web-server`
 ```sh
 # install dependencies for the API client server
-npm i
+$ npm i
 ```
+
 ### :herb: Environment
 This project uses two environment files for configuration
 | File                                                                                                                             | Description                   |
@@ -27,18 +34,28 @@ This project uses two environment files for configuration
 
 <br />
 
-## :gear: Development
+## 🚀 Development
+
+### 🛠️ Using mprocs
+If [mprocs](https://github.com/pvolok/mprocs) is installed, run the following command:
+```sh
+# This command will look for an mprocs.yaml configuration and start necessary services automatically
+$ mprocs --config ./mprocs.yaml
+```
+
+### ⚙️  Manually
 To get started with developing on MySK API, run the following commands:
 ```sh
 # Build and run cargo workspace at root
-cargo run
+$ cargo run
 
 # Start API testing client server at /mysk-api-test-web-server
-npm run dev
+$ npm run dev
 ```
 
+<br />
 
-### :book: Basic structure
+### 📁 Basic structure
 This repository contains libraries and tools needed to get set up for developing on MySK's API. The basic structure of the monorepo are as follows:
 ```
 .
