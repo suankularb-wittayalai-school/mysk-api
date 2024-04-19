@@ -1,50 +1,77 @@
+use super::gsi_login::GoogleTokenResponse;
 use crate::AppState;
 use actix_web::{
     cookie::{time::Duration as ActixWebDuration, Cookie},
-    post,
-    web::{Data, Json},
+    get,
+    web::{Data, Query, Redirect},
     HttpResponse, Responder,
 };
-use chrono::{prelude::*, Duration};
+use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use mysk_lib::{
-    auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
+    auth::oauth::{
+        exchange_oauth_code, generate_oauth_init_url, verify_id_token, GoogleUserResult,
+        TokenClaims,
+    },
     common::response::ResponseType,
-    error::Error,
     models::user::User,
     prelude::*,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
-pub struct OAuthRequest {
-    pub credential: String,
+#[get("/oauth/init")]
+pub async fn oauth_initiator(data: Data<AppState>) -> Result<impl Responder> {
+    let (redirect_url, state) = generate_oauth_init_url(
+        &data.env.google_oauth_client_id,
+        format!("{}/auth/oauth/google", &data.env.root_uri).as_str(),
+    );
+
+    {
+        let mut guard = data.oauth_states.lock();
+        let oauth_states = &mut *guard;
+        oauth_states.insert(state.clone());
+    }
+
+    Ok(Redirect::to(redirect_url))
 }
-#[derive(Debug, Serialize)]
-struct GoogleTokenResponse {
-    access_token: String,
-    expires_in: i64,
-    token_type: String,
-    scope: String,
-    id_token: String,
+
+#[derive(Deserialize)]
+struct GoogleOAuthCodeRequest {
+    code: String,
+    state: String,
 }
 
 #[allow(clippy::cast_possible_wrap)]
-#[post("/oauth/google")]
-async fn google_oauth_handler(
+#[get("/oauth/google")]
+pub async fn google_oauth_handler(
     data: Data<AppState>,
-    query: Json<OAuthRequest>,
+    request_query: Query<GoogleOAuthCodeRequest>,
 ) -> Result<impl Responder> {
-    let id_token: String = query.credential.clone();
+    let code = &request_query.code;
+    let state = &request_query.state;
 
-    if id_token.is_empty() {
-        return Err(Error::InvalidToken(
-            "Invalid token".to_string(),
-            "/auth/oauth/google".to_string(),
-        ));
+    {
+        let mut guard = data.oauth_states.lock();
+        let oauth_states = &mut *guard;
+
+        if !oauth_states.contains(state) {
+            return Err(Error::InvalidToken(
+                "OAuth state mismatch".to_string(),
+                "/auth/oauth/google".to_string(),
+            ));
+        }
+
+        oauth_states.remove(state);
     }
 
-    // decode id_token to get google user info with jwt and get access_token and verify it with google secret
+    let id_token = exchange_oauth_code(
+        code,
+        &data.env.google_oauth_client_id,
+        &data.env.google_oauth_client_secret,
+        format!("{}/auth/oauth/google", &data.env.root_uri).as_str(),
+    )
+    .await?;
+
     let google_id_data = match verify_id_token(&id_token, &data.env).await {
         Ok(data) => data,
         Err(err) => {
@@ -56,20 +83,7 @@ async fn google_oauth_handler(
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-
-    let user = User::get_by_email(&data.db, &google_user.email).await;
-
-    // let user_id = match user {
-    //     Some(user) => Ok(user.id),
-    //     None => {
-    //         return Err(Error::EntityNotFound(
-    //             "User not found".to_string(),
-    //             "/auth/oauth/google".to_string(),
-    //         ))
-    //     }
-    // };
-
-    let user_id = match user {
+    let user_id = match User::get_by_email(&data.db, &google_user.email).await {
         Ok(Some(user)) => user.id,
         Ok(None) => {
             return Err(Error::EntityNotFound(
@@ -114,9 +128,9 @@ async fn google_oauth_handler(
             let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
                 GoogleTokenResponse {
                     access_token: token,
-                    expires_in: data.env.token_max_age as i64 * 60,
-                    token_type: "Bearer".to_owned(),
-                    scope: "email profile".to_owned(),
+                    expires_in: data.env.token_max_age * 60,
+                    token_type: "Bearer".to_string(),
+                    scope: "openid email profile".to_string(),
                     id_token,
                 },
                 None,
