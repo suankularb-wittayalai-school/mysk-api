@@ -19,10 +19,10 @@ npm i
 This project uses two environment files for configuration
 | File                                                                                                                             | Description                   |
 | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| [`.env`](https://github.com/suankularb-wittayalai-school/mysk-api/blob/0.2.0/.env.template)                                      | Global configuration file     |
-| [`.env.local`](https://github.com/suankularb-wittayalai-school/mysk-api/tree/0.2.0/mysk-api-test-web-server/.env.local.template) | Web server configuration file |
+| [`.env`](.env.template)                                      | Global configuration file     |
+| [`.env.local`](mysk-api-test-web-server/.env.local.template) | Web server configuration file |
 
-> [!CAUTION] 
+> [!CAUTION]
 > Do not commit `.env` and `.env.local` files to the repository. These files contain sensitive information and should be kept private.
 
 <br />
