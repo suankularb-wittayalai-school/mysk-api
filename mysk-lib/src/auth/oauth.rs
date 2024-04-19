@@ -1,6 +1,8 @@
 use crate::{common::config::Config, prelude::*};
+use rand::{rngs::OsRng, RngCore};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,11 +61,7 @@ pub struct TokenPayload {
     _iat: usize,
     #[serde(rename = "iss")]
     _iss: String,
-    #[serde(rename = "jti")]
-    _jti: String,
     name: String,
-    #[serde(rename = "nbf")]
-    _nbf: usize,
     picture: String,
     sub: String,
 }
@@ -82,6 +80,96 @@ struct GooglePublicKey {
 #[derive(Debug, Serialize, Deserialize)]
 struct GooglePublicKeys {
     keys: Vec<GooglePublicKey>,
+}
+
+#[derive(Debug, Serialize)]
+struct GoogleOAuthInitQueryParams {
+    client_id: String,
+    redirect_uri: String,
+    response_type: String,
+    scope: String,
+    access_type: String,
+    state: String,
+    include_granted_scopes: bool,
+    hd: String,
+}
+
+pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> (String, String) {
+    let mut state = [0u8; 32];
+    OsRng.fill_bytes(&mut state);
+    let state = format!("{:x}", Sha256::new().chain_update(state).finalize());
+    let query_params = GoogleOAuthInitQueryParams {
+        client_id: client_id.to_string(),
+        redirect_uri: redirect_uri.to_string(),
+        response_type: "code".to_string(),
+        scope: [
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+        ]
+        .join(" ")
+        .to_string(),
+        access_type: "online".to_string(),
+        state: state.clone(),
+        include_granted_scopes: true,
+        hd: "sk.ac.th".to_string(),
+    };
+
+    (
+        format!(
+            "https://accounts.google.com/o/oauth2/v2/auth?{}",
+            serde_qs::to_string(&query_params).unwrap(),
+        ),
+        state,
+    )
+}
+
+#[derive(Debug, Serialize)]
+struct CodeExchangeQueryParams {
+    client_id: String,
+    client_secret: String,
+    code: String,
+    grant_type: String,
+    redirect_uri: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct CodeExchangeResponse {
+    id_token: String,
+}
+
+pub async fn exchange_oauth_code(
+    code: &str,
+    client_id: &str,
+    client_secret: &str,
+    redirect_uri: &str,
+) -> Result<String> {
+    let query_params = CodeExchangeQueryParams {
+        client_id: client_id.to_string(),
+        client_secret: client_secret.to_string(),
+        code: code.to_string(),
+        grant_type: "authorization_code".to_string(),
+        redirect_uri: redirect_uri.to_string(),
+    };
+    let code_exchange_response = Client::new()
+        .post(format!(
+            "https://oauth2.googleapis.com/token?{}",
+            serde_qs::to_string(&query_params).unwrap(),
+        ))
+        .send()
+        .await;
+
+    match code_exchange_response {
+        Ok(response) => Ok(response
+            .json::<CodeExchangeResponse>()
+            .await
+            .unwrap()
+            .id_token),
+        Err(err) => Err(Error::InternalSeverError(
+            err.to_string(),
+            "exchange_oauth_code".to_string(),
+        )),
+    }
 }
 
 pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayload> {
