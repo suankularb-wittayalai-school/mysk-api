@@ -1,13 +1,13 @@
 use crate::{models::enums::UserRole, prelude::*};
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgPool};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
-#[base_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
+pub mod db;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct User {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -15,19 +15,32 @@ pub struct User {
     pub role: UserRole,
     pub is_admin: bool,
     pub onboarded: bool,
+    pub permissions: Vec<String>,
 }
 
 impl User {
-    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Option<Self>> {
-        let res =
-            sqlx::query_as::<_, User>(format!("{} WHERE email = $1", Self::base_query()).as_str())
-                .bind(email)
-                .fetch_optional(pool)
-                .await
-                .map_err(|e| {
-                    Error::InternalSeverError(e.to_string(), "User::get_by_email".to_string())
-                })?;
+    pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self> {
+        let user = db::DbUser::get_by_id(pool, id).await?;
 
-        Ok(res)
+        let permissions = db::DbUser::get_user_permissions(pool, user.id).await?;
+
+        Ok(Self {
+            id: user.id,
+            created_at: user.created_at,
+            email: user.email,
+            role: user.role,
+            is_admin: user.is_admin,
+            onboarded: user.onboarded,
+            permissions,
+        })
+    }
+
+    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Option<Self>> {
+        let id = db::DbUser::get_by_email(pool, email).await?;
+
+        match id {
+            Some(id) => Self::get_by_id(pool, id).await.map(Some),
+            None => Ok(None),
+        }
     }
 }
