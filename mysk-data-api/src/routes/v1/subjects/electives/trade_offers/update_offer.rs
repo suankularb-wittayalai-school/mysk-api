@@ -141,8 +141,7 @@ async fn update_trade_offer(
             UPDATE elective_subject_trade_offers SET status = $1
             WHERE
                 id != $2 AND status = $3 AND
-                (sender_id = $4 AND receiver_id = $5) OR
-                (sender_id = $5 AND receiver_id = $4)
+                (sender_id = $4 OR sender_id = $5 OR receiver_id = $4 OR receiver_id = $5)
             ",
             SubmissionStatus::Declined as SubmissionStatus,
             trade_offer_id,
