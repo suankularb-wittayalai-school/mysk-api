@@ -34,6 +34,7 @@ pub struct DefaultElectiveSubject {
     pub r#type: SubjectType,
     pub semester: Option<i64>,
     pub session_code: i64,
+    pub requirements: Vec<MultiLangString>,
 }
 
 impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
@@ -97,6 +98,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
             cap_size: table.cap_size,
             room: table.room,
             session_code: table.session_code,
+            requirements: DbElectiveSubject::get_requirements(pool, table.id).await?,
         })
     }
 }
