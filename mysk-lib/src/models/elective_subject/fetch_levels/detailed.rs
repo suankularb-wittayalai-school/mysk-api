@@ -37,7 +37,9 @@ pub struct DetailedElectiveSubject {
     pub semester: Option<i64>,
     pub applicable_classrooms: Vec<Classroom>,
     pub students: Vec<Student>,
+    pub randomized_students: Vec<Student>,
     pub session_code: i64,
+    pub requirements: Vec<MultiLangString>,
 }
 
 impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
@@ -53,7 +55,8 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
         let co_teacher_ids =
             DbSubject::get_subject_co_teachers(pool, table.subject_id, None).await?;
         let applicable_classroom_ids = table.get_subject_applicable_classrooms(pool).await?;
-        let student_ids = table.get_enrolled_students(pool, None).await?;
+        let student_ids = table.get_enrolled_students(pool, None, None).await?;
+        let randomized_student_ids = table.get_randomized_student(pool, None, None).await?;
 
         let description = match (table.description_th, table.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
@@ -117,6 +120,14 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
             )
             .await?,
             session_code: table.session_code,
+            requirements: DbElectiveSubject::get_requirements(pool, table.id).await?,
+            randomized_students: Student::get_by_ids(
+                pool,
+                randomized_student_ids,
+                descendant_fetch_level,
+                Some(&FetchLevel::IdOnly),
+            )
+            .await?,
         })
     }
 }
