@@ -13,6 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
+        elective_subject::db::DbElectiveSubject,
         elective_trade_offer::{db::DbElectiveTradeOffer, ElectiveTradeOffer},
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
@@ -56,6 +57,14 @@ async fn update_trade_offer(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+
+    // Check if the current time is within the elective's enrollment period
+    if !DbElectiveSubject::is_enrollment_period(pool).await? {
+        return Err(Error::InvalidPermission(
+            "The elective's enrollment period has ended".to_string(),
+            format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+        ));
+    }
 
     let Some(trade_offer) = query_as!(
         DbElectiveTradeOffer,

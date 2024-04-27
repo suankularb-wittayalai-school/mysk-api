@@ -49,6 +49,14 @@ async fn create_trade_offer(
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
+    // Check if the current time is within the elective's enrollment period
+    if !DbElectiveSubject::is_enrollment_period(pool).await? {
+        return Err(Error::InvalidPermission(
+            "The elective's enrollment period has ended".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
     // Check if the receiving student has an elective subject
     let Some(receiver_elective_subject_id) = query!(
         r"

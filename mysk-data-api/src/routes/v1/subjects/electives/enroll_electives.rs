@@ -18,6 +18,7 @@ use mysk_lib::{
 };
 use sqlx::query;
 
+#[allow(clippy::too_many_lines)]
 #[post("/{session_code}/enroll")]
 pub async fn enroll_elective_subject(
     data: Data<AppState>,
@@ -59,6 +60,14 @@ pub async fn enroll_elective_subject(
         }
         _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
     };
+
+    // Check if the current time is within the elective's enrollment period
+    if !DbElectiveSubject::is_enrollment_period(pool).await? {
+        return Err(Error::InvalidPermission(
+            "The elective's enrollment period has ended".to_string(),
+            format!("/subjects/electives/{session_code}/enroll"),
+        ));
+    }
 
     // Checks if the student is in a class available for the elective
     if !DbElectiveSubject::is_student_eligible(pool, session_code, student_id).await? {

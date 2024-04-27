@@ -33,6 +33,14 @@ async fn modify_elective_subject(
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
+    // Check if the current time is within the elective's enrollment period
+    if !DbElectiveSubject::is_enrollment_period(pool).await? {
+        return Err(Error::InvalidPermission(
+            "The elective's enrollment period has ended".to_string(),
+            format!("/subjects/electives/{session_code}/enroll"),
+        ));
+    }
+
     // Check if the student already has an elective subject
     let student_elective_subject = query!(
         r"
