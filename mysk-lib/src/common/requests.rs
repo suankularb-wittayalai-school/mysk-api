@@ -8,6 +8,9 @@ use std::string::ToString;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
+pub struct DataPlaceholder;
+
+#[derive(Debug, Deserialize)]
 pub struct QueryablePlaceholder;
 
 #[derive(Debug, Deserialize)]
