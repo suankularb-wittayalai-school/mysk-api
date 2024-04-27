@@ -263,7 +263,7 @@ impl DbElectiveSubject {
 
     pub async fn is_enrollment_period(pool: &PgPool) -> Result<bool> {
         let res = query!(
-            r"
+            "
             SELECT EXISTS (
                 SELECT FROM elective_subject_enrollment_periods
                 WHERE timezone ('Asia/Bangkok', now()) BETWEEN start_time AND end_time
