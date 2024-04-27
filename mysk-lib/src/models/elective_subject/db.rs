@@ -260,6 +260,27 @@ impl DbElectiveSubject {
             )),
         }
     }
+
+    pub async fn is_enrollment_period(pool: &PgPool) -> Result<bool> {
+        let res = query!(
+            r"
+            SELECT EXISTS (
+                SELECT FROM elective_subject_enrollment_periods
+                WHERE timezone ('Asia/Bangkok', now()) BETWEEN start_time AND end_time
+            )
+            ",
+        )
+        .fetch_one(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.exists.unwrap_or(false)),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::is_enrollment_period".to_string(),
+            )),
+        }
+    }
 }
 
 impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
