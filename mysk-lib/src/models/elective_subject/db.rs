@@ -5,7 +5,7 @@ use crate::{
         response::PaginationType,
         string::MultiLangString,
     },
-    helpers::date::get_current_academic_year,
+    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         student::db::DbStudent,
         subject::enums::subject_type::SubjectType,
@@ -212,7 +212,7 @@ impl DbElectiveSubject {
             ",
             self.session_code,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
-            semester.unwrap_or_else(|| get_current_academic_year(None)),
+            semester.unwrap_or_else(|| get_current_semester(None)),
         )
         .fetch_all(pool)
         .await;
@@ -247,7 +247,7 @@ impl DbElectiveSubject {
             ",
             self.session_code,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
-            semester.unwrap_or_else(|| get_current_academic_year(None)),
+            semester.unwrap_or_else(|| get_current_semester(None)),
         )
         .fetch_all(pool)
         .await;
