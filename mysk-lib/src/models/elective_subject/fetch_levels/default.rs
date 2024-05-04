@@ -33,7 +33,7 @@ pub struct DefaultElectiveSubject {
     pub room: String,
     pub r#type: SubjectType,
     pub semester: Option<i64>,
-    pub session_code: i64,
+    pub session_code: String,
     pub requirements: Vec<MultiLangString>,
 }
 

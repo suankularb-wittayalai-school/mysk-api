@@ -38,7 +38,7 @@ pub struct DetailedElectiveSubject {
     pub applicable_classrooms: Vec<Classroom>,
     pub students: Vec<Student>,
     pub randomized_students: Vec<Student>,
-    pub session_code: i64,
+    pub session_code: String,
     pub requirements: Vec<MultiLangString>,
 }
 
