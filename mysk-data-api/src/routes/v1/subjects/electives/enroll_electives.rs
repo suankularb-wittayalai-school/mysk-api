@@ -94,7 +94,7 @@ pub async fn enroll_elective_subject(
         SELECT 
             COUNT(*) 
         FROM 
-            elective_subject_session_enrolled_students 
+            elective_subject_session_enrolled_students enrolls
             INNER JOIN elective_subject_sessions electives
             ON enrolls.elective_subject_session_id = electives.id
         WHERE student_id = $1 AND subject_id = $2
