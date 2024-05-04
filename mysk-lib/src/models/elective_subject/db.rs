@@ -15,7 +15,7 @@ use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, query_as, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
+use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -47,24 +47,6 @@ pub struct DbElectiveSubject {
 }
 
 impl DbElectiveSubject {
-    pub async fn get_by_session_code(pool: &PgPool, session_code: i64) -> Result<Option<Self>> {
-        query_as::<_, DbElectiveSubject>(
-            r"
-            SELECT * FROM elective_subject_sessions_with_detail
-            WHERE session_code = $1
-            ",
-        )
-        .bind(session_code)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| {
-            Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_by_session_code".to_string(),
-            )
-        })
-    }
-
     /// Checks if the student is in a class available for the elective
     pub async fn is_student_eligible(
         pool: &PgPool,
