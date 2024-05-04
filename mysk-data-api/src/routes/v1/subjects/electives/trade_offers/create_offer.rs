@@ -232,6 +232,48 @@ async fn create_trade_offer(
         ));
     }
 
+    // check if sender have more than 3 pending trade offers
+    let pending_trade_offers_count = query!(
+        r"
+        SELECT COUNT(*) FROM elective_subject_trade_offers
+        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
+        ",
+        sender_student_id,
+        SubmissionStatus::Pending as SubmissionStatus,
+    )
+    .fetch_one(pool)
+    .await?
+    .count
+    .unwrap_or(0);
+
+    if pending_trade_offers_count >= 3 {
+        return Err(Error::InvalidPermission(
+            "Student has reached the maximum number of pending trade offers".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
+    // check if receiver have more than 3 pending trade offers
+    let pending_trade_offers_count = query!(
+        r"
+        SELECT COUNT(*) FROM elective_subject_trade_offers
+        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
+        ",
+        receiver_student_id,
+        SubmissionStatus::Pending as SubmissionStatus,
+    )
+    .fetch_one(pool)
+    .await?
+    .count
+    .unwrap_or(0);
+
+    if pending_trade_offers_count >= 3 {
+        return Err(Error::InvalidPermission(
+            "Receiving student has reached the maximum number of pending trade offers".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
     let trade_offer_id = query!(
         "
         INSERT INTO elective_subject_trade_offers (
