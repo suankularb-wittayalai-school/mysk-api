@@ -98,7 +98,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
             cap_size: table.cap_size,
             room: table.room,
             session_code: table.session_code,
-            requirements: DbElectiveSubject::get_requirements(pool, table.id).await?,
+            requirements: DbSubject::get_requirements(pool, table.subject_id).await?,
         })
     }
 }

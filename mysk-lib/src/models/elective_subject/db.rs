@@ -4,7 +4,6 @@ use crate::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
     },
-    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         student::db::DbStudent,
         subject::enums::subject_type::SubjectType,

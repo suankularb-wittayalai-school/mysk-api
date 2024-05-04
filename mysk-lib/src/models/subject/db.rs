@@ -101,13 +101,13 @@ impl DbSubject {
         }
     }
 
-    pub async fn get_requirements(&self, pool: &PgPool) -> Result<Vec<MultiLangString>> {
+    pub async fn get_requirements(pool: &PgPool, subject_id: Uuid) -> Result<Vec<MultiLangString>> {
         query!(
             r"
             SELECT label_th, label_en FROM subject_requirements
             WHERE subject_id = $1
             ",
-            self.id,
+            subject_id,
         )
         .fetch_all(pool)
         .await
