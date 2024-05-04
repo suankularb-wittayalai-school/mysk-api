@@ -95,7 +95,8 @@ pub async fn enroll_elective_subject(
             COUNT(*) 
         FROM 
             elective_subject_session_enrolled_students 
-            INNER JOIN elective_subject_sessions_with_detail_view on elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions_with_detail_view.id
+            INNER JOIN elective_subject_sessions electives
+            ON enrolls.elective_subject_session_id = electives.id
         WHERE student_id = $1 AND subject_id = $2
         ",
         student_id,
