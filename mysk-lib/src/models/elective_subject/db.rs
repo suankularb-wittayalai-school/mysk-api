@@ -3,7 +3,6 @@ use crate::{
     common::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
-        string::MultiLangString,
     },
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
@@ -22,8 +21,8 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
 #[base_query(
-    query = "SELECT * FROM complete_elective_subjects_view",
-    count_query = "SELECT COUNT(*) FROM complete_elective_subjects_view"
+    query = "SELECT * FROM elective_subject_sessions_with_detail_view",
+    count_query = "SELECT COUNT(*) FROM elective_subject_sessions_with_detail_view"
 )]
 pub struct DbElectiveSubject {
     pub id: Uuid,
@@ -52,7 +51,7 @@ impl DbElectiveSubject {
     pub async fn get_by_session_code(pool: &PgPool, session_code: i64) -> Result<Option<Self>> {
         query_as::<_, DbElectiveSubject>(
             r"
-            SELECT * FROM complete_elective_subjects_view
+            SELECT * FROM elective_subject_sessions_with_detail
             WHERE session_code = $1
             ",
         )
@@ -67,79 +66,10 @@ impl DbElectiveSubject {
         })
     }
 
-    /// # Get elective subject by ID with student context
-    /// This function is the extension of the `get_by_id` function. Since an elective subject can
-    /// be enrolled by students in different classrooms and taught in different sessions, this
-    /// function will return the elective subject object which is available for the student which
-    /// will always be unique. If the student is not eligible for the elective subject, it will
-    /// return `None`. If the student is not in any classroom, it will return an `Error`.
-    pub async fn get_by_id_with_student_context(
-        pool: &PgPool,
-        id: Uuid,
-        student_id: Uuid,
-    ) -> Result<Option<Self>> {
-        // Checks if the student is in a class available for the elective
-        let student_class = DbStudent::get_student_classroom(pool, student_id, None).await?;
-
-        let student_classroom_id = match student_class {
-            Some(classroom) => classroom.id,
-            None => {
-                return Err(Error::InvalidPermission(
-                    "Student has no classroom".to_string(),
-                    "DbElectiveSubject::get_by_id_with_student_context".to_string(),
-                ))
-            }
-        };
-
-        query_as::<_, DbElectiveSubject>(
-            r"
-            SELECT * FROM complete_elective_subjects_view
-            WHERE id = $1 AND session_code IN (
-                SELECT session_code FROM elective_subject_classrooms
-                WHERE classroom_id = $2
-            )
-            ",
-        )
-        .bind(id)
-        .bind(student_classroom_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| {
-            Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_by_id_with_student_context".to_string(),
-            )
-        })
-    }
-
-    /// Get the requirements of the elective subject
-    pub async fn get_requirements(pool: &PgPool, id: Uuid) -> Result<Vec<MultiLangString>> {
-        query!(
-            r"
-            SELECT label_th, label_en FROM elective_subject_requirements
-            WHERE elective_subject_id = $1
-            ",
-            id
-        )
-        .fetch_all(pool)
-        .await
-        .map(|res| {
-            res.iter()
-                .map(|r| MultiLangString::new(r.label_th.clone(), r.label_en.clone()))
-                .collect::<Vec<MultiLangString>>()
-        })
-        .map_err(|e| {
-            Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_requirements".to_string(),
-            )
-        })
-    }
-
     /// Checks if the student is in a class available for the elective
     pub async fn is_student_eligible(
         pool: &PgPool,
-        session_code: i64,
+        session_id: Uuid,
         student_id: Uuid,
     ) -> Result<bool> {
         // Checks if the student is in a class available for the elective
@@ -158,11 +88,11 @@ impl DbElectiveSubject {
         let is_eligible = query!(
             r"
             SELECT EXISTS (
-                SELECT FROM elective_subject_classrooms
-                WHERE session_code = $1 AND classroom_id = $2
+                SELECT FROM elective_subject_session_classrooms
+                WHERE elective_subject_session_id = $1 AND classroom_id = $2
             )
             ",
-            session_code,
+            session_id,
             student_classroom_id
         )
         .fetch_one(pool)
@@ -174,10 +104,10 @@ impl DbElectiveSubject {
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             r"
-            SELECT classroom_id FROM elective_subject_classrooms
-            WHERE session_code = $1
+            SELECT classroom_id FROM elective_subject_session_classrooms
+            WHERE elective_subject_session_id = $1
             ",
-            self.session_code
+            self.id
         )
         .fetch_all(pool)
         .await;
@@ -191,28 +121,17 @@ impl DbElectiveSubject {
         }
     }
 
-    pub async fn get_enrolled_students(
-        &self,
-        pool: &PgPool,
-        academic_year: Option<i64>,
-        semester: Option<i64>,
-    ) -> Result<Vec<Uuid>> {
+    pub async fn get_enrolled_students(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             r"
             SELECT
-                ses.student_id
+                student_id
             FROM
-                elective_subject_classrooms AS esc
-                INNER JOIN student_elective_subjects AS ses
-                    ON esc.elective_subject_id = ses.elective_subject_id
-                INNER JOIN classroom_students AS cs
-                    ON cs.student_id = ses.student_id
+                elective_subject_session_enrolled_students
             WHERE
-                cs.classroom_id = esc.classroom_id AND esc.session_code = $1 AND year = $2 AND semester = $3
+                elective_subject_session_id = $1
             ",
-            self.session_code,
-            academic_year.unwrap_or_else(|| get_current_academic_year(None)),
-            semester.unwrap_or_else(|| get_current_semester(None)),
+            self.id
         )
         .fetch_all(pool)
         .await;
@@ -226,28 +145,17 @@ impl DbElectiveSubject {
         }
     }
 
-    pub async fn get_randomized_student(
-        &self,
-        pool: &PgPool,
-        academic_year: Option<i64>,
-        semester: Option<i64>,
-    ) -> Result<Vec<Uuid>> {
+    pub async fn get_randomized_student(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             r"
             SELECT
-                ses.student_id
+                student_id
             FROM
-                elective_subject_classrooms AS esc
-                INNER JOIN student_elective_subjects AS ses
-                    ON esc.elective_subject_id = ses.elective_subject_id
-                INNER JOIN classroom_students AS cs
-                    ON cs.student_id = ses.student_id
+                elective_subject_session_enrolled_students
             WHERE
-                cs.classroom_id = esc.classroom_id AND esc.session_code = $1 AND year = $2 AND semester = $3 AND is_randomized = true
+                elective_subject_session_id = $1 AND is_randomized = true
             ",
-            self.session_code,
-            academic_year.unwrap_or_else(|| get_current_academic_year(None)),
-            semester.unwrap_or_else(|| get_current_semester(None)),
+            self.id
         )
         .fetch_all(pool)
         .await;
