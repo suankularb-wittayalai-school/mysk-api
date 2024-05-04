@@ -75,8 +75,8 @@ async fn update_trade_offer(
             sender_id,
             receiver_id,
             status AS "status: SubmissionStatus",
-            sender_elective_subject_id,
-            receiver_elective_subject_id
+            sender_elective_subject_session_id,
+            receiver_elective_subject_session_id
         FROM elective_subject_trade_offers WHERE id = $1
         "#,
         trade_offer_id,
