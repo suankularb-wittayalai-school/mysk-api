@@ -62,7 +62,7 @@ export const useOneTapSignin = (options?: {
             callback: async (response) => {
               const { data: BackendCredentials, error } =
                 await fetchAPI<BackendCredentials>(
-                  "/auth/oauth/google",
+                  "/auth/oauth/gsi",
                   undefined,
                   {
                     method: "POST",
