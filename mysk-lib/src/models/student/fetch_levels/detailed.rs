@@ -11,7 +11,6 @@ use crate::{
     prelude::*,
 };
 use chrono::NaiveDate;
-use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -24,7 +23,7 @@ pub struct DetailedStudent {
     pub middle_name: Option<MultiLangString>,
     pub last_name: MultiLangString,
     pub nickname: Option<MultiLangString>,
-    pub student_id: String,
+    pub student_id: Option<String>,
     pub profile_url: Option<String>,
     pub birthdate: Option<NaiveDate>,
     pub sex: Sex,

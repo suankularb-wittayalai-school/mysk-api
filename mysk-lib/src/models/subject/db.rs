@@ -1,5 +1,7 @@
 use super::enums::subject_type::SubjectType;
-use crate::{helpers::date::get_current_academic_year, prelude::*};
+use crate::{
+    common::string::MultiLangString, helpers::date::get_current_academic_year, prelude::*,
+};
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
@@ -97,5 +99,25 @@ impl DbSubject {
                 "DbSubject::get_subject_co_teachers".to_string(),
             )),
         }
+    }
+
+    pub async fn get_requirements(pool: &PgPool, subject_id: Uuid) -> Result<Vec<MultiLangString>> {
+        query!(
+            r"
+            SELECT label_th, label_en FROM subject_requirements
+            WHERE subject_id = $1
+            ",
+            subject_id,
+        )
+        .fetch_all(pool)
+        .await
+        .map(|res| {
+            res.iter()
+                .map(|r| MultiLangString::new(r.label_th.clone(), r.label_en.clone()))
+                .collect::<Vec<MultiLangString>>()
+        })
+        .map_err(|e| {
+            Error::InternalSeverError(e.to_string(), "DbSubject::get_requirements".to_string())
+        })
     }
 }

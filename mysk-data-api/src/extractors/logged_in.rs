@@ -4,7 +4,6 @@ use actix_web::{dev::Payload, http::header, web::Data, FromRequest, HttpRequest}
 use futures::future;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use mysk_lib::{auth::oauth::TokenClaims, models::user::User, prelude::*};
-use mysk_lib_macros::traits::db::GetById;
 use serde::Serialize;
 use uuid::Uuid;
 

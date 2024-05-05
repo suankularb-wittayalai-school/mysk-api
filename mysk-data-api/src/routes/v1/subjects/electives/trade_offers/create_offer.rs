@@ -60,7 +60,7 @@ async fn create_trade_offer(
     // Check if the receiving student has an elective subject
     let Some(receiver_elective_subject_id) = query!(
         r"
-        SELECT elective_subject_id FROM student_elective_subjects
+        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
         receiver_student_id,
@@ -75,13 +75,12 @@ async fn create_trade_offer(
             "/subjects/electives/trade-offers".to_string(),
         ));
     };
-    let receiver_elective_subject_id = receiver_elective_subject_id.elective_subject_id;
+    let receiver_elective_subject_id = receiver_elective_subject_id.elective_subject_session_id;
 
     // Gets the elective subject of the receiver, and also checks whether they're in a classroom
-    let receiver_elective_subject = match ElectiveSubject::get_by_id_with_student_context(
+    let receiver_elective_subject = match ElectiveSubject::get_by_id(
         pool,
         receiver_elective_subject_id,
-        receiver_student_id,
         Some(&FetchLevel::Compact),
         None,
     )
@@ -113,7 +112,7 @@ async fn create_trade_offer(
     // whether they're in a classroom
     match DbElectiveSubject::is_student_eligible(
         pool,
-        receiver_elective_subject.session_code,
+        receiver_elective_subject.id,
         sender_student_id,
     )
     .await
@@ -137,7 +136,7 @@ async fn create_trade_offer(
     // Check if the sending student has an elective subject
     let Some(sender_elective_subject_id) = query!(
         r"
-        SELECT elective_subject_id FROM student_elective_subjects
+        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
         sender_student_id,
@@ -152,13 +151,12 @@ async fn create_trade_offer(
             "/subjects/electives/trade-offers".to_string(),
         ));
     };
-    let sender_elective_subject_id = sender_elective_subject_id.elective_subject_id;
+    let sender_elective_subject_id = sender_elective_subject_id.elective_subject_session_id;
 
     // Gets the elective subject of the sender
-    let sender_elective_subject = match ElectiveSubject::get_by_id_with_student_context(
+    let sender_elective_subject = match ElectiveSubject::get_by_id(
         pool,
         sender_elective_subject_id,
-        sender_student_id,
         Some(&FetchLevel::Compact),
         None,
     )
@@ -183,7 +181,7 @@ async fn create_trade_offer(
     // Checks if the receiver is eligible to enroll in the sender's elective session
     match DbElectiveSubject::is_student_eligible(
         pool,
-        sender_elective_subject.session_code,
+        sender_elective_subject.id,
         receiver_student_id,
     )
     .await
@@ -214,7 +212,7 @@ async fn create_trade_offer(
         SELECT EXISTS (
             SELECT FROM elective_subject_trade_offers
             WHERE sender_id = $1 AND receiver_id = $2 AND status = $3
-            AND sender_elective_subject_id = $4 AND receiver_elective_subject_id = $5
+            AND sender_elective_subject_session_id = $4 AND receiver_elective_subject_session_id = $5
         )
         ",
         sender_student_id,
@@ -234,14 +232,56 @@ async fn create_trade_offer(
         ));
     }
 
+    // check if sender have more than 3 pending trade offers
+    let pending_trade_offers_count = query!(
+        r"
+        SELECT COUNT(*) FROM elective_subject_trade_offers
+        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
+        ",
+        sender_student_id,
+        SubmissionStatus::Pending as SubmissionStatus,
+    )
+    .fetch_one(pool)
+    .await?
+    .count
+    .unwrap_or(0);
+
+    if pending_trade_offers_count >= 3 {
+        return Err(Error::InvalidPermission(
+            "Student has reached the maximum number of pending trade offers".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
+    // check if receiver have more than 3 pending trade offers
+    let pending_trade_offers_count = query!(
+        r"
+        SELECT COUNT(*) FROM elective_subject_trade_offers
+        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
+        ",
+        receiver_student_id,
+        SubmissionStatus::Pending as SubmissionStatus,
+    )
+    .fetch_one(pool)
+    .await?
+    .count
+    .unwrap_or(0);
+
+    if pending_trade_offers_count >= 3 {
+        return Err(Error::InvalidPermission(
+            "Receiving student has reached the maximum number of pending trade offers".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
     let trade_offer_id = query!(
         "
         INSERT INTO elective_subject_trade_offers (
             sender_id,
             receiver_id,
             status,
-            sender_elective_subject_id,
-            receiver_elective_subject_id
+            sender_elective_subject_session_id,
+            receiver_elective_subject_session_id
         ) VALUES ($1, $2, $3, $4, $5)
         RETURNING id
         ",

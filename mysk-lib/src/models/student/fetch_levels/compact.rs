@@ -15,7 +15,7 @@ pub struct CompactStudent {
     pub first_name: MultiLangString,
     pub last_name: MultiLangString,
     pub nickname: Option<MultiLangString>,
-    pub student_id: String,
+    pub student_id: Option<String>,
     pub profile_url: Option<String>,
 }
 

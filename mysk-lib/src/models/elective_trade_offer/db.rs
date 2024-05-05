@@ -30,8 +30,8 @@ pub struct DbElectiveTradeOffer {
     pub sender_id: Uuid,
     pub receiver_id: Uuid,
     pub status: SubmissionStatus,
-    pub sender_elective_subject_id: Uuid,
-    pub receiver_elective_subject_id: Uuid,
+    pub sender_elective_subject_session_id: Uuid,
+    pub receiver_elective_subject_session_id: Uuid,
 }
 
 impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElectiveTradeOffer {

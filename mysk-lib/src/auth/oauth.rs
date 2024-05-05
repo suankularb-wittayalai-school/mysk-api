@@ -1,6 +1,6 @@
 use crate::{common::config::Config, prelude::*};
 use rand::{rngs::OsRng, RngCore};
-use reqwest::Client;
+use reqwest::{Client, header::{HeaderValue, CONTENT_LENGTH}};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
@@ -156,6 +156,7 @@ pub async fn exchange_oauth_code(
             "https://oauth2.googleapis.com/token?{}",
             serde_qs::to_string(&query_params).unwrap(),
         ))
+        .header(CONTENT_LENGTH, HeaderValue::from_static("0"))
         .send()
         .await;
 

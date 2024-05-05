@@ -47,14 +47,14 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
             .await?,
             sender_elective_subject: ElectiveSubject::get_by_id(
                 pool,
-                table.sender_elective_subject_id,
+                table.sender_elective_subject_session_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
             )
             .await?,
             receiver_elective_subject: ElectiveSubject::get_by_id(
                 pool,
-                table.receiver_elective_subject_id,
+                table.receiver_elective_subject_session_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
             )
