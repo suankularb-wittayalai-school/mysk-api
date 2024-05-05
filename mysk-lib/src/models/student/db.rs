@@ -43,7 +43,7 @@ pub struct DbStudent {
     pub shirt_size: Option<ShirtSize>,
     pub blood_group: Option<BloodGroup>,
     pub sex: Sex,
-    pub student_id: String,
+    pub student_id: Option<String>,
     pub user_id: Option<Uuid>,
 }
 

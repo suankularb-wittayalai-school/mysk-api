@@ -23,7 +23,7 @@ pub struct DefaultStudent {
     pub middle_name: Option<MultiLangString>,
     pub last_name: MultiLangString,
     pub nickname: Option<MultiLangString>,
-    pub student_id: String,
+    pub student_id: Option<String>,
     pub profile_url: Option<String>,
     pub birthdate: Option<NaiveDate>,
     pub sex: Sex,
