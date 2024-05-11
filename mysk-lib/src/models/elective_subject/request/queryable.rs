@@ -16,6 +16,8 @@ pub struct QueryableElectiveSubject {
     pub subject_group_id: Option<Vec<i64>>,
     pub credit: Option<f64>,
     pub is_full: Option<bool>,
+    pub year: Option<i64>,
+    pub semester: Option<i64>,
     pub applicable_classroom_ids: Option<Vec<Uuid>>,
     pub room: Option<String>,
     pub student_ids: Option<Vec<Uuid>>,
@@ -139,6 +141,22 @@ impl Queryable for QueryableElectiveSubject {
                     params: vec![],
                 });
             }
+        }
+
+        // WHERE year = $1
+        if let Some(year) = &self.year {
+            where_sections.push(SqlSection {
+                sql: vec!["year = ".to_string()],
+                params: vec![QueryParam::Int(*year)],
+            });
+        }
+
+        // WHERE semester = $1
+        if let Some(semester) = &self.semester {
+            where_sections.push(SqlSection {
+                sql: vec!["semester = ".to_string()],
+                params: vec![QueryParam::Int(*semester)],
+            });
         }
 
         // WHERE id IN (SELECT elective_subject_session_id FROM elective_subject_session_classrooms WHERE classroom_id IN ANY($1))
