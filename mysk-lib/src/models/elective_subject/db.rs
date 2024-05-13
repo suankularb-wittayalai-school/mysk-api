@@ -155,7 +155,7 @@ impl DbElectiveSubject {
             "
             SELECT EXISTS (
                 SELECT FROM elective_subject_enrollment_periods
-                WHERE timezone ('Asia/Bangkok', now()) BETWEEN start_time AND end_time
+                WHERE now() BETWEEN start_time AND end_time
             )
             ",
         )
