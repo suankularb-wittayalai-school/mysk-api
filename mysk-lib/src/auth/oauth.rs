@@ -1,6 +1,9 @@
 use crate::{common::config::Config, prelude::*};
 use rand::{rngs::OsRng, RngCore};
-use reqwest::{Client, header::{HeaderValue, CONTENT_LENGTH}};
+use reqwest::{
+    header::{HeaderValue, CONTENT_LENGTH},
+    Client,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
@@ -26,7 +29,6 @@ pub struct GoogleUserResult {
     pub name: String,
     pub given_name: String,
     pub family_name: String,
-    pub picture: String,
 }
 
 impl GoogleUserResult {
@@ -38,7 +40,6 @@ impl GoogleUserResult {
             name: payload.name,
             given_name: payload.given_name,
             family_name: payload.family_name,
-            picture: payload.picture,
         }
     }
 }
@@ -62,7 +63,6 @@ pub struct TokenPayload {
     #[serde(rename = "iss")]
     _iss: String,
     name: String,
-    picture: String,
     sub: String,
 }
 
