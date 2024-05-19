@@ -166,7 +166,7 @@ async fn update_trade_offer(
         query!(
             "
             UPDATE elective_subject_session_enrolled_students
-                SET elective_subject_session_enrolled_students = CASE student_id
+                SET elective_subject_session_id = CASE student_id
                     WHEN $1 THEN (
                         SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students
                         WHERE student_id = $2
