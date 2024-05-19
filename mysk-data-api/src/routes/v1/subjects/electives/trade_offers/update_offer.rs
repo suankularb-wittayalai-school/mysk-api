@@ -1,4 +1,4 @@
-use crate::{
+iuse crate::{
     extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
 };
@@ -165,14 +165,14 @@ async fn update_trade_offer(
         // https://dba.stackexchange.com/a/131128
         query!(
             "
-            UPDATE student_elective_subjects
-                SET elective_subject_id = CASE student_id
+            UPDATE elective_subject_session_enrolled_students
+                SET elective_subject_session_enrolled_students = CASE student_id
                     WHEN $1 THEN (
-                        SELECT elective_subject_id FROM student_elective_subjects
+                        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students
                         WHERE student_id = $2
                     )
                     WHEN $2 THEN (
-                        SELECT elective_subject_id FROM student_elective_subjects
+                        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students
                         WHERE student_id = $1
                     )
                 END
