@@ -1,4 +1,4 @@
-iuse crate::{
+use crate::{
     extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
 };
