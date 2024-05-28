@@ -22,7 +22,7 @@ use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "SELECT * FROM organizations")]
+#[base_query(query = "SELECT * FROM clubs")]
 pub struct DbClub {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
