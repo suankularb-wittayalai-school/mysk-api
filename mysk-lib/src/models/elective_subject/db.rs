@@ -67,7 +67,7 @@ impl DbElectiveSubject {
         };
 
         let is_eligible = query!(
-            r"
+            "
             SELECT EXISTS (
                 SELECT FROM elective_subject_session_classrooms
                 WHERE elective_subject_session_id = $1 AND classroom_id = $2
@@ -84,7 +84,7 @@ impl DbElectiveSubject {
 
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
-            r"
+            "
             SELECT classroom_id FROM elective_subject_session_classrooms
             WHERE elective_subject_session_id = $1
             ",
@@ -104,7 +104,7 @@ impl DbElectiveSubject {
 
     pub async fn get_enrolled_students(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
-            r"
+            "
             SELECT
                 student_id
             FROM
@@ -128,7 +128,7 @@ impl DbElectiveSubject {
 
     pub async fn get_randomized_student(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
-            r"
+            "
             SELECT
                 student_id
             FROM

@@ -10,7 +10,7 @@ use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = r"
+#[base_query(query = "
     SELECT
         id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type,
         credit, description_th, description_en, semester, subject_group_id, syllabus
@@ -41,7 +41,7 @@ impl DbSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r"SELECT classroom_id FROM classroom_subjects WHERE subject_id = $1 AND year = $2",
+            "SELECT classroom_id FROM classroom_subjects WHERE subject_id = $1 AND year = $2",
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
@@ -63,7 +63,7 @@ impl DbSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r"SELECT teacher_id FROM subject_teachers WHERE subject_id = $1 AND year = $2",
+            "SELECT teacher_id FROM subject_teachers WHERE subject_id = $1 AND year = $2",
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
@@ -85,7 +85,7 @@ impl DbSubject {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r"SELECT teacher_id FROM subject_co_teachers WHERE subject_id = $1 AND year = $2",
+            "SELECT teacher_id FROM subject_co_teachers WHERE subject_id = $1 AND year = $2",
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
@@ -103,7 +103,7 @@ impl DbSubject {
 
     pub async fn get_requirements(pool: &PgPool, subject_id: Uuid) -> Result<Vec<MultiLangString>> {
         query!(
-            r"
+            "
             SELECT label_th, label_en FROM subject_requirements
             WHERE subject_id = $1
             ",

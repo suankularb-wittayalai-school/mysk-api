@@ -23,7 +23,13 @@ impl DbClassroom {
         year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT teacher_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE classroom_id = $1 AND year = $2"#,
+            "
+            SELECT
+                teacher_id
+            FROM classroom_advisors
+                INNER JOIN classrooms ON classrooms.id = classroom_id
+            WHERE classroom_id = $1 AND year = $2
+            ",
             classroom_id,
             year.unwrap_or_else(|| get_current_academic_year(None))
         )
@@ -47,7 +53,7 @@ impl DbClassroom {
 
     pub async fn get_classroom_students(pool: &PgPool, classroom_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT student_id FROM classroom_students WHERE classroom_id = $1"#,
+            "SELECT student_id FROM classroom_students WHERE classroom_id = $1",
             classroom_id
         )
         .fetch_all(pool)
@@ -70,7 +76,7 @@ impl DbClassroom {
 
     pub async fn get_classroom_contacts(pool: &PgPool, classroom_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT contact_id FROM classroom_contacts WHERE classroom_id = $1"#,
+            "SELECT contact_id FROM classroom_contacts WHERE classroom_id = $1",
             classroom_id
         )
         .fetch_all(pool)

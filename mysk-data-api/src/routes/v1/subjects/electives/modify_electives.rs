@@ -48,7 +48,7 @@ async fn modify_elective_subject(
 
     // Check if the student already has an elective subject
     let student_elective_subject = query!(
-        r"
+        "
         SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
@@ -110,7 +110,7 @@ async fn modify_elective_subject(
         .subject_id;
 
     let enroll_count = query!(
-        r"
+        "
         SELECT 
             COUNT(*) 
         FROM 
@@ -134,7 +134,7 @@ async fn modify_elective_subject(
     }
 
     query!(
-        r"
+        "
         UPDATE elective_subject_session_enrolled_students SET elective_subject_session_id = $1 WHERE student_id = $2 AND elective_subject_session_id = $3
         ",
         elective.id,
