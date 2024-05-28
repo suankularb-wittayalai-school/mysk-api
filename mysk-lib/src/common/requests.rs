@@ -1,3 +1,4 @@
+use crate::models::traits::Queryable;
 use crate::{models::enums::SubmissionStatus, prelude::*};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future;
@@ -9,6 +10,12 @@ use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct QueryablePlaceholder;
+
+impl Queryable for QueryablePlaceholder {
+    fn to_query_string(&self) -> Vec<SqlSection> {
+        unimplemented!("QueryablePlaceholder can't actually be queried");
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct SortablePlaceholder;

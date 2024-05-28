@@ -1,8 +1,10 @@
 pub mod classroom;
+pub mod club;
 pub mod contact;
 pub mod elective_subject;
 pub mod elective_trade_offer;
 pub mod enums;
+pub mod organization;
 pub mod person;
 pub mod student;
 pub mod subject;
