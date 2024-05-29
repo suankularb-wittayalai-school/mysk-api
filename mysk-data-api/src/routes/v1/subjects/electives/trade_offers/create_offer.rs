@@ -59,7 +59,7 @@ async fn create_trade_offer(
 
     // Check if the receiving student has an elective subject
     let Some(receiver_elective_subject_id) = query!(
-        r"
+        "
         SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
@@ -135,7 +135,7 @@ async fn create_trade_offer(
 
     // Check if the sending student has an elective subject
     let Some(sender_elective_subject_id) = query!(
-        r"
+        "
         SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
@@ -208,7 +208,7 @@ async fn create_trade_offer(
 
     // Check if a trade offer with same receiving student and same elective subject already exists
     let trade_offer_already_exists = query!(
-        r"
+        "
         SELECT EXISTS (
             SELECT FROM elective_subject_trade_offers
             WHERE sender_id = $1 AND receiver_id = $2 AND status = $3
@@ -234,7 +234,7 @@ async fn create_trade_offer(
 
     // check if sender have more than 3 pending trade offers
     let pending_trade_offers_count = query!(
-        r"
+        "
         SELECT COUNT(*) FROM elective_subject_trade_offers
         WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
         ",
@@ -255,7 +255,7 @@ async fn create_trade_offer(
 
     // check if receiver have more than 3 pending trade offers
     let pending_trade_offers_count = query!(
-        r"
+        "
         SELECT COUNT(*) FROM elective_subject_trade_offers
         WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
         ",

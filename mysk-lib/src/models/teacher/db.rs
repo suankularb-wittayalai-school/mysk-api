@@ -11,14 +11,14 @@ use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = r#"
+#[base_query(query = "
     SELECT
         teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
         last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
         birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id,
         user_id, subject_group_id
     FROM teachers INNER JOIN people ON teachers.person_id = people.id
-    "#)]
+")]
 #[get_by_id(table = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
@@ -48,13 +48,13 @@ pub struct DbTeacher {
 impl DbTeacher {
     pub async fn get_teacher_contacts(pool: &PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"
+            "
             SELECT contacts.id FROM contacts
             INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id
             INNER JOIN people ON person_contacts.person_id = people.id
             INNER JOIN teachers ON people.id = teachers.person_id
             WHERE teachers.id = $1
-            "#,
+            ",
             teacher_id,
         )
         .fetch_all(pool)
@@ -75,11 +75,11 @@ impl DbTeacher {
         academic_year: Option<i64>,
     ) -> Result<Option<Uuid>> {
         let res = query!(
-            r#"
+            "
             SELECT classroom_id FROM classroom_advisors
             INNER JOIN classrooms ON classrooms.id = classroom_id
             WHERE teacher_id = $1 AND classrooms.year = $2
-            "#,
+            ",
             teacher_id,
             match academic_year {
                 Some(year) => year,
@@ -104,7 +104,7 @@ impl DbTeacher {
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"SELECT subject_id FROM subject_teachers WHERE teacher_id = $1 AND year = $2"#,
+            "SELECT subject_id FROM subject_teachers WHERE teacher_id = $1 AND year = $2",
             teacher_id,
             match academic_year {
                 Some(year) => year,
@@ -115,7 +115,7 @@ impl DbTeacher {
         .await;
 
         let res2 = query!(
-            r#"SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2"#,
+            "SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2",
             teacher_id,
             match academic_year {
                 Some(year) => year,

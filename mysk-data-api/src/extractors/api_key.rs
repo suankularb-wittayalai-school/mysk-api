@@ -70,11 +70,11 @@ impl FromRequest for ApiKeyHeader {
         Box::pin(async move {
             let api_key = match query_as!(
                 ApiKey,
-                r#"
+                "
                 SELECT * FROM user_api_keys
                 WHERE long_token_hash = $1 AND short_token = $2
                 AND (expire_at > NOW() OR expire_at IS NULL)
-                "#,
+                ",
                 hash,
                 token.get_short_token(),
             )
