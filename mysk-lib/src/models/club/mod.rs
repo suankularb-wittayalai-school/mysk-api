@@ -3,6 +3,7 @@ use self::{
     fetch_levels::{
         compact::CompactClub, default::DefaultClub, detailed::DetailedClub, id_only::IdOnlyClub,
     },
+    request::SortableClub,
 };
 use crate::{
     common::requests::{QueryablePlaceholder, SortablePlaceholder},
@@ -11,8 +12,9 @@ use crate::{
 
 pub mod db;
 pub mod fetch_levels;
+pub mod request;
 
 pub type Club = TopLevelVariant<DbClub, IdOnlyClub, CompactClub, DefaultClub, DetailedClub>;
 
 // TODO: Queryable and Sortable to be implemented
-impl TopLevelQuery<DbClub, QueryablePlaceholder, SortablePlaceholder> for Club {}
+impl TopLevelQuery<DbClub, QueryablePlaceholder, SortableClub> for Club {}

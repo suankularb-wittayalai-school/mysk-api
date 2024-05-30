@@ -1,7 +1,7 @@
 use crate::{
     common::{
         requests::{
-            FilterConfig, PaginationConfig, QueryablePlaceholder, SortablePlaceholder,
+            FilterConfig, PaginationConfig, QueryablePlaceholder,
             SortingConfig,
         },
         response::PaginationType,
@@ -9,6 +9,7 @@ use crate::{
     error::Error,
     helpers::date::get_current_academic_year,
     models::{
+        club::request::sortable::SortableClub,
         enums::{ActivityDayHouse, SubmissionStatus},
         traits::QueryDb,
     },
@@ -92,7 +93,7 @@ impl DbClub {
     }
 }
 
-impl QueryDb<QueryablePlaceholder, SortablePlaceholder> for DbClub {
+impl QueryDb<QueryablePlaceholder, SortableClub> for DbClub {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryablePlaceholder>>,
@@ -105,7 +106,7 @@ impl QueryDb<QueryablePlaceholder, SortablePlaceholder> for DbClub {
     async fn query(
         pool: &PgPool,
         filter: Option<&FilterConfig<QueryablePlaceholder>>,
-        sort: Option<&SortingConfig<SortablePlaceholder>>,
+        sort: Option<&SortingConfig<SortableClub>>,
         pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
