@@ -39,7 +39,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
         table: DbClub,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
-        let organization = Organization::get_by_id(pool, table.id).await?;
+        let organization = Organization::get_by_id(pool, table.organization_id).await?;
         let staff_ids = DbClub::get_club_staffs(pool, table.id).await?;
         let member_ids = DbClub::get_club_members(pool, table.id).await?;
         let contact_ids = DbClub::get_club_contacts(pool, table.id).await?;

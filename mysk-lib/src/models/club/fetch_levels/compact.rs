@@ -30,7 +30,7 @@ impl FetchLevelVariant<DbClub> for CompactClub {
         table: DbClub,
         _: Option<&FetchLevel>,
     ) -> Result<Self> {
-        let organization = Organization::get_by_id(pool, table.id).await?;
+        let organization = Organization::get_by_id(pool, table.organization_id).await?;
 
         Ok(Self {
             id: table.id,
