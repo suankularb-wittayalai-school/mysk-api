@@ -6,7 +6,7 @@ use self::{
 };
 use crate::{
     common::requests::{QueryablePlaceholder, SortablePlaceholder},
-    models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery},
+    models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery as _},
 };
 
 pub mod db;

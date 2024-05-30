@@ -6,7 +6,7 @@ use self::{
     },
     request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
 };
-use crate::models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery};
+use crate::models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery as _};
 
 pub mod db;
 pub mod fetch_levels;

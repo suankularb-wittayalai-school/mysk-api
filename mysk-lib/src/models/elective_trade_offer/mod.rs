@@ -3,9 +3,7 @@ use self::{
     fetch_levels::{default::DefaultElectiveTradeOffer, id_only::IdOnlyElectiveTradeOffer},
     request::{queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer},
 };
-use crate::models::top_level_variant::TopLevelVariant;
-
-use super::traits::TopLevelQuery;
+use crate::models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery as _};
 
 pub mod db;
 pub mod fetch_levels;
