@@ -64,7 +64,6 @@ pub async fn create_club_contact(
         _ => unreachable!("Club::get_by_id should always return a Detailed variant"),
     };
 
-    dbg!(&club.staffs);
     // Check if the student is a staff of the club
     if !club.staffs.iter().any(|staff| match staff {
         Student::IdOnly(staff, _) => staff.id == student_id,
