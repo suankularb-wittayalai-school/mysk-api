@@ -28,7 +28,7 @@ pub async fn query_club(
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
 
-    let electives = Club::query(
+    let clubs = Club::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -39,7 +39,7 @@ pub async fn query_club(
     .await?;
 
     let pagination = Club::response_pagination(pool, filter, pagination).await?;
-    let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));
+    let response = ResponseType::new(clubs, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))
 }
