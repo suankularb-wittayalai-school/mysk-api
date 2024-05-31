@@ -3,7 +3,7 @@ use crate::{extractors::logged_in::LoggedIn, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use futures::future;
 use mysk_lib::{
-    models::{student::Student, enums::UserRole},
+    models::{enums::UserRole, student::Student},
     prelude::*,
 };
 use serde::Serialize;

@@ -29,11 +29,7 @@ pub struct DefaultSubject {
 }
 
 impl FetchLevelVariant<DbSubject> for DefaultSubject {
-    async fn from_table(
-        pool: &PgPool,
-        table: DbSubject,
-        _: Option<&FetchLevel>,
-    ) -> Result<Self> {
+    async fn from_table(pool: &PgPool, table: DbSubject, _: Option<&FetchLevel>) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
 

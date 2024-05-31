@@ -7,6 +7,7 @@ pub enum SortableClub {
     Id,
     House,
     MapLocation,
+    Name,
 }
 
 impl Default for SortableClub {
@@ -20,7 +21,8 @@ impl Display for SortableClub {
         match self {
             SortableClub::Id => write!(f, "id"),
             SortableClub::House => write!(f, "house"),
-            SortableClub::MapLocation => write(f, "map_location"),
+            SortableClub::MapLocation => write!(f, "map_location"),
+            SortableClub::Name => write!(f, "name"),
         }
     }
 }

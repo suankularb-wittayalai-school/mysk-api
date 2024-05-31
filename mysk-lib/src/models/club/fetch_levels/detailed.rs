@@ -7,7 +7,6 @@ use crate::{
         club::db::DbClub,
         contact::Contact,
         enums::ActivityDayHouse,
-        organization::Organization,
         student::Student,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
@@ -29,7 +28,6 @@ pub struct DetailedClub {
     pub accent_color: Option<String>,
     pub background_color: Option<String>,
     pub house: Option<ActivityDayHouse>,
-    pub main_room: Option<String>,
     pub map_location: Option<i64>,
 }
 
@@ -39,16 +37,29 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
         table: DbClub,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
-        let organization = Organization::get_by_id(pool, table.organization_id).await?;
         let staff_ids = DbClub::get_club_staffs(pool, table.id).await?;
         let member_ids = DbClub::get_club_members(pool, table.id).await?;
         let contact_ids = DbClub::get_club_contacts(pool, table.id).await?;
 
         Ok(Self {
             id: table.id,
-            name: organization.name,
-            description: organization.description,
-            logo_url: organization.logo_url,
+            name: MultiLangString::new(table.name_th, table.name_en),
+            description: match (table.description_th, table.description_en) {
+                (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
+                    th: Some(description_th),
+                    en: Some(description_en),
+                }),
+                (Some(description_th), None) => Some(FlexibleMultiLangString {
+                    th: Some(description_th),
+                    en: None,
+                }),
+                (None, Some(description_en)) => Some(FlexibleMultiLangString {
+                    th: None,
+                    en: Some(description_en),
+                }),
+                (None, None) => None,
+            },
+            logo_url: table.logo_url,
             contacts: Contact::get_by_ids(
                 pool,
                 contact_ids,
@@ -73,7 +84,6 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
             accent_color: table.accent_color,
             background_color: table.background_color,
             house: table.house,
-            main_room: organization.main_room,
             map_location: table.map_location,
         })
     }

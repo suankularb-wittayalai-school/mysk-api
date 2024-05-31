@@ -26,13 +26,7 @@ pub async fn query_club_details(
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
-    let club = Club::get_by_id(
-        pool,
-        club_id,
-        fetch_level,
-        descendant_fetch_level,
-    )
-    .await?;
+    let club = Club::get_by_id(pool, club_id, fetch_level, descendant_fetch_level).await?;
     let response = ResponseType::new(club, None);
 
     Ok(HttpResponse::Ok().json(response))
