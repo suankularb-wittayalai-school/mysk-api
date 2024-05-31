@@ -92,6 +92,7 @@ struct GoogleOAuthInitQueryParams {
     state: String,
     include_granted_scopes: bool,
     hd: String,
+    prompt: String,
 }
 
 pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> (String, String) {
@@ -113,6 +114,10 @@ pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> (String, 
         state: state.clone(),
         include_granted_scopes: true,
         hd: "sk.ac.th".to_string(),
+        #[cfg(debug_assertions)]
+        prompt: "select_account".to_string(),
+        #[cfg(not(debug_assertions))]
+        prompt: "none".to_string(),
     };
 
     (

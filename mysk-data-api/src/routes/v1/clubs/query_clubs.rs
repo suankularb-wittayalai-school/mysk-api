@@ -6,9 +6,9 @@ use mysk_lib::{
         response::{MetadataType, ResponseType},
     },
     models::{
-        elective_subject::{
-            request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
-            ElectiveSubject,
+        club::{
+            request::{queryable::QueryableClub, sortable::SortableClub},
+            Club,
         },
         traits::TopLevelQuery as _,
     },
@@ -18,7 +18,7 @@ use mysk_lib::{
 #[get("")]
 pub async fn query_club(
     data: Data<AppState>,
-    request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
+    request_query: RequestType<Club, QueryableClub, SortableClub>,
     _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
@@ -28,7 +28,7 @@ pub async fn query_club(
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
 
-    let electives = ElectiveSubject::query(
+    let electives = Club::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -38,7 +38,7 @@ pub async fn query_club(
     )
     .await?;
 
-    let pagination = ElectiveSubject::response_pagination(pool, filter, pagination).await?;
+    let pagination = Club::response_pagination(pool, filter, pagination).await?;
     let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))
