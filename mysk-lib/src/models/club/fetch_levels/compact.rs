@@ -17,8 +17,7 @@ pub struct CompactClub {
     pub description: Option<FlexibleMultiLangString>,
     pub logo_url: Option<String>,
     pub background_color: Option<String>,
-    pub house: Option<ActivityDayHouse>,
-    pub map_location: Option<i64>,
+    pub member_count: i64,
 }
 
 impl From<DbClub> for CompactClub {
@@ -43,8 +42,7 @@ impl From<DbClub> for CompactClub {
             },
             logo_url: club.logo_url,
             background_color: club.background_color,
-            house: club.house,
-            map_location: club.map_location,
+            member_count: club.member_count,
         }
     }
 }

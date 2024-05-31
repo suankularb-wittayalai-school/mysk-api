@@ -21,17 +21,9 @@ use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
-    query = "
-        SELECT
-            clubs.id, clubs.created_at, organizations.id AS organization_id, clubs.accent_color,
-            clubs.background_color, organizations.description_en, organizations.description_th,
-            clubs.house, organizations.logo_url, clubs.map_location, organizations.name_en,
-            organizations.name_th
-        FROM clubs INNER JOIN organizations ON organizations.id = clubs.organization_id
-    ",
+    query = "SELECT * FROM clubs_with_detail_view",
     count_query = "SELECT COUNT(*) FROM clubs"
 )]
-#[get_by_id(table = "clubs")]
 pub struct DbClub {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -40,11 +32,11 @@ pub struct DbClub {
     pub background_color: Option<String>,
     pub description_en: Option<String>,
     pub description_th: Option<String>,
-    pub house: Option<ActivityDayHouse>,
     pub logo_url: Option<String>,
-    pub map_location: Option<i64>,
+    pub member_count: i64,
     pub name_en: Option<String>,
     pub name_th: String,
+    pub staff_count: i64,
 }
 
 impl DbClub {

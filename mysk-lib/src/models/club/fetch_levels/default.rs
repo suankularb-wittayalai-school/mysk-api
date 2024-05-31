@@ -24,8 +24,8 @@ pub struct DefaultClub {
     pub contacts: Vec<Contact>,
     pub accent_color: Option<String>,
     pub background_color: Option<String>,
-    pub house: Option<ActivityDayHouse>,
-    pub map_location: Option<i64>,
+    pub member_count: i64,
+    pub staff_count: i64,
 }
 
 impl FetchLevelVariant<DbClub> for DefaultClub {
@@ -64,8 +64,8 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
             .await?,
             accent_color: table.accent_color,
             background_color: table.background_color,
-            house: table.house,
-            map_location: table.map_location,
+            member_count: table.member_count,
+            staff_count: table.staff_count,
         })
     }
 }
