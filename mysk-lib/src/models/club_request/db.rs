@@ -73,7 +73,39 @@ impl QueryDb<QueryablePlaceholder, SortablePlaceholder> for DbClubRequest {
     where
         Self: BaseQuery + Sized,
     {
-        todo!()
+        let mut query = QueryBuilder::new(DbClubRequest::base_query());
+        Self::build_shared_query(&mut query, filter);
+
+        if let Some(sorting) = sort {
+            query.push(sorting.to_order_by_clause());
+        }
+
+        if let Some(pagination) = pagination {
+            let limit_section = pagination.to_limit_clause();
+            query.push(" ");
+            for (i, sql) in limit_section.sql.iter().enumerate() {
+                query.push(sql);
+                if i < limit_section.params.len() {
+                    match limit_section.params.get(i) {
+                        Some(&QueryParam::Int(v)) => query.push_bind(v),
+                        _ => {
+                            return Err(Error::InternalSeverError(
+                                "Invalid pagination params".to_string(),
+                                "DbClubRequest::query".to_string(),
+                            ));
+                        }
+                    };
+                }
+            }
+        }
+
+        query
+            .build_query_as::<DbClubRequest>()
+            .fetch_all(pool)
+            .await
+            .map_err(|e| {
+                Error::InternalSeverError(e.to_string(), "DbClubRequest::query".to_string())
+            })
     }
 
     async fn response_pagination(
@@ -84,6 +116,35 @@ impl QueryDb<QueryablePlaceholder, SortablePlaceholder> for DbClubRequest {
     where
         Self: Sized,
     {
-        todo!()
+        let mut query = QueryBuilder::new(DbClubRequest::count_query());
+        Self::build_shared_query(&mut query, filter);
+
+        let count = u32::try_from(
+            query
+                .build()
+                .fetch_one(pool)
+                .await
+                .map_err(|e| {
+                    Error::InternalSeverError(
+                        e.to_string(),
+                        "DbClubRequest::response_pagination".to_string(),
+                    )
+                })?
+                .get::<i64, _>("count"),
+        )
+        .unwrap();
+
+        match pagination {
+            Some(pagination) => Ok(PaginationType::new(
+                pagination.p,
+                pagination.size.unwrap(),
+                count,
+            )),
+            None => Ok(PaginationType::new(
+                PaginationConfig::default().p,
+                PaginationConfig::default().size.unwrap(),
+                count,
+            )),
+        }
     }
 }
