@@ -5,9 +5,9 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct QueryableClubRequest {
-    pub id: Option<Vec<Uuid>>,
+    pub ids: Option<Vec<Uuid>>,
     pub club_ids: Option<Vec<Uuid>>,
     pub student_ids: Option<Vec<Uuid>>,
     pub year: Option<i64>,
@@ -20,7 +20,7 @@ impl Queryable for QueryableClubRequest {
         let mut where_sections = Vec::<SqlSection>::new();
 
         // WHERE id = ANY($1)
-        if let Some(ids) = &self.id {
+        if let Some(ids) = &self.ids {
             where_sections.push(SqlSection {
                 sql: vec!["id = ANY(".to_string(), ")".to_string()],
                 params: vec![QueryParam::ArrayUuid(ids.clone())],
@@ -55,7 +55,7 @@ impl Queryable for QueryableClubRequest {
         if let Some(membership_status) = &self.membership_status {
             where_sections.push(SqlSection {
                 sql: vec!["membership_status = ".to_string()],
-                params: vec![QueryParam::String(membership_status.to_string())],
+                params: vec![QueryParam::SubmissionStatus(*membership_status)],
             });
         }
 
