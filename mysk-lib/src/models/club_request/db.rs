@@ -1,6 +1,9 @@
 use crate::{
     common::{
-        requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
+        requests::{
+            FilterConfig, PaginationConfig, QueryParam, QueryablePlaceholder, SortablePlaceholder,
+            SortingConfig, SqlSection,
+        },
         response::PaginationType,
     },
     error::Error,
@@ -20,8 +23,8 @@ use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
-    query = "SELECT student_id FROM club_members",
-    count_query = "SELECT COUNT(student_id) FROM club_members"
+    query = "SELECT id, created_at, club_id, year, membership_status, student_id FROM club_members",
+    count_query = "SELECT COUNT(*) FROM club_members"
 )]
 pub struct DbClubRequest {
     pub id: Uuid,
