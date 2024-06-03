@@ -5,7 +5,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryableClubRequest {
     pub ids: Option<Vec<Uuid>>,
     pub club_ids: Option<Vec<Uuid>>,
