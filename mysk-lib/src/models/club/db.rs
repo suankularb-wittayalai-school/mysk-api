@@ -8,7 +8,7 @@ use crate::{
     models::{
         club::request::{queryable::QueryableClub, sortable::SortableClub},
         enums::{ActivityDayHouse, SubmissionStatus},
-        traits::{QueryDb, Queryable as _},
+        traits::{QueryDb, Queryable},
     },
     prelude::*,
 };
