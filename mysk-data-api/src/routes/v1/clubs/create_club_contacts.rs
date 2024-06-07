@@ -28,7 +28,7 @@ struct ClubContactRequest {
 }
 
 #[post("/{id}/contacts")]
-pub async fn create_club_contact(
+pub async fn create_club_contacts(
     data: Data<AppState>,
     club_id: Path<Uuid>,
     student_id: LoggedInStudent,

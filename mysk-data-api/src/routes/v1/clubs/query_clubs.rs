@@ -16,7 +16,7 @@ use mysk_lib::{
 };
 
 #[get("")]
-pub async fn query_club(
+pub async fn query_clubs(
     data: Data<AppState>,
     request_query: RequestType<Club, QueryableClub, SortableClub>,
     _: ApiKeyHeader,

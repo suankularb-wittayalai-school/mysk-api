@@ -172,6 +172,9 @@ pub struct ErrorResponseType {
     meta: Option<MetadataType>,
 }
 
+#[derive(Serialize)]
+pub struct EmptyResponseData;
+
 impl ErrorResponseType {
     pub fn new(error: ErrorType, meta: Option<MetadataType>) -> Self {
         let version = env!("CARGO_PKG_VERSION").to_string();
