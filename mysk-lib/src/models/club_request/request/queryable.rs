@@ -10,9 +10,8 @@ pub struct QueryableClubRequest {
     pub ids: Option<Vec<Uuid>>,
     pub club_ids: Option<Vec<Uuid>>,
     pub student_ids: Option<Vec<Uuid>>,
-    pub year: Option<i64>,
     pub membership_status: Option<SubmissionStatus>,
-    // pub created_at: Option<DateTime<Utc>>,
+    pub year: Option<i64>,
 }
 
 impl Queryable for QueryableClubRequest {
@@ -43,19 +42,19 @@ impl Queryable for QueryableClubRequest {
             });
         }
 
-        // WHERE year = $1
-        if let Some(year) = &self.year {
-            where_sections.push(SqlSection {
-                sql: vec!["year = ".to_string()],
-                params: vec![QueryParam::Int(*year)],
-            });
-        }
-
         // WHERE membership_status = $1
         if let Some(membership_status) = &self.membership_status {
             where_sections.push(SqlSection {
                 sql: vec!["membership_status = ".to_string()],
                 params: vec![QueryParam::SubmissionStatus(*membership_status)],
+            });
+        }
+
+        // WHERE year = $1
+        if let Some(year) = &self.year {
+            where_sections.push(SqlSection {
+                sql: vec!["year = ".to_string()],
+                params: vec![QueryParam::Int(*year)],
             });
         }
 

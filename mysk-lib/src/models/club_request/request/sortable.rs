@@ -7,9 +7,8 @@ pub enum SortableClubRequest {
     Id,
     ClubId,
     StudentId,
-    Year,
     MembershipStatus,
-    CreatedAt,
+    Year,
 }
 
 impl Default for SortableClubRequest {
@@ -24,9 +23,8 @@ impl Display for SortableClubRequest {
             SortableClubRequest::Id => write!(f, "id"),
             SortableClubRequest::ClubId => write!(f, "club_id"),
             SortableClubRequest::StudentId => write!(f, "student_id"),
-            SortableClubRequest::Year => write!(f, "year"),
             SortableClubRequest::MembershipStatus => write!(f, "membership_status"),
-            SortableClubRequest::CreatedAt => write!(f, "created_at"),
+            SortableClubRequest::Year => write!(f, "year"),
         }
     }
 }

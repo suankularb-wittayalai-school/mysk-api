@@ -1,14 +1,11 @@
 use crate::{
     common::{
-        requests::{
-            FilterConfig, PaginationConfig, QueryParam, QueryablePlaceholder, SortablePlaceholder,
-            SortingConfig, SqlSection,
-        },
+        requests::{PaginationConfig, QueryParam, SqlSection},
         response::PaginationType,
     },
     error::Error,
-    helpers::date::get_current_academic_year,
     models::{
+        club_request::request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
         enums::SubmissionStatus,
         traits::{QueryDb, Queryable as _},
     },
@@ -18,7 +15,7 @@ use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
+use sqlx::{FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
@@ -35,39 +32,42 @@ pub struct DbClubRequest {
     pub student_id: Uuid,
 }
 
-impl DbClubRequest {
-    pub async fn get_club_requests(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
-        let res = query!(
-            "SELECT student_id FROM club_members WHERE club_id = $1",
-            club_id,
-        )
-        .fetch_all(pool)
-        .await;
-
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.student_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClubRequest::get_club_requests".to_string(),
-            )),
-        }
-    }
-}
-
-impl QueryDb<QueryablePlaceholder, SortablePlaceholder> for DbClubRequest {
+impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
-        filter: Option<&crate::common::requests::FilterConfig<QueryablePlaceholder>>,
+        filter: Option<&crate::common::requests::FilterConfig<QueryableClubRequest>>,
     ) where
         Self: Sized,
     {
-        todo!()
+        let mut where_sections: Vec<SqlSection> = Vec::new();
+
+        if let Some(filter) = filter {
+            if let Some(data) = &filter.data {
+                let mut data_sections = data.to_query_string();
+                where_sections.append(&mut data_sections);
+            }
+        }
+
+        for (i, section) in where_sections.iter().enumerate() {
+            query_builder.push(if i == 0 { " WHERE " } else { " AND " });
+            for (j, sql) in section.sql.iter().enumerate() {
+                query_builder.push(sql);
+                if j < section.params.len() {
+                    match section.params.get(j) {
+                        Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::Int(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::SubmissionStatus(v)) => query_builder.push_bind(*v),
+                        _ => unreachable!(),
+                    };
+                }
+            }
+        }
     }
 
     async fn query(
         pool: &PgPool,
-        filter: Option<&crate::common::requests::FilterConfig<QueryablePlaceholder>>,
-        sort: Option<&crate::common::requests::SortingConfig<SortablePlaceholder>>,
+        filter: Option<&crate::common::requests::FilterConfig<QueryableClubRequest>>,
+        sort: Option<&crate::common::requests::SortingConfig<SortableClubRequest>>,
         pagination: Option<&crate::common::requests::PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
@@ -110,7 +110,7 @@ impl QueryDb<QueryablePlaceholder, SortablePlaceholder> for DbClubRequest {
 
     async fn response_pagination(
         pool: &sqlx::PgPool,
-        filter: Option<&crate::common::requests::FilterConfig<QueryablePlaceholder>>,
+        filter: Option<&crate::common::requests::FilterConfig<QueryableClubRequest>>,
         pagination: Option<&crate::common::requests::PaginationConfig>,
     ) -> Result<crate::common::response::PaginationType>
     where

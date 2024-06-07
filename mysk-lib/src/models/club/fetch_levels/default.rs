@@ -6,7 +6,6 @@ use crate::{
     models::{
         club::db::DbClub,
         contact::Contact,
-        enums::ActivityDayHouse,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
     prelude::*,
