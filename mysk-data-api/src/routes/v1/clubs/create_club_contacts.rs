@@ -57,7 +57,7 @@ pub async fn create_club_contacts(
         Ok(Club::Detailed(club, _)) => club,
         Err(Error::InternalSeverError(_, _)) => {
             return Err(Error::EntityNotFound(
-                "Elective subject not found".to_string(),
+                "Club contact not found".to_string(),
                 format!("/clubs/{club_id}/contacts"),
             ));
         }
