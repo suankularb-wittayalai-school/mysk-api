@@ -13,7 +13,7 @@ use log::info;
 use mysk_lib::{
     common::{
         requests::{FetchLevel, RequestType},
-        response::{self, ResponseType},
+        response::{self, MetadataType, PaginationType, ResponseType},
     },
     helpers::date::get_current_academic_year,
     models::{
@@ -37,14 +37,14 @@ pub async fn join_clubs(
     data: Data<AppState>,
     club_id: Path<Uuid>,
     student_id: LoggedInStudent,
-    request_query: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
+    request_body: Json<RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>>,
     _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
     let club_id = club_id.into_inner();
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level.as_ref();
+    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
     // Check if club exists
     let club = match Club::get_by_id(
@@ -69,8 +69,8 @@ pub async fn join_clubs(
     // Check if student has already requested to join the club or is already a member
     if let Some(has_requested) = query!(
         r#"
-        SELECT membership_status "membership_status: SubmissionStatus" FROM club_members
-        WHERE club_id = $1 AND year = $2 and membership_status != $3 AND student_id = $4
+            SELECT membership_status "membership_status: SubmissionStatus" FROM club_members
+            WHERE club_id = $1 AND year = $2 and membership_status != $3 AND student_id = $4
         "#,
         club_id,
         get_current_academic_year(None),
@@ -85,36 +85,41 @@ pub async fn join_clubs(
                 return Err(Error::InvalidPermission(
                     "Student is already a member of the club".to_string(),
                     format!("clubs/{club_id}/join"),
-                ));
+                ))
             }
-            SubmissionStatus::Pending => {
-                new_join_request = false;
-                return Err(Error::InvalidPermission(
-                    "Student has already requested to join the club".to_string(),
-                    format!("clubs/{club_id}/join"),
-                ));
-            }
+            SubmissionStatus::Pending => new_join_request = false,
             SubmissionStatus::Declined => unreachable!(),
         }
     }
-    if new_join_request {
-        let _ = query!(
+    let club_member_id = if new_join_request {
+        query!(
             r#"
-            INSERT INTO club_members (club_id, year, membership_status, student_id)
-            VALUES ($1, $2, $3, $4)
+                INSERT INTO club_members (club_id, year, membership_status, student_id)
+                VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id
             "#,
-            club_id,
+            club.id,
             get_current_academic_year(None),
             SubmissionStatus::Pending as SubmissionStatus,
             student_id
         )
-        .execute(pool)
-        .await?;
-    }
+        .fetch_one(pool)
+        .await?
+        .id
+    } else {
+        return Err(Error::InvalidPermission(
+            "Student has already requested to join the club".to_string(),
+            format!("clubs/{club_id}/join"),
+        ));
+    };
 
     info!("Student {} has joined club {}", student_id, club_id);
     dbg!(club.id);
     dbg!(student_id);
 
-    Ok(HttpResponse::Ok())
+    let club_request_id =
+        ClubRequest::get_by_id(pool, club_member_id, fetch_level, descendant_fetch_level).await?;
+
+    let response = ResponseType::new(club_member_id, None);
+
+    Ok(HttpResponse::Ok().json(response))
 }
