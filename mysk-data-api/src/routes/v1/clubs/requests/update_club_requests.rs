@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use crate::{
     extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
@@ -15,20 +13,19 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        club::{self, db::DbClub, Club},
+        club::{db::DbClub, Club},
         club_request::ClubRequest,
         enums::SubmissionStatus,
-        student::Student,
         traits::TopLevelGetById as _,
     },
     prelude::*,
 };
 use serde::Deserialize;
-use sqlx::{query, query_as};
+use sqlx::query;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-struct UpdatableClubRequest {
+struct UpdateClubRequest {
     pub status: SubmissionStatus,
 }
 
@@ -36,14 +33,12 @@ struct UpdatableClubRequest {
 pub async fn update_club_requests(
     data: Data<AppState>,
     club_request_id: Path<Uuid>,
-    request_body: Json<
-        RequestType<UpdatableClubRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    request_body: Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
     student_id: LoggedInStudent,
     _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let client_student_id = student_id.0;
+    let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
     let club_request_status = match &request_body.data {
         Some(request_data) => match request_data.status {
@@ -65,7 +60,7 @@ pub async fn update_club_requests(
         pool,
         club_request_id,
         Some(&FetchLevel::Default),
-        Some(&FetchLevel::Detailed),
+        Some(&FetchLevel::IdOnly),
     )
     .await
     {
@@ -85,7 +80,7 @@ pub async fn update_club_requests(
             return Err(Error::InvalidPermission(
                 format!(
                     "Club request has already been {}",
-                    club_request.membership_status
+                    club_request.membership_status,
                 ),
                 format!("/clubs/requests/{club_request_id}"),
             ))
@@ -93,41 +88,34 @@ pub async fn update_club_requests(
         SubmissionStatus::Pending => (),
     }
 
-    // Check if client student is permitted to update the club request by checking if they are club staff
-
-    let club = club_request.club.unwrap_detailed();
-
-    // Check if the client student is a staff member of the club
-    if !club
-        .staffs
-        .iter()
-        .any(|staff| staff.id == client_student_id)
-    {
-        return Err(Error::InvalidPermission(
-            "Student must be a staff member of the club to update club requests".to_string(),
-            format!("/clubs/requests/{club_request_id}"),
-        ));
+    // Check if the student is a staff of the club
+    match club_request.club {
+        Club::IdOnly(club, _) => {
+            if !DbClub::get_club_staffs(pool, club.id)
+                .await?
+                .iter()
+                .any(|staff_id| *staff_id == student_id)
+            {
+                return Err(Error::InvalidPermission(
+                    "Student must be a staff member of the club to update club requests"
+                        .to_string(),
+                    format!("/clubs/requests/{club_request_id}"),
+                ));
+            }
+        }
+        _ => unreachable!("Club::get_by_id should always return an IdOnly variant"),
     }
-
-    // Update the club request status to either approved or declined
-    let mut updated_status: Option<SubmissionStatus> = club_request_status.into();
 
     query!(
         "UPDATE club_members SET membership_status = $1 WHERE id = $2",
-        updated_status.unwrap() as SubmissionStatus,
+        club_request_status as SubmissionStatus,
         club_request_id,
     )
     .execute(pool)
     .await?;
 
-    let updated_club_request = ClubRequest::get_by_id(
-        pool,
-        club_request_id,
-        Some(&FetchLevel::Detailed),
-        Some(&FetchLevel::IdOnly),
-    )
-    .await?;
-
+    let updated_club_request =
+        ClubRequest::get_by_id(pool, club_request_id, fetch_level, descendant_fetch_level).await?;
     let response = ResponseType::new(updated_club_request, None);
 
     Ok(HttpResponse::Ok().json(response))

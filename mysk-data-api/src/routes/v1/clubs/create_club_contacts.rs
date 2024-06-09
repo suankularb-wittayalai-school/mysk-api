@@ -13,7 +13,8 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        club::Club, contact::Contact, enums::ContactType, student::Student, traits::TopLevelGetById,
+        club::Club, contact::Contact, enums::ContactType, student::Student,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };

@@ -9,7 +9,7 @@ use mysk_lib::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{elective_subject::ElectiveSubject, traits::TopLevelGetById},
+    models::{elective_subject::ElectiveSubject, traits::TopLevelGetById as _},
     prelude::*,
 };
 use uuid::Uuid;

@@ -15,7 +15,7 @@ use mysk_lib::{
     helpers::date::get_current_academic_year,
     models::{
         club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-        traits::TopLevelGetById,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
@@ -48,6 +48,7 @@ pub async fn add_club_members(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists
     match Student::get_by_id(
@@ -62,14 +63,14 @@ pub async fn add_club_members(
             if student.classroom.is_none() {
                 return Err(Error::EntityNotFound(
                     "Invitee student not found".to_string(),
-                    format!("/clubs/{club_id}/contacts"),
+                    format!("/clubs/{club_id}/add"),
                 ));
             }
         }
         Err(Error::InternalSeverError(_, _)) => {
             return Err(Error::EntityNotFound(
                 "Invitee student not found".to_string(),
-                format!("/clubs/{club_id}/contacts"),
+                format!("/clubs/{club_id}/add"),
             ));
         }
         _ => unreachable!("Student::get_by_id should always return a Default variant"),
@@ -88,7 +89,7 @@ pub async fn add_club_members(
         Err(Error::InternalSeverError(_, _)) => {
             return Err(Error::EntityNotFound(
                 "Club contact not found".to_string(),
-                format!("/clubs/{club_id}/contacts"),
+                format!("/clubs/{club_id}/add"),
             ));
         }
         _ => unreachable!("Club::get_by_id should always return a Detailed variant"),
@@ -101,20 +102,31 @@ pub async fn add_club_members(
     }) {
         return Err(Error::InvalidPermission(
             "Student must be a staff of the club to create contacts".to_string(),
-            format!("/clubs/{club_id}/contacts"),
+            format!("/clubs/{club_id}/add"),
         ));
     }
 
     let mut insert_new_member: bool = true;
 
+    // Check if the invitee student is already a club staff
+    if club.staffs.iter().any(|staff| match staff {
+        Student::IdOnly(staff, _) => staff.id == invitee_student_id,
+        _ => unreachable!("Staff should always be an IdOnly variant"),
+    }) {
+        return Err(Error::InvalidPermission(
+            "Invitee student is already a staff member of the club".to_string(),
+            format!("/clubs/{club_id}/add"),
+        ));
+    }
+
     // Check if the invitee student is already a club member or a club request already exists
     if let Some(club_request) = query!(
         r#"
-        SELECT membership_status "membership_status: SubmissionStatus" FROM club_members
+        SELECT membership_status AS "membership_status: SubmissionStatus" FROM club_members
         WHERE club_id = $1 AND year = $2 AND membership_status != $3 AND student_id = $4
         "#,
         club.id,
-        get_current_academic_year(None),
+        current_year,
         SubmissionStatus::Declined as SubmissionStatus,
         invitee_student_id,
     )
@@ -140,7 +152,7 @@ pub async fn add_club_members(
             VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id
             ",
             club.id,
-            get_current_academic_year(None),
+            current_year,
             SubmissionStatus::Approved as SubmissionStatus,
             invitee_student_id,
         )
@@ -155,7 +167,7 @@ pub async fn add_club_members(
             ",
             SubmissionStatus::Approved as SubmissionStatus,
             club.id,
-            get_current_academic_year(None),
+            current_year,
             invitee_student_id,
         )
         .fetch_one(pool)

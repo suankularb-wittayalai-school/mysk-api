@@ -15,7 +15,7 @@ use mysk_lib::{
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
-        traits::TopLevelGetById,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
