@@ -1,3 +1,5 @@
+use std::{any::Any, f32::consts::E};
+
 use crate::{
     extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
@@ -7,10 +9,11 @@ use actix_web::{
     web::{Data, Json, Path},
     HttpResponse, Responder,
 };
+use log::info;
 use mysk_lib::{
     common::{
         requests::{FetchLevel, RequestType},
-        response::ResponseType,
+        response::{self, ResponseType},
     },
     helpers::date::get_current_academic_year,
     models::{
@@ -20,7 +23,7 @@ use mysk_lib::{
             ClubRequest,
         },
         enums::SubmissionStatus,
-        student::Student,
+        student::{self, Student},
         traits::{TopLevelGetById, TopLevelQuery as _},
     },
     prelude::*,
@@ -86,6 +89,10 @@ pub async fn join_clubs(
             }
             SubmissionStatus::Pending => {
                 new_join_request = false;
+                return Err(Error::InvalidPermission(
+                    "Student has already requested to join the club".to_string(),
+                    format!("clubs/{club_id}/join"),
+                ));
             }
             SubmissionStatus::Declined => unreachable!(),
         }
@@ -105,9 +112,9 @@ pub async fn join_clubs(
         .await?;
     }
 
+    info!("Student {} has joined club {}", student_id, club_id);
     dbg!(club.id);
     dbg!(student_id);
-    dbg!(new_join_request);
 
     Ok(HttpResponse::Ok())
 }
