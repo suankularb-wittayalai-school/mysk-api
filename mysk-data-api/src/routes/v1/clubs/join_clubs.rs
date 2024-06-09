@@ -1,5 +1,3 @@
-use std::{any::Any, f32::consts::E};
-
 use crate::{
     extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
@@ -13,7 +11,7 @@ use log::info;
 use mysk_lib::{
     common::{
         requests::{FetchLevel, RequestType},
-        response::{self, MetadataType, PaginationType, ResponseType},
+        response::ResponseType,
     },
     helpers::date::get_current_academic_year,
     models::{
@@ -23,8 +21,7 @@ use mysk_lib::{
             ClubRequest,
         },
         enums::SubmissionStatus,
-        student::{self, Student},
-        traits::{TopLevelGetById, TopLevelQuery as _},
+        traits::TopLevelGetById,
     },
     prelude::*,
 };
@@ -111,10 +108,6 @@ pub async fn join_clubs(
             format!("clubs/{club_id}/join"),
         ));
     };
-
-    info!("Student {} has joined club {}", student_id, club_id);
-    dbg!(club.id);
-    dbg!(student_id);
 
     let club_request_id =
         ClubRequest::get_by_id(pool, club_member_id, fetch_level, descendant_fetch_level).await?;
