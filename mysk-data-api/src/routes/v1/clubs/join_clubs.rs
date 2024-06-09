@@ -63,6 +63,7 @@ pub async fn join_clubs(
     };
 
     let mut new_join_request: bool = true;
+
     // Check if student has already requested to join the club or is already a member
     if let Some(has_requested) = query!(
         r#"
@@ -88,6 +89,8 @@ pub async fn join_clubs(
             SubmissionStatus::Declined => unreachable!(),
         }
     }
+
+    // Insert new club member
     let club_member_id = if new_join_request {
         query!(
             r#"

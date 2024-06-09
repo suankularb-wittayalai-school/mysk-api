@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
@@ -7,15 +9,14 @@ use actix_web::{
     web::{Data, Json, Path},
     HttpResponse, Responder,
 };
-use log::info;
 use mysk_lib::{
     common::{
         requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
-        response::{self, ResponseType},
+        response::ResponseType,
     },
     models::{
-        club::{request, Club},
-        club_request::{db::DbClubRequest, ClubRequest},
+        club::{self, db::DbClub, Club},
+        club_request::ClubRequest,
         enums::SubmissionStatus,
         student::Student,
         traits::TopLevelGetById as _,
@@ -64,7 +65,7 @@ pub async fn update_club_requests(
         pool,
         club_request_id,
         Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(&FetchLevel::Detailed),
     )
     .await
     {
@@ -92,11 +93,27 @@ pub async fn update_club_requests(
         SubmissionStatus::Pending => (),
     }
 
+    // Check if client student is permitted to update the club request by checking if they are club staff
+
+    let club = club_request.club.unwrap_detailed();
+
+    // Check if the client student is a staff member of the club
+    if !club
+        .staffs
+        .iter()
+        .any(|staff| staff.id == client_student_id)
+    {
+        return Err(Error::InvalidPermission(
+            "Student must be a staff member of the club to update club requests".to_string(),
+            format!("/clubs/requests/{club_request_id}"),
+        ));
+    }
+
+    // Update the club request status to either approved or declined
     let mut updated_status: Option<SubmissionStatus> = club_request_status.into();
-    dbg!(club_request_status);
-    // Update the club request status based on the approval or decline
+
     query!(
-        r#"UPDATE club_members SET membership_status = $1 WHERE id = $2"#,
+        "UPDATE club_members SET membership_status = $1 WHERE id = $2",
         updated_status.unwrap() as SubmissionStatus,
         club_request_id,
     )
