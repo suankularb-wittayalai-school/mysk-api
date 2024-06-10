@@ -6,9 +6,9 @@ use mysk_lib::{
         response::{MetadataType, ResponseType},
     },
     models::{
-        club::{
-            request::{queryable::QueryableClub, sortable::SortableClub},
-            Club,
+        club_request::{
+            request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
+            ClubRequest,
         },
         traits::TopLevelQuery as _,
     },
@@ -16,9 +16,9 @@ use mysk_lib::{
 };
 
 #[get("")]
-pub async fn query_clubs(
+pub async fn query_club_requests(
     data: Data<AppState>,
-    request_query: RequestType<Club, QueryableClub, SortableClub>,
+    request_query: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
     _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
@@ -28,7 +28,7 @@ pub async fn query_clubs(
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
 
-    let clubs = Club::query(
+    let club_requests = ClubRequest::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -38,8 +38,8 @@ pub async fn query_clubs(
     )
     .await?;
 
-    let pagination = Club::response_pagination(pool, filter, pagination).await?;
-    let response = ResponseType::new(clubs, Some(MetadataType::new(Some(pagination))));
+    let pagination = ClubRequest::response_pagination(pool, filter, pagination).await?;
+    let response = ResponseType::new(club_requests, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))
 }

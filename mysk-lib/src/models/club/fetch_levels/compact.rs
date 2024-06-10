@@ -3,7 +3,7 @@ use crate::{
         requests::FetchLevel,
         string::{FlexibleMultiLangString, MultiLangString},
     },
-    models::{club::db::DbClub, enums::ActivityDayHouse, traits::FetchLevelVariant},
+    models::{club::db::DbClub, traits::FetchLevelVariant},
     prelude::*,
 };
 use serde::{Deserialize, Serialize};

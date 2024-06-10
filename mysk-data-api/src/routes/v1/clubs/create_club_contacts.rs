@@ -13,7 +13,8 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        club::Club, contact::Contact, enums::ContactType, student::Student, traits::TopLevelGetById,
+        club::Club, contact::Contact, enums::ContactType, student::Student,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
@@ -28,7 +29,7 @@ struct ClubContactRequest {
 }
 
 #[post("/{id}/contacts")]
-pub async fn create_club_contact(
+pub async fn create_club_contacts(
     data: Data<AppState>,
     club_id: Path<Uuid>,
     student_id: LoggedInStudent,
@@ -57,7 +58,7 @@ pub async fn create_club_contact(
         Ok(Club::Detailed(club, _)) => club,
         Err(Error::InternalSeverError(_, _)) => {
             return Err(Error::EntityNotFound(
-                "Elective subject not found".to_string(),
+                "Club contact not found".to_string(),
                 format!("/clubs/{club_id}/contacts"),
             ));
         }

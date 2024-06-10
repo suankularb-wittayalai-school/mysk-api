@@ -13,5 +13,4 @@ pub mod request;
 
 pub type Club = TopLevelVariant<DbClub, IdOnlyClub, CompactClub, DefaultClub, DetailedClub>;
 
-// TODO: Queryable and Sortable to be implemented
 impl TopLevelQuery<DbClub, QueryableClub, SortableClub> for Club {}

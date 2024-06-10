@@ -9,31 +9,26 @@ use mysk_lib::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{elective_subject::ElectiveSubject, traits::TopLevelGetById as _},
+    models::{club_request::ClubRequest, traits::TopLevelGetById as _},
     prelude::*,
 };
 use uuid::Uuid;
 
 #[get("/{id}")]
-pub async fn query_elective_details(
+pub async fn query_club_request_details(
     data: Data<AppState>,
-    elective_subject_session_id: Path<Uuid>,
-    request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
+    club_id: Path<Uuid>,
+    request_query: RequestType<ClubRequest, QueryablePlaceholder, SortablePlaceholder>,
     _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let elective_subject_session_id = elective_subject_session_id.into_inner();
+    let club_id = club_id.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
 
-    let elective_subject = ElectiveSubject::get_by_id(
-        pool,
-        elective_subject_session_id,
-        fetch_level,
-        descendant_fetch_level,
-    )
-    .await?;
-    let response = ResponseType::new(elective_subject, None);
+    let club_request =
+        ClubRequest::get_by_id(pool, club_id, fetch_level, descendant_fetch_level).await?;
+    let response = ResponseType::new(club_request, None);
 
     Ok(HttpResponse::Ok().json(response))
 }

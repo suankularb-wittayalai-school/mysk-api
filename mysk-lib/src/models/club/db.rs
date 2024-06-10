@@ -7,8 +7,8 @@ use crate::{
     helpers::date::get_current_academic_year,
     models::{
         club::request::{queryable::QueryableClub, sortable::SortableClub},
-        enums::{ActivityDayHouse, SubmissionStatus},
-        traits::{QueryDb, Queryable as _},
+        enums::SubmissionStatus,
+        traits::{QueryDb, Queryable},
     },
     prelude::*,
 };
