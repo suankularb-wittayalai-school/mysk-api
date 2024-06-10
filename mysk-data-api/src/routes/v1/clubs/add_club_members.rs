@@ -101,7 +101,7 @@ pub async fn add_club_members(
         _ => unreachable!("Staff should always be an IdOnly variant"),
     }) {
         return Err(Error::InvalidPermission(
-            "Student must be a staff of the club to create contacts".to_string(),
+            "Student must be a staff of the club to add club members".to_string(),
             format!("/clubs/{club_id}/add"),
         ));
     }
