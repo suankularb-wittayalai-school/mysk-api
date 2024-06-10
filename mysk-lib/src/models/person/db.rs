@@ -7,7 +7,7 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = r"
+#[base_query(query = "
     SELECT
         id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th,
         last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate,

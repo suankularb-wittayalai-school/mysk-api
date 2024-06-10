@@ -15,7 +15,7 @@ use mysk_lib::{
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
-        traits::TopLevelGetById,
+        traits::TopLevelGetById as _,
     },
     prelude::*,
 };
@@ -90,7 +90,7 @@ pub async fn enroll_elective_subject(
         .subject_id;
 
     let enroll_count = query!(
-        r"
+        "
         SELECT 
             COUNT(*) 
         FROM 
@@ -115,7 +115,7 @@ pub async fn enroll_elective_subject(
 
     // Checks if the student is already enrolled in an elective this semester
     let has_enrolled = query!(
-        r"
+        "
         SELECT EXISTS (
             SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
             WHERE student_id = $1 and year = $2 AND semester = $3
@@ -137,7 +137,7 @@ pub async fn enroll_elective_subject(
     }
 
     query!(
-        r"
+        "
         INSERT INTO elective_subject_session_enrolled_students (student_id, elective_subject_session_id)  VALUES ($1, $2) ON CONFLICT DO NOTHING
         ",
         student_id,

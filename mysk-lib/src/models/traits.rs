@@ -108,8 +108,7 @@ pub trait QueryDb<QueryableObject: Queryable, SortableObject: Display> {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableObject>>,
-    )
-    where
+    ) where
         Self: Sized;
 
     async fn query(

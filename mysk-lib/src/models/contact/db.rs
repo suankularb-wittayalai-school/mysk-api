@@ -7,12 +7,12 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = r#"
+#[base_query(query = "
     SELECT
         id, created_at, name_th, name_en, type, value, include_students, include_teachers,
         include_parents
     FROM contacts
-    "#)]
+")]
 pub struct DbContact {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

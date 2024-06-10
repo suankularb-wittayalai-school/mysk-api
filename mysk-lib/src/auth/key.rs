@@ -45,10 +45,10 @@ impl ApiKey {
         let hash = bs58::encode(hasher.finalize()).into_string();
 
         let res = sqlx::query!(
-            r#"
+            "
             INSERT INTO user_api_keys (user_id, short_token, long_token_hash, expire_at)
             VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 DAY'))
-            "#,
+            ",
             user_id,
             short_token,
             hash,

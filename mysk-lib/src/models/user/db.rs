@@ -31,12 +31,12 @@ impl DbUser {
 
     pub async fn get_user_permissions(pool: &PgPool, user_id: Uuid) -> Result<Vec<String>> {
         let res = sqlx::query_as::<_, (String,)>(
-            r"
+            "
             SELECT permissions.name
             FROM user_permissions
             JOIN permissions ON user_permissions.permission_id = permissions.id
             WHERE user_permissions.user_id = $1
-        ",
+            ",
         )
         .bind(user_id)
         .fetch_all(pool)

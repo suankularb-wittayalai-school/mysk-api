@@ -33,10 +33,10 @@ impl ErrorType {
     #[allow(clippy::missing_panics_doc)]
     pub async fn log(&self, pool: &PgPool, api_key: Option<Uuid>) {
         let _ = sqlx::query!(
-            r#"
+            "
             INSERT INTO api_logging.error_logs (id, code, error_type, detail, source, api_key_id)
             VALUES ($1, $2, $3, $4, $5, $6)
-            "#,
+            ",
             self.id,
             self.code,
             self.error_type,
@@ -171,6 +171,9 @@ pub struct ErrorResponseType {
     data: Option<String>,
     meta: Option<MetadataType>,
 }
+
+#[derive(Serialize)]
+pub struct EmptyResponseData;
 
 impl ErrorResponseType {
     pub fn new(error: ErrorType, meta: Option<MetadataType>) -> Self {

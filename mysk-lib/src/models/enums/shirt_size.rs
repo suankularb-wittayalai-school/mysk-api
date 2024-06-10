@@ -43,4 +43,3 @@ impl Display for ShirtSize {
         }
     }
 }
-

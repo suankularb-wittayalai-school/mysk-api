@@ -14,7 +14,7 @@ use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = r"
+#[base_query(query = "
     SELECT
         students.id, students.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
         last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
@@ -49,7 +49,7 @@ pub struct DbStudent {
 
 impl DbStudent {
     pub async fn get_student_from_user_id(pool: &PgPool, user_id: Uuid) -> Result<Option<Uuid>> {
-        query!(r#"SELECT id FROM students WHERE user_id = $1"#, user_id)
+        query!("SELECT id FROM students WHERE user_id = $1", user_id)
             .fetch_optional(pool)
             .await
             .map(|res| res.map(|r| r.id))
@@ -63,13 +63,13 @@ impl DbStudent {
 
     pub async fn get_student_contacts(pool: &PgPool, student_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            r#"
+            "
             SELECT contacts.id FROM contacts
             INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id
             INNER JOIN people ON person_contacts.person_id = people.id
             INNER JOIN students ON people.id = students.person_id
             WHERE students.id = $1
-            "#,
+            ",
             student_id,
         )
         .fetch_all(pool)
@@ -90,11 +90,11 @@ impl DbStudent {
         academic_year: Option<i64>,
     ) -> Result<Option<ClassroomWClassNo>> {
         let res = query!(
-            r#"
+            "
             SELECT classroom_id, class_no FROM classroom_students
             INNER JOIN classrooms ON classrooms.id = classroom_id
             WHERE student_id = $1 AND year = $2
-            "#,
+            ",
             student_id,
             match academic_year {
                 Some(year) => year,
