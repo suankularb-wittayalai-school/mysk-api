@@ -17,9 +17,9 @@ use uuid::Uuid;
 #[get("/{id}")]
 pub async fn query_elective_details(
     data: Data<AppState>,
+    _: ApiKeyHeader,
     elective_subject_session_id: Path<Uuid>,
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let elective_subject_session_id = elective_subject_session_id.into_inner();

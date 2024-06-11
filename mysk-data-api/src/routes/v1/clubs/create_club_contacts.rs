@@ -31,10 +31,10 @@ struct ClubContactRequest {
 #[post("/{id}/contacts")]
 pub async fn create_club_contacts(
     data: Data<AppState>,
-    club_id: Path<Uuid>,
-    student_id: LoggedInStudent,
-    request_body: Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
     _: ApiKeyHeader,
+    student_id: LoggedInStudent,
+    club_id: Path<Uuid>,
+    request_body: Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;

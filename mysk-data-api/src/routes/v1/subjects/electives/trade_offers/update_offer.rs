@@ -33,12 +33,12 @@ struct UpdatableElectiveOffer {
 #[put("/{id}")]
 async fn update_trade_offer(
     data: Data<AppState>,
+    _: ApiKeyHeader,
+    student_id: LoggedInStudent,
     trade_offer_id: Path<Uuid>,
     request_body: Json<
         RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>,
     >,
-    student_id: LoggedInStudent,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let client_student_id = student_id.0;

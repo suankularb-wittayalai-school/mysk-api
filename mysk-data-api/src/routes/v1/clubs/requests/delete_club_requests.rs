@@ -24,9 +24,9 @@ use uuid::Uuid;
 #[delete("/{id}")]
 pub async fn delete_club_requests(
     data: Data<AppState>,
+    _: ApiKeyHeader,
     club_request_id: Path<Uuid>,
     student_id: LoggedInStudent,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;

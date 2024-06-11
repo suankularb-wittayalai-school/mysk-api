@@ -34,11 +34,11 @@ struct ElectiveTradeOfferRequest {
 #[post("")]
 async fn create_trade_offer(
     data: Data<AppState>,
+    _: ApiKeyHeader,
+    student_id: LoggedInStudent,
     request_body: Json<
         RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
-    student_id: LoggedInStudent,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let receiver_student_id = match &request_body.data {

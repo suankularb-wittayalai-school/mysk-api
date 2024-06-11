@@ -31,10 +31,10 @@ use uuid::Uuid;
 #[post("/{id}/join")]
 pub async fn join_clubs(
     data: Data<AppState>,
-    club_id: Path<Uuid>,
-    student_id: LoggedInStudent,
-    request_body: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
     _: ApiKeyHeader,
+    student_id: LoggedInStudent,
+    club_id: Path<Uuid>,
+    request_body: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;

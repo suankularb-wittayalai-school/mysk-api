@@ -32,12 +32,12 @@ struct AddClubMemberRequest {
 #[post("/{id}/add")]
 pub async fn add_club_members(
     data: Data<AppState>,
-    club_id: Path<Uuid>,
+    _: ApiKeyHeader,
     student_id: LoggedInStudent,
+    club_id: Path<Uuid>,
     request_body: Json<
         RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let inviter_student_id = student_id.0;

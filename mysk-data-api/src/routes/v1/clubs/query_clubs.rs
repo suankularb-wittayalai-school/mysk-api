@@ -18,8 +18,8 @@ use mysk_lib::{
 #[get("")]
 pub async fn query_clubs(
     data: Data<AppState>,
-    request_query: RequestType<Club, QueryableClub, SortableClub>,
     _: ApiKeyHeader,
+    request_query: RequestType<Club, QueryableClub, SortableClub>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let fetch_level = request_query.fetch_level.as_ref();

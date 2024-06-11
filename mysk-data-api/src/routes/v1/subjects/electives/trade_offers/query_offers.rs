@@ -20,12 +20,12 @@ use mysk_lib::{
 #[get("")]
 pub async fn query_trade_offers(
     data: Data<AppState>,
+    _: ApiKeyHeader,
     request_body: RequestType<
         ElectiveTradeOffer,
         QueryableElectiveTradeOffer,
         SortableElectiveTradeOffer,
     >,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let fetch_level = request_body.fetch_level.as_ref();

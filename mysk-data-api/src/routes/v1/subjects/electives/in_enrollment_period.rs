@@ -9,6 +9,7 @@ pub async fn in_enrollment_period(data: Data<AppState>, _: ApiKeyHeader) -> Resu
     let pool = &data.db;
 
     let is_in_enrollment_period = DbElectiveSubject::is_enrollment_period(pool).await?;
+    let response = ResponseType::new(is_in_enrollment_period, None);
 
-    Ok(HttpResponse::Ok().json(ResponseType::new(is_in_enrollment_period, None)))
+    Ok(HttpResponse::Ok().json(response))
 }

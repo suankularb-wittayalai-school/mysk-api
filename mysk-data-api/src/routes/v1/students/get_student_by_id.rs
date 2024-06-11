@@ -17,9 +17,9 @@ use uuid::Uuid;
 #[get("/{id}")]
 pub async fn get_student_by_id(
     data: Data<AppState>,
+    _: ApiKeyHeader,
     id: Path<Uuid>,
     request_query: RequestType<Student, QueryablePlaceholder, SortablePlaceholder>,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = id.into_inner();
