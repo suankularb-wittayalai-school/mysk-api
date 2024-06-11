@@ -19,23 +19,15 @@ impl FromRequest for ApiKeyHeader {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let Some(app_state) = req.app_data::<Data<AppState>>() else {
-            return Box::pin(future::err(Error::InternalSeverError(
-                "App state not found".to_string(),
-                "HaveApiKey Middleware".to_string(),
-            )));
-        };
-
+        let app_state = req.app_data::<Data<AppState>>().unwrap();
         let pool = app_state.db.clone();
-        let x_api_key_header = req.headers().get("X-API-KEY");
-
-        let token = match x_api_key_header {
+        let token = match req.headers().get("X-Api-Key") {
             Some(token) => match token.to_str() {
-                Ok(token) => token,
+                Ok(token) => PrefixedApiKey::try_from(token.to_string()),
                 Err(_) => {
                     return Box::pin(future::err(Error::InvalidApiKey(
                         "Invalid API Key".to_string(),
-                        "HaveApiKey Middleware".to_string(),
+                        "extractors::ApiKeyHeader".to_string(),
                     )));
                 }
             },
@@ -43,31 +35,18 @@ impl FromRequest for ApiKeyHeader {
                 return Box::pin(async {
                     Err(Error::MissingApiKey(
                         "Missing API Key".to_string(),
-                        "HaveApiKey Middleware".to_string(),
+                        "extractors::ApiKeyHeader".to_string(),
                     ))
                 })
             }
         };
 
-        let token = PrefixedApiKey::from(token.to_string());
-
-        let mut hasher = Sha256::new();
-        hasher.update(token.get_long_token().as_bytes());
-        let hash = bs58::encode(hasher.finalize()).into_string();
-
-        // let hash = match hash {
-        //     Ok(hash) => hash,
-        //     Err(_) => {
-        //         return Box::pin(async {
-        //             Err(Error::InvalidApiKey(
-        //                 "Invalid API Key".to_string(),
-        //                 "HaveApiKey Middleware".to_string(),
-        //             ))
-        //         })
-        //     }
-        // };
-
         Box::pin(async move {
+            let token = token?;
+            let mut hasher = Sha256::new();
+            hasher.update(token.get_long_token().as_bytes());
+            let hash = bs58::encode(hasher.finalize()).into_string();
+
             let api_key = match query_as!(
                 ApiKey,
                 "
@@ -86,13 +65,13 @@ impl FromRequest for ApiKeyHeader {
                     sqlx::Error::RowNotFound => {
                         return Err(Error::InvalidApiKey(
                             "Invalid API Key".to_string(),
-                            "HaveApiKey Middleware".to_string(),
+                            "extractors::ApiKeyHeader".to_string(),
                         ))
                     }
                     _ => {
                         return Err(Error::InternalSeverError(
                             "Internal server error".to_string(),
-                            "HaveApiKey Middleware".to_string(),
+                            "extractors::ApiKeyHeader".to_string(),
                         ))
                     }
                 },
