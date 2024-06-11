@@ -41,7 +41,12 @@ pub async fn create_club_contacts(
     let club_id = club_id.into_inner();
     let club_contact = match &request_body.data {
         Some(club_contact) => club_contact,
-        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+        None => {
+            return Err(Error::InvalidRequest(
+                "Json deserialize error: field `data` can not be empty".to_string(),
+                format!("/clubs/{club_id}/contacts"),
+            ));
+        }
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();

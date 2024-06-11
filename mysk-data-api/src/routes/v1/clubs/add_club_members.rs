@@ -44,7 +44,12 @@ pub async fn add_club_members(
     let club_id = club_id.into_inner();
     let invitee_student_id = match &request_body.data {
         Some(request_data) => request_data.id,
-        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+        None => {
+            return Err(Error::InvalidRequest(
+                "Json deserialize error: field `data` can not be empty".to_string(),
+                format!("/clubs/{club_id}/add"),
+            ));
+        }
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();

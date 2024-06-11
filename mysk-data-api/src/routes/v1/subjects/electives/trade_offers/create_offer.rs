@@ -43,7 +43,12 @@ async fn create_trade_offer(
     let pool = &data.db;
     let receiver_student_id = match &request_body.data {
         Some(request_data) => request_data.receiver_id,
-        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+        None => {
+            return Err(Error::InvalidRequest(
+                "Json deserialize error: field `data` can not be empty".to_string(),
+                format!("/subjects/electives/trade-offers"),
+            ));
+        }
     };
     let sender_student_id = student_id.0;
     let fetch_level = request_body.fetch_level.as_ref();
