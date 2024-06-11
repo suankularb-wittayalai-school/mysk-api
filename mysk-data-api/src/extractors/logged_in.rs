@@ -16,41 +16,48 @@ impl FromRequest for LoggedIn {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let Some(app_state) = req.app_data::<Data<AppState>>() else {
-            return Box::pin(future::err(Error::InternalSeverError(
-                "App state not found".to_string(),
-                "extractors::LoggedIn".to_string(),
-            )));
-        };
-
+        let app_state = req.app_data::<Data<AppState>>().unwrap();
         let pool = app_state.db.clone();
         let jwt_secret = app_state.env.token_secret.clone();
-
-        let Some(token) = req.headers().get(header::AUTHORIZATION) else {
+        let Some(authorization_header) = req.headers().get(header::AUTHORIZATION) else {
             return Box::pin(future::err(Error::MissingToken(
-                "Missing token".to_string(),
+                "Missing authorization token".to_string(),
                 "extractors::LoggedIn".to_string(),
             )));
         };
-        let Ok(token) = token.to_str() else {
-            return Box::pin(future::err(Error::InvalidToken(
-                "Invalid token".to_string(),
-                "extractors::LoggedIn".to_string(),
-            )));
-        };
+        let token_parts: Vec<&str> = authorization_header.to_str().unwrap().split(' ').collect();
 
-        let Ok(claims) = decode::<TokenClaims>(
-            token.trim_start_matches("Bearer "),
+        let Some(scheme) = token_parts.first() else {
+            return Box::pin(future::err(Error::InvalidAuthorizationScheme(
+                "Invalid authorization scheme".to_string(),
+                "extractors::LoggedIn".to_string(),
+            )));
+        };
+        if *scheme != "Bearer" {
+            return Box::pin(future::err(Error::InvalidAuthorizationScheme(
+                "Invalid authorization scheme".to_string(),
+                "extractors::LoggedIn".to_string(),
+            )));
+        }
+
+        let Some(token) = token_parts.get(1) else {
+            return Box::pin(future::err(Error::MissingToken(
+                "Missing authorization token".to_string(),
+                "extractors::LoggedIn".to_string(),
+            )));
+        };
+        let Ok(decoded_token) = decode::<TokenClaims>(
+            token,
             &DecodingKey::from_secret(jwt_secret.as_bytes()),
             &Validation::default(),
         ) else {
             return Box::pin(future::err(Error::InvalidToken(
-                "Invalid token".to_string(),
+                "Invalid authorization token".to_string(),
                 "extractors::LoggedIn".to_string(),
             )));
         };
 
-        let Ok(user_id) = Uuid::parse_str(&claims.claims.sub) else {
+        let Ok(user_id) = Uuid::parse_str(&decoded_token.claims.sub) else {
             return Box::pin(future::err(Error::EntityNotFound(
                 "User not found".to_string(),
                 "extractors::LoggedIn".to_string(),
