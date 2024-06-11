@@ -6,7 +6,7 @@ use crate::{
 use actix_web::{HttpResponse, Responder};
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
-use sqlx::PgPool;
+use sqlx::{Error as SqlxError, PgPool};
 use std::marker::PhantomData;
 use uuid::Uuid;
 
@@ -116,15 +116,23 @@ where
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
-        let variant = DbVariant::get_by_id(pool, id).await;
-
-        let variant = match variant {
+        let variant = match DbVariant::get_by_id(pool, id).await {
             Ok(variant) => variant,
             Err(e) => {
-                return Err(Error::InternalSeverError(
-                    e.to_string(),
-                    "TopLevelGetById::get_by_id".to_string(),
-                ))
+                return Err(match e {
+                    SqlxError::Database(source) => Error::InvalidRequest(
+                        source.message().to_string(),
+                        "TopLevelGetById::get_by_id".to_string(),
+                    ),
+                    SqlxError::RowNotFound => Error::EntityNotFound(
+                        "Entity not found".to_string(),
+                        "TopLevelGetById::get_by_id".to_string(),
+                    ),
+                    _ => Error::InternalSeverError(
+                        "An unknown database error had occurred".to_string(),
+                        "TopLevelGetById::get_by_id".to_string(),
+                    ),
+                });
             }
         };
 
@@ -137,20 +145,27 @@ where
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>> {
-        let variants = DbVariant::get_by_ids(pool, ids).await;
-
-        let variants = match variants {
+        let variants = match DbVariant::get_by_ids(pool, ids).await {
             Ok(variants) => variants,
             Err(e) => {
-                return Err(Error::InternalSeverError(
-                    e.to_string(),
-                    "TopLevelGetById::get_by_ids".to_string(),
-                ))
+                return Err(match e {
+                    SqlxError::Database(source) => Error::InvalidRequest(
+                        source.message().to_string(),
+                        "TopLevelGetById::get_by_ids".to_string(),
+                    ),
+                    SqlxError::RowNotFound => Error::EntityNotFound(
+                        "Entity not found".to_string(),
+                        "TopLevelGetById::get_by_ids".to_string(),
+                    ),
+                    _ => Error::InternalSeverError(
+                        "An unknown database error had occurred".to_string(),
+                        "TopLevelGetById::get_by_ids".to_string(),
+                    ),
+                });
             }
         };
 
         let mut result = vec![];
-
         for variant in variants {
             result
                 .push(Self::from_table(pool, variant, fetch_level, descendant_fetch_level).await?);
