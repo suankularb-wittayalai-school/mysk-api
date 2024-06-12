@@ -116,6 +116,8 @@ pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> (String, 
         hd: "sk.ac.th".to_string(),
         #[cfg(debug_assertions)]
         prompt: Some("select_account".to_string()),
+        #[cfg(not(debug_assertions))]
+        prompt: None,
     };
 
     (
