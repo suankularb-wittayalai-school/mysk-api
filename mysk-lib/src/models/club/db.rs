@@ -109,15 +109,14 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
 
         if let Some(filter) = filter {
             if let Some(q) = &filter.q {
-                // (organizations.name_th ILIKE '%q%' OR organizations.name_en ILIKE '%q%' OR
-                // organizations.description_th ILIKE '%q%' OR organizations.description_en ILIKE
-                // '%q%')
+                // (name_th ILIKE '%q%' OR name_en ILIKE '%q%' OR description_th ILIKE '%q%' OR
+                // description_en ILIKE '%q%')
                 where_sections.push(SqlSection {
                     sql: vec![
-                        "(organizations.name_th ILIKE concat('%', ".to_string(),
-                        ", '%') OR organizations.name_en ILIKE concat('%', ".to_string(),
-                        ", '%') OR organizations.description_th ILIKE concat('%', ".to_string(),
-                        ", '%') OR organizations.description_en ILIKE concat('%', ".to_string(),
+                        "(name_th ILIKE concat('%', ".to_string(),
+                        ", '%') OR name_en ILIKE concat('%', ".to_string(),
+                        ", '%') OR description_th ILIKE concat('%', ".to_string(),
+                        ", '%') OR description_en ILIKE concat('%', ".to_string(),
                         ", '%'))".to_string(),
                     ],
                     params: vec![
