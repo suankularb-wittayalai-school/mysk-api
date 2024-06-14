@@ -22,7 +22,7 @@ use uuid::Uuid;
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
     query = "SELECT * FROM clubs_with_detail_view",
-    count_query = "SELECT COUNT(*) FROM clubs"
+    count_query = "SELECT COUNT(*) FROM clubs_with_detail_view"
 )]
 pub struct DbClub {
     pub id: Uuid,
