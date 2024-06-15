@@ -27,10 +27,10 @@ use uuid::Uuid;
 #[post("/{id}/enroll")]
 pub async fn enroll_elective_subject(
     data: Data<AppState>,
-    elective_subject_session_id: Path<Uuid>,
-    student_id: LoggedInStudent,
-    request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
     _: ApiKeyHeader,
+    student_id: LoggedInStudent,
+    elective_subject_session_id: Path<Uuid>,
+    request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
@@ -91,12 +91,11 @@ pub async fn enroll_elective_subject(
 
     let enroll_count = query!(
         "
-        SELECT 
-            COUNT(*) 
-        FROM 
-            elective_subject_session_enrolled_students enrolls
-            INNER JOIN elective_subject_sessions electives
-            ON enrolls.elective_subject_session_id = electives.id
+        SELECT COUNT(*)
+        FROM
+            elective_subject_session_enrolled_students AS esses
+            INNER JOIN elective_subject_sessions AS ess
+            ON ess.id = esses.elective_subject_session_id
         WHERE student_id = $1 AND subject_id = $2
         ",
         student_id,
@@ -117,8 +116,12 @@ pub async fn enroll_elective_subject(
     let has_enrolled = query!(
         "
         SELECT EXISTS (
-            SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
-            WHERE student_id = $1 and year = $2 AND semester = $3
+            SELECT elective_subject_session_id
+            FROM
+                elective_subject_session_enrolled_students AS esses
+                INNER JOIN elective_subject_sessions AS ess
+                ON ess.id = esses.elective_subject_session_id
+            WHERE student_id = $1 AND year = $2 AND semester = $3
         )
         ",
         student_id,
@@ -138,7 +141,8 @@ pub async fn enroll_elective_subject(
 
     query!(
         "
-        INSERT INTO elective_subject_session_enrolled_students (student_id, elective_subject_session_id)  VALUES ($1, $2) ON CONFLICT DO NOTHING
+        INSERT INTO elective_subject_session_enrolled_students
+        (student_id, elective_subject_session_id) VALUES ($1, $2) ON CONFLICT DO NOTHING
         ",
         student_id,
         elective.id,

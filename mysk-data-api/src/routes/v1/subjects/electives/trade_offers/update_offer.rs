@@ -33,12 +33,12 @@ struct UpdatableElectiveOffer {
 #[put("/{id}")]
 async fn update_trade_offer(
     data: Data<AppState>,
+    _: ApiKeyHeader,
+    student_id: LoggedInStudent,
     trade_offer_id: Path<Uuid>,
     request_body: Json<
         RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>,
     >,
-    student_id: LoggedInStudent,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let client_student_id = student_id.0;
@@ -53,7 +53,12 @@ async fn update_trade_offer(
                 ));
             }
         },
-        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+        None => {
+            return Err(Error::InvalidRequest(
+                "Json deserialize error: field `data` can not be empty".to_string(),
+                format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+            ));
+        }
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();

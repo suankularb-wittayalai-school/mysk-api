@@ -1,7 +1,6 @@
 use super::ExtractorFuture;
 use crate::{extractors::logged_in::LoggedIn, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
-use futures::future;
 use mysk_lib::{
     models::{enums::UserRole, student::Student},
     prelude::*,
@@ -18,15 +17,8 @@ impl FromRequest for LoggedInStudent {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let Some(app_state) = req.app_data::<Data<AppState>>() else {
-            return Box::pin(future::err(Error::InternalSeverError(
-                "App state not found".to_string(),
-                "extractors::StudentOnly".to_string(),
-            )));
-        };
-
+        let app_state = req.app_data::<Data<AppState>>().unwrap();
         let pool = app_state.db.clone();
-
         let req = req.clone();
         let user = LoggedIn::from_request(&req, payload);
 
@@ -43,7 +35,7 @@ impl FromRequest for LoggedInStudent {
                 .await?
                 .ok_or(Error::EntityNotFound(
                     "Student not found".to_string(),
-                    "extractors::StudentOnly".to_string(),
+                    "extractors::LoggedInStudent".to_string(),
                 ))?;
 
             Ok(LoggedInStudent(student_id))

@@ -17,11 +17,11 @@ use uuid::Uuid;
 #[get("/{id}")]
 pub async fn get_teacher_by_id(
     data: Data<AppState>,
+    _: ApiKeyHeader,
     id: Path<Uuid>,
     request_query: RequestType<Teacher, QueryablePlaceholder, SortablePlaceholder>,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
-    let pool: &sqlx::Pool<sqlx::Postgres> = &data.db;
+    let pool = &data.db;
     let teacher_id = id.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();

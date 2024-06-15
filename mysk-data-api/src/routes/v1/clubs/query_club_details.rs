@@ -17,9 +17,9 @@ use uuid::Uuid;
 #[get("/{id}")]
 pub async fn query_club_details(
     data: Data<AppState>,
+    _: ApiKeyHeader,
     club_id: Path<Uuid>,
     request_query: RequestType<Club, QueryablePlaceholder, SortablePlaceholder>,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let club_id = club_id.into_inner();

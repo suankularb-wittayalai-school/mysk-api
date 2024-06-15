@@ -32,19 +32,24 @@ struct AddClubMemberRequest {
 #[post("/{id}/add")]
 pub async fn add_club_members(
     data: Data<AppState>,
-    club_id: Path<Uuid>,
+    _: ApiKeyHeader,
     student_id: LoggedInStudent,
+    club_id: Path<Uuid>,
     request_body: Json<
         RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let inviter_student_id = student_id.0;
     let club_id = club_id.into_inner();
     let invitee_student_id = match &request_body.data {
         Some(request_data) => request_data.id,
-        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+        None => {
+            return Err(Error::InvalidRequest(
+                "Json deserialize error: field `data` can not be empty".to_string(),
+                format!("/clubs/{club_id}/add"),
+            ));
+        }
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();

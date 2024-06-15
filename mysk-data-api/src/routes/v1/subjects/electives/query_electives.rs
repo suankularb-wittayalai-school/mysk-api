@@ -18,8 +18,8 @@ use mysk_lib::{
 #[get("")]
 pub async fn query_elective_subject(
     data: Data<AppState>,
-    request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
     _: ApiKeyHeader,
+    request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let fetch_level = request_query.fetch_level.as_ref();

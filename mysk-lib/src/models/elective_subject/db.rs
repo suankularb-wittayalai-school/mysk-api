@@ -243,7 +243,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         }
 
         if let Some(pagination) = pagination {
-            let limit_section = pagination.to_limit_clause();
+            let limit_section = pagination.to_limit_clause()?;
             query.push(" ");
             for (i, sql) in limit_section.sql.iter().enumerate() {
                 query.push(sql);

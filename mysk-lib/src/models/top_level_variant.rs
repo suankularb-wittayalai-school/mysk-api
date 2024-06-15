@@ -129,7 +129,7 @@ where
                         "TopLevelGetById::get_by_id".to_string(),
                     ),
                     _ => Error::InternalSeverError(
-                        "An unknown database error had occurred".to_string(),
+                        "Internal server error".to_string(),
                         "TopLevelGetById::get_by_id".to_string(),
                     ),
                 });
@@ -158,7 +158,7 @@ where
                         "TopLevelGetById::get_by_ids".to_string(),
                     ),
                     _ => Error::InternalSeverError(
-                        "An unknown database error had occurred".to_string(),
+                        "Internal server error".to_string(),
                         "TopLevelGetById::get_by_ids".to_string(),
                     ),
                 });

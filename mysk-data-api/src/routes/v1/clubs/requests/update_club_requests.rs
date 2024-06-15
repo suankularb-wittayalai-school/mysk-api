@@ -32,10 +32,10 @@ struct UpdateClubRequest {
 #[put("/{id}")]
 pub async fn update_club_requests(
     data: Data<AppState>,
+    _: ApiKeyHeader,
+    student_id: LoggedInStudent,
     club_request_id: Path<Uuid>,
     request_body: Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
-    student_id: LoggedInStudent,
-    _: ApiKeyHeader,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
@@ -50,7 +50,12 @@ pub async fn update_club_requests(
                 ));
             }
         },
-        _ => unreachable!("JSON errors are pre-handled by the JsonConfig error handler"),
+        None => {
+            return Err(Error::InvalidRequest(
+                "Json deserialize error: field `data` can not be empty".to_string(),
+                format!("/clubs/requests/{club_request_id}"),
+            ));
+        }
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();

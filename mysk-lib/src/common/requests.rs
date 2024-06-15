@@ -93,15 +93,22 @@ impl PaginationConfig {
         Self { p, size }
     }
 
-    pub fn to_limit_clause(&self) -> SqlSection {
+    pub fn to_limit_clause(&self) -> Result<SqlSection> {
+        if self.p == 0 {
+            return Err(Error::InvalidRequest(
+                "Page number must be greater than zero".to_string(),
+                "PaginationConfig::to_limit_clause".to_string(),
+            ));
+        }
+
         // LIMIT $1 OFFSET $2
-        SqlSection {
+        Ok(SqlSection {
             sql: vec!["LIMIT ".to_string(), " OFFSET ".to_string()],
             params: vec![
                 QueryParam::Int(i64::from(self.size.unwrap_or(50))),
                 QueryParam::Int(i64::from((self.p - 1) * self.size.unwrap_or(50))),
             ],
-        }
+        })
     }
 }
 

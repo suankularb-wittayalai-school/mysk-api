@@ -165,7 +165,7 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
         }
 
         if let Some(pagination) = pagination {
-            let limit_section = pagination.to_limit_clause();
+            let limit_section = pagination.to_limit_clause()?;
             query.push(" ");
             for (i, sql) in limit_section.sql.iter().enumerate() {
                 query.push(sql);

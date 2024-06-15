@@ -24,6 +24,8 @@ pub enum Error {
 
     // Auth errors
     /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
+    InvalidAuthorizationScheme(String, String),
+    /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
     InvalidToken(String, String),
     /// HTTP 401 - [Unauthorized](https://developer.mozilla.org/docs/Web/HTTP/Status/401)
     MissingToken(String, String),
@@ -68,6 +70,13 @@ impl From<&Error> for ErrorType {
                 id: Uuid::new_v4(),
                 code: 500,
                 error_type: "internal_server_error".to_string(),
+                detail: detail.to_string(),
+                source: source.to_string(),
+            },
+            Error::InvalidAuthorizationScheme(detail, source) => ErrorType {
+                id: Uuid::new_v4(),
+                code: 401,
+                error_type: "invalid_authorization_scheme".to_string(),
                 detail: detail.to_string(),
                 source: source.to_string(),
             },
@@ -118,7 +127,8 @@ impl From<&Error> for HttpResponse {
             Error::InvalidPermission(_, _) => HttpResponse::Forbidden().json(res_val),
             Error::Conflicted(_, _) => HttpResponse::Conflict().json(res_val),
             Error::InternalSeverError(_, _) => HttpResponse::InternalServerError().json(res_val),
-            Error::InvalidToken(_, _)
+            Error::InvalidAuthorizationScheme(_, _)
+            | Error::InvalidToken(_, _)
             | Error::MissingToken(_, _)
             | Error::MissingApiKey(_, _)
             | Error::InvalidApiKey(_, _) => HttpResponse::Unauthorized().json(res_val),
@@ -173,6 +183,9 @@ impl Display for Error {
             }
             Error::InternalSeverError(detail, source) => {
                 format!("Internal server error: {detail} (source: {source})")
+            }
+            Error::InvalidAuthorizationScheme(detail, source) => {
+                format!("Invalid authorization scheme: {detail} (source: {source})")
             }
             Error::InvalidToken(detail, source) => {
                 format!("Invalid token: {detail} (source: {source})")

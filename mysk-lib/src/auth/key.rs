@@ -4,6 +4,7 @@ use rand::{rngs::OsRng, RngCore};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::{prelude::FromRow, PgPool};
+use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, FromRow)]
@@ -93,22 +94,44 @@ impl PrefixedApiKey {
     }
 }
 
-impl From<String> for PrefixedApiKey {
-    fn from(api_key: String) -> Self {
-        let tokens: Vec<&str> = api_key.split('_').collect();
-        let prefix = tokens[0].to_string();
-        let short_token = tokens[1].to_string();
-        let long_token = tokens[2].to_string();
+impl TryFrom<String> for PrefixedApiKey {
+    type Error = Error;
 
-        Self {
-            prefix,
-            short_token,
-            long_token,
-        }
+    fn try_from(api_key: String) -> Result<Self> {
+        let tokens: Vec<&str> = api_key.split('_').collect();
+        let Some(prefix) = tokens.first() else {
+            return Err(Error::InvalidToken(
+                "Invalid API Key".to_string(),
+                "PrefixedApiKey::try_from".to_string(),
+            ));
+        };
+        let Some(short_token) = tokens.get(1) else {
+            return Err(Error::InvalidToken(
+                "Invalid API Key".to_string(),
+                "PrefixedApiKey::try_from".to_string(),
+            ));
+        };
+        let Some(long_token) = tokens.get(2) else {
+            return Err(Error::InvalidToken(
+                "Invalid API Key".to_string(),
+                "PrefixedApiKey::try_from".to_string(),
+            ));
+        };
+
+        Ok(Self {
+            prefix: (*prefix).to_string(),
+            short_token: (*short_token).to_string(),
+            long_token: (*long_token).to_string(),
+        })
     }
 }
-impl ToString for PrefixedApiKey {
-    fn to_string(&self) -> String {
-        format!("{}_{}_{}", self.prefix, self.short_token, self.long_token)
+
+impl Display for PrefixedApiKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}_{}_{}",
+            self.prefix, self.short_token, self.long_token,
+        )
     }
 }

@@ -27,14 +27,14 @@ use uuid::Uuid;
 #[put("/{id}/enroll")]
 async fn modify_elective_subject(
     data: Data<AppState>,
-    id: Path<Uuid>,
-    student_id: LoggedInStudent,
-    request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
     _: ApiKeyHeader,
+    student_id: LoggedInStudent,
+    elective_subject_session_id: Path<Uuid>,
+    request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let student_id = student_id.0;
-    let elective_subject_session_id = id.into_inner();
+    let elective_subject_session_id = elective_subject_session_id.into_inner();
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
