@@ -9,7 +9,6 @@ pub struct Config {
     pub host: IpAddr,
     pub port: u16,
     pub root_uri: String,
-    pub token_expired_in: String,
     pub token_max_age: u64,
     pub token_secret: String,
 }
@@ -30,7 +29,6 @@ impl Config {
             .parse::<u16>()
             .expect("PORT must be a valid port number");
         let root_uri = var("ROOT_URI").expect("ROOT_URI must be set");
-        let token_expired_in = var("TOKEN_EXPIRED_IN").expect("TOKEN_EXPIRED_IN must be set");
         let token_max_age = var("TOKEN_MAXAGE")
             .expect("TOKEN_MAXAGE must be set")
             .parse::<u64>()
@@ -44,7 +42,6 @@ impl Config {
             host,
             port,
             root_uri,
-            token_expired_in,
             token_max_age,
             token_secret,
         }
