@@ -139,8 +139,8 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
                 query_builder.push(sql);
                 if j < section.params.len() {
                     match section.params.get(j) {
-                        Some(QueryParam::Uuid(v)) => query_builder.push_bind(*v),
                         Some(QueryParam::String(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
                         _ => unreachable!(),
                     };
                 }
