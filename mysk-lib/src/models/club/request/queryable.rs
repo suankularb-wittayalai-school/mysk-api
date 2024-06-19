@@ -28,24 +28,23 @@ impl Queryable for QueryableClub {
             });
         }
 
-        // WHERE clubs.id IN (SELECT club_id FROM club_contacts WHERE contact_id IN ANY($1))
+        // WHERE id IN (SELECT club_id FROM club_contacts WHERE contact_id IN ANY($1))
         if let Some(contact_ids) = &self.contact_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "clubs.id IN (SELECT club_id FROM club_contacts WHERE contact_id = ANY("
-                        .to_string(),
+                    "id IN (SELECT club_id FROM club_contacts WHERE contact_id = ANY(".to_string(),
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(contact_ids.clone())],
             });
         }
 
-        // WHERE organizations.description_th ILIKE $1 OR organizations.description_en ILIKE $1
+        // WHERE description_th ILIKE $1 OR description_en ILIKE $1
         if let Some(description) = &self.description {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "(organizations.description_th ILIKE ".to_string(),
-                    " OR organizations.description_en ILIKE ".to_string(),
+                    "(description_th ILIKE ".to_string(),
+                    " OR description_en ILIKE ".to_string(),
                     ")".to_string(),
                 ],
                 params: vec![
@@ -61,11 +60,11 @@ impl Queryable for QueryableClub {
             where_sections.push(SqlSection {
                 sql: vec![
                     concat!(
-                        "clubs.id IN (SELECT club_id FROM club_members WHERE",
+                        "id IN (SELECT club_id FROM club_members WHERE",
                         " student_id = ANY(",
                     )
                     .to_string(),
-                    ") AND membership_status = 'approved')".to_string(),
+                    ") AND membership_status = 'approved' AND year = get_current_academic_year(CAST(NOW() as DATE)))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(member_ids.clone())],
             });
@@ -86,13 +85,12 @@ impl Queryable for QueryableClub {
             });
         }
 
-        // WHERE clubs.id IN (SELECT club_id FROM club_staffs WHERE student_id IN ANY($1) AND
+        // WHERE id IN (SELECT club_id FROM club_staffs WHERE student_id IN ANY($1) AND
         // year = {get_current_academic_year(None)})
         if let Some(staff_ids) = &self.staff_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "clubs.id IN (SELECT club_id FROM club_staffs WHERE student_id = ANY("
-                        .to_string(),
+                    "id IN (SELECT club_id FROM club_staffs WHERE student_id = ANY(".to_string(),
                     format!(") AND year = {})", get_current_academic_year(None)),
                 ],
                 params: vec![QueryParam::ArrayUuid(staff_ids.clone())],
