@@ -20,7 +20,7 @@ impl ClubStatistics {
 
         let club_members = query!(
             "SELECT COUNT(DISTINCT student_id) as count FROM club_members WHERE year = $1",
-            current_year
+            current_year,
         )
         .fetch_one(pool)
         .await?
@@ -29,7 +29,7 @@ impl ClubStatistics {
 
         let club_staffs = query!(
             "SELECT COUNT(DISTINCT student_id) as count FROM club_staffs WHERE year = $1",
-            current_year
+            current_year,
         )
         .fetch_one(pool)
         .await?
@@ -38,7 +38,7 @@ impl ClubStatistics {
 
         let active_clubs = query!(
             "SELECT COUNT(DISTINCT club_id) as count FROM club_staffs WHERE year = $1",
-            current_year
+            current_year,
         )
         .fetch_one(pool)
         .await?
@@ -47,7 +47,11 @@ impl ClubStatistics {
 
         // Total students for percentage calculation
         let total_students = query!(
-            "SELECT count(DISTINCT students.id) as count FROM students JOIN classroom_students  ON classroom_students.student_id = students.id JOIN classrooms  ON classrooms.id = classroom_students.classroom_id AND classrooms.year = $1", current_year
+            "SELECT count(DISTINCT students.id) as count FROM students
+            JOIN classroom_students ON classroom_students.student_id = students.id
+            JOIN classrooms ON classrooms.id = classroom_students.classroom_id
+            AND classrooms.year = $1",
+            current_year,
         )
         .fetch_one(pool)
         .await?
