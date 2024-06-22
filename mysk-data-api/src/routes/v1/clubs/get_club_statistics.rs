@@ -37,7 +37,7 @@ impl ClubStatistics {
         .unwrap_or(0);
 
         let active_clubs = query!(
-            "SELECT COUNT(DISTINCT club_id) as count FROM club_staffs JOIN clubs ON club_staffs.club_id = clubs.id WHERE club_staffs.year = $1",
+            "SELECT COUNT(DISTINCT club_id) as count FROM club_staffs WHERE year = $1",
             current_year
         )
         .fetch_one(pool)
