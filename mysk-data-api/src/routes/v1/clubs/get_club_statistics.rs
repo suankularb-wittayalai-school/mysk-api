@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::{extractors::api_key::ApiKeyHeader, AppState};
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use mysk_lib::{
     common::response::ResponseType, helpers::date::get_current_academic_year, prelude::*,
@@ -68,7 +68,7 @@ impl ClubStatistics {
 }
 
 #[get("/statistics")]
-async fn get_club_statistics(data: Data<AppState>) -> Result<impl Responder> {
+async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<impl Responder> {
     let pool = &data.db;
     let statistics = ClubStatistics::new(pool).await?;
     let response = ResponseType::new(statistics, None);
