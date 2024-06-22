@@ -8,8 +8,8 @@ use sqlx::{query, PgPool};
 
 #[derive(Debug, Serialize)]
 struct ClubStatistics {
-    pub new_club_members: i64,
-    pub new_club_staffs: i64,
+    pub club_members: i64,
+    pub club_staffs: i64,
     pub active_clubs: i64,
     pub total_students: i64,
 }
@@ -18,7 +18,7 @@ impl ClubStatistics {
     pub async fn new(pool: &PgPool) -> Result<Self> {
         let current_year = get_current_academic_year(None);
 
-        let new_club_members = query!(
+        let club_members = query!(
             "SELECT COUNT(DISTINCT student_id) as count FROM club_members WHERE year = $1",
             current_year
         )
@@ -27,7 +27,7 @@ impl ClubStatistics {
         .count
         .unwrap_or(0);
 
-        let new_club_staffs = query!(
+        let club_staffs = query!(
             "SELECT COUNT(DISTINCT student_id) as count FROM club_staffs WHERE year = $1",
             current_year
         )
@@ -55,8 +55,8 @@ impl ClubStatistics {
         .unwrap_or(0);
 
         Ok(ClubStatistics {
-            new_club_members,
-            new_club_staffs,
+            club_members,
+            club_staffs,
             active_clubs,
             total_students,
         })
