@@ -1,4 +1,4 @@
-use crate::{extractors::api_key::ApiKeyHeader, AppState};
+use crate::AppState;
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use mysk_lib::{
     common::response::ResponseType, helpers::date::get_current_academic_year, prelude::*,
