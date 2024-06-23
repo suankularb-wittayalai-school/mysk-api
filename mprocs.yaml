@@ -1,6 +1,6 @@
 procs:
   mysk-api-server:
-    shell: "cargo run"
+    shell: "cargo run -q"
     autorestart: true
 
   test-web-server:
