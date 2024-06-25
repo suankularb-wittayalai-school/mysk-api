@@ -9,6 +9,7 @@ use crate::{
     },
     prelude::*,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -16,6 +17,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DefaultClubRequest {
     pub id: Uuid,
+    pub created_at: Option<DateTime<Utc>>,
     pub club: Club,
     pub student: Student,
     pub year: Option<i64>,
@@ -30,6 +32,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
+            created_at: table.created_at,
             club: Club::get_by_id(
                 pool,
                 table.club_id,
