@@ -22,6 +22,7 @@ serde.workspace = true
 sha2.workspace = true
 sqlx.workspace = true
 uuid.workspace = true
+tokio = "1.38.0"
 
 [build-dependencies]
 chrono.workspace = true
