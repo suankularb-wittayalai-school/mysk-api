@@ -1,14 +1,13 @@
 [package]
 name = "mysk-lib-derives"
-version = "0.3.2"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
 
 [lib]
 proc-macro = true
 
 [dependencies]
-darling = "0.20.3"
-quote = "1.0.9"
-syn = { version = "2.0.48", features = ["full"] }
+darling.workspace = true
+quote.workspace = true
+syn.workspace = true
