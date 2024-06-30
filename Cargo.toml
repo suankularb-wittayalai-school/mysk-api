@@ -13,7 +13,8 @@ edition = "2021"
 
 [workspace.dependencies]
 actix-cors = "0.7.0"
-actix-web = { version = "4.8.0" }
+actix-web = "4.8.0"
+async-trait = "0.1.80"
 bs58 = "0.5.1"
 chrono = { version = "0.4.38", features = ["serde"] }
 darling = "0.20.9"

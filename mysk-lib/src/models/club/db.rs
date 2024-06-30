@@ -12,6 +12,7 @@ use crate::{
     },
     prelude::*,
 };
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
@@ -98,6 +99,7 @@ impl DbClub {
     }
 }
 
+#[async_trait]
 impl QueryDb<QueryableClub, SortableClub> for DbClub {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,

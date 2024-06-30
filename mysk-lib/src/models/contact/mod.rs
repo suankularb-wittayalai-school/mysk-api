@@ -7,6 +7,7 @@ use crate::{
     },
     prelude::*,
 };
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
@@ -27,6 +28,7 @@ pub struct Contact {
     pub include_parents: Option<bool>,
 }
 
+#[async_trait]
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
         _: &PgPool,
@@ -61,6 +63,7 @@ impl TopLevelFromTable<DbContact> for Contact {
     }
 }
 
+#[async_trait]
 impl TopLevelGetById for Contact {
     async fn get_by_id(
         pool: &PgPool,

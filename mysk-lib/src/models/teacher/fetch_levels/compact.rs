@@ -3,6 +3,7 @@ use crate::{
     models::{subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchLevelVariant},
     prelude::*,
 };
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -19,6 +20,7 @@ pub struct CompactTeacher {
     pub subject_group: SubjectGroup,
 }
 
+#[async_trait]
 impl FetchLevelVariant<DbTeacher> for CompactTeacher {
     async fn from_table(pool: &PgPool, table: DbTeacher, _: Option<&FetchLevel>) -> Result<Self> {
         let subject_group =

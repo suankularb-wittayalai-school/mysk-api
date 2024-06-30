@@ -4,6 +4,7 @@ use crate::{
     prelude::*,
 };
 use actix_web::{HttpResponse, Responder};
+use async_trait::async_trait;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::{Error as SqlxError, PgPool};
@@ -11,32 +12,29 @@ use std::marker::PhantomData;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize)]
-pub enum TopLevelVariant<
+pub enum TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
+where
     DbVariant: GetById,
     IdOnly: Serialize + FetchLevelVariant<DbVariant>,
     Compact: Serialize + FetchLevelVariant<DbVariant>,
     Default: Serialize + FetchLevelVariant<DbVariant>,
     Detailed: Serialize + FetchLevelVariant<DbVariant>,
-> {
+{
     IdOnly(Box<IdOnly>, PhantomData<DbVariant>),
     Compact(Box<Compact>, PhantomData<DbVariant>),
     Default(Box<Default>, PhantomData<DbVariant>),
     Detailed(Box<Detailed>, PhantomData<DbVariant>),
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > TopLevelFromTable<DbVariant>
+#[async_trait]
+impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelFromTable<DbVariant>
     for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    DbVariant: GetById + Send,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + Send,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + Send,
+    Default: Serialize + FetchLevelVariant<DbVariant> + Send,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + Send,
 {
     async fn from_table(
         pool: &PgPool,
@@ -45,7 +43,8 @@ where
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Self> {
         match fetch_level {
-            Some(FetchLevel::IdOnly) => Ok(Self::IdOnly(
+            Some(FetchLevel::IdOnly) | None => Ok(Self::IdOnly(
+                // We don't need to return a pinned box because IdOnly is never recursive
                 Box::new(IdOnly::from_table(pool, table, descendant_fetch_level).await?),
                 PhantomData,
             )),
@@ -63,22 +62,15 @@ where
                 ),
                 PhantomData,
             )),
-            None => Ok(Self::IdOnly(
-                Box::new(IdOnly::from_table(pool, table, descendant_fetch_level).await?),
-                PhantomData,
-            )),
         }
     }
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > Serialize for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
+#[async_trait]
+impl<DbVariant, IdOnly, Compact, Default, Detailed> Serialize
+    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
+    DbVariant: GetById,
     IdOnly: Serialize + FetchLevelVariant<DbVariant>,
     Compact: Serialize + FetchLevelVariant<DbVariant>,
     Default: Serialize + FetchLevelVariant<DbVariant>,
@@ -97,18 +89,15 @@ where
     }
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > TopLevelGetById for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
+#[async_trait]
+impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelGetById
+    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    DbVariant: GetById + Send,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + Send,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + Send,
+    Default: Serialize + FetchLevelVariant<DbVariant> + Send,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + Send,
 {
     async fn get_by_id(
         pool: &PgPool,
@@ -175,27 +164,29 @@ where
     }
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
+impl<DbVariant, IdOnly, Compact, Default, Detailed>
+    From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
     for ResponseType<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
+where
+    DbVariant: GetById,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+    Compact: Serialize + FetchLevelVariant<DbVariant>,
+    Default: Serialize + FetchLevelVariant<DbVariant>,
+    Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
         ResponseType::new(variant, None)
     }
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for HttpResponse
+impl<DbVariant, IdOnly, Compact, Default, Detailed>
+    From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for HttpResponse
+where
+    DbVariant: GetById,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+    Compact: Serialize + FetchLevelVariant<DbVariant>,
+    Default: Serialize + FetchLevelVariant<DbVariant>,
+    Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
         let response_type: ResponseType<
@@ -206,14 +197,14 @@ impl<
     }
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
-    for Result<HttpResponse>
+impl<DbVariant, IdOnly, Compact, Default, Detailed>
+    From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for Result<HttpResponse>
+where
+    DbVariant: GetById,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+    Compact: Serialize + FetchLevelVariant<DbVariant>,
+    Default: Serialize + FetchLevelVariant<DbVariant>,
+    Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
         let response_type: ResponseType<
@@ -224,15 +215,17 @@ impl<
     }
 }
 
-impl<
-        DbVariant: GetById,
-        IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-        Compact: Serialize + FetchLevelVariant<DbVariant>,
-        Default: Serialize + FetchLevelVariant<DbVariant>,
-        Detailed: Serialize + FetchLevelVariant<DbVariant>,
-    > Responder for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
+impl<DbVariant, IdOnly, Compact, Default, Detailed> Responder
+    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
+where
+    DbVariant: GetById,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+    Compact: Serialize + FetchLevelVariant<DbVariant>,
+    Default: Serialize + FetchLevelVariant<DbVariant>,
+    Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     type Body = actix_web::body::BoxBody;
+
     fn respond_to(self, _req: &actix_web::HttpRequest) -> actix_web::HttpResponse {
         let response_type: ResponseType<
             TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>,

@@ -10,6 +10,7 @@ use crate::{
     },
     prelude::*,
 };
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -27,6 +28,7 @@ pub struct DefaultClub {
     pub staff_count: i64,
 }
 
+#[async_trait]
 impl FetchLevelVariant<DbClub> for DefaultClub {
     async fn from_table(
         pool: &PgPool,

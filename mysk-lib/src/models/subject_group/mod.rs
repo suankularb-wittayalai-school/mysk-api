@@ -4,6 +4,7 @@ use crate::{
     models::traits::TopLevelFromTable,
     prelude::*,
 };
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -17,6 +18,7 @@ pub struct SubjectGroup {
     pub name: MultiLangString,
 }
 
+#[async_trait]
 impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
     async fn from_table(
         _: &PgPool,
@@ -32,6 +34,7 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
     }
 }
 
+// We're not using the GetById derive here because the ID of this table is an integer not a UUID.
 impl SubjectGroup {
     pub async fn get_by_id(
         pool: &PgPool,
