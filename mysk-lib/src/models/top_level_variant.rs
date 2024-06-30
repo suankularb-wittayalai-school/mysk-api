@@ -93,11 +93,11 @@ where
 impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelGetById
     for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    DbVariant: GetById + Send,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant> + Send,
-    Compact: Serialize + FetchLevelVariant<DbVariant> + Send,
-    Default: Serialize + FetchLevelVariant<DbVariant> + Send,
-    Detailed: Serialize + FetchLevelVariant<DbVariant> + Send,
+    DbVariant: GetById + Send + 'static,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
+    Compact: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
+    Default: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
+    Detailed: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
 {
     async fn get_by_id(
         pool: &PgPool,
@@ -153,11 +153,28 @@ where
                 });
             }
         };
+        let fetch_level = fetch_level.copied();
+        let descendant_fetch_level = descendant_fetch_level.copied();
+        let futures: Vec<_> = variants
+            .into_iter()
+            .map(|variant| {
+                let pool = pool.clone();
 
-        let mut result = vec![];
-        for variant in variants {
-            result
-                .push(Self::from_table(pool, variant, fetch_level, descendant_fetch_level).await?);
+                tokio::spawn(async move {
+                    Self::from_table(
+                        &pool,
+                        variant,
+                        fetch_level.as_ref(),
+                        descendant_fetch_level.as_ref(),
+                    )
+                    .await
+                })
+            })
+            .collect();
+
+        let mut result = Vec::with_capacity(futures.len());
+        for future in futures {
+            result.push(future.await.unwrap()?);
         }
 
         Ok(result)

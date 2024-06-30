@@ -103,7 +103,7 @@ impl DbTeacher {
         teacher_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
-        let res = query!(
+        let as_teacher = query!(
             "SELECT subject_id FROM subject_teachers WHERE teacher_id = $1 AND year = $2",
             teacher_id,
             match academic_year {
@@ -113,8 +113,7 @@ impl DbTeacher {
         )
         .fetch_all(pool)
         .await;
-
-        let res2 = query!(
+        let as_co_teacher = query!(
             "SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2",
             teacher_id,
             match academic_year {
@@ -125,7 +124,7 @@ impl DbTeacher {
         .fetch_all(pool)
         .await;
 
-        let res = match res {
+        let as_teacher = match as_teacher {
             Ok(res) => res,
             Err(e) => {
                 return Err(Error::InternalSeverError(
@@ -134,7 +133,7 @@ impl DbTeacher {
                 ));
             }
         };
-        let res2 = match res2 {
+        let as_co_teacher = match as_co_teacher {
             Ok(res) => res,
             Err(e) => {
                 return Err(Error::InternalSeverError(
@@ -143,13 +142,13 @@ impl DbTeacher {
                 ));
             }
         };
-        let mut result = vec![];
 
-        for r in res {
-            result.push(r.subject_id);
+        let mut result = Vec::with_capacity(as_teacher.len() + as_co_teacher.len());
+        for record in as_teacher {
+            result.push(record.subject_id);
         }
-        for r in res2 {
-            result.push(r.subject_id);
+        for record in as_co_teacher {
+            result.push(record.subject_id);
         }
 
         Ok(result)

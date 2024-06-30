@@ -83,12 +83,28 @@ impl TopLevelGetById for Contact {
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>> {
         let contacts = DbContact::get_by_ids(pool, ids).await?;
+        let fetch_level = fetch_level.copied();
+        let descendant_fetch_level = descendant_fetch_level.copied();
+        let futures: Vec<_> = contacts
+            .into_iter()
+            .map(|contact| {
+                let pool = pool.clone();
 
-        let mut result = vec![];
+                tokio::spawn(async move {
+                    Self::from_table(
+                        &pool,
+                        contact,
+                        fetch_level.as_ref(),
+                        descendant_fetch_level.as_ref(),
+                    )
+                    .await
+                })
+            })
+            .collect();
 
-        for contact in contacts {
-            result
-                .push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?);
+        let mut result = Vec::with_capacity(futures.len());
+        for future in futures {
+            result.push(future.await.unwrap()?);
         }
 
         Ok(result)
