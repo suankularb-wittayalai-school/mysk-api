@@ -4,6 +4,7 @@ use crate::{
     models::traits::TopLevelFromTable,
     prelude::*,
 };
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -17,6 +18,7 @@ pub struct SubjectGroup {
     pub name: MultiLangString,
 }
 
+#[async_trait]
 impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
     async fn from_table(
         _: &PgPool,
@@ -32,6 +34,7 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
     }
 }
 
+// We're not using the GetById derive here because the ID of this table is an integer not a UUID.
 impl SubjectGroup {
     pub async fn get_by_id(
         pool: &PgPool,
@@ -51,11 +54,28 @@ impl SubjectGroup {
         descendant_fetch_level: Option<&FetchLevel>,
     ) -> Result<Vec<Self>> {
         let contacts = DbSubjectGroup::get_by_ids(pool, ids).await?;
+        let fetch_level = fetch_level.copied();
+        let descendant_fetch_level = descendant_fetch_level.copied();
+        let futures: Vec<_> = contacts
+            .into_iter()
+            .map(|contact| {
+                let pool = pool.clone();
 
-        let mut result = vec![];
-        for contact in contacts {
-            result
-                .push(Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await?);
+                tokio::spawn(async move {
+                    Self::from_table(
+                        &pool,
+                        contact,
+                        fetch_level.as_ref(),
+                        descendant_fetch_level.as_ref(),
+                    )
+                    .await
+                })
+            })
+            .collect();
+
+        let mut result = Vec::with_capacity(futures.len());
+        for future in futures {
+            result.push(future.await.unwrap()?);
         }
 
         Ok(result)

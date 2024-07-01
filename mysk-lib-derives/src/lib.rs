@@ -24,6 +24,9 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let expanded = match opts.table {
         None => quote! {
+            use async_trait::async_trait as __async_trait;
+
+            #[__async_trait]
             impl GetById for #ident {
                 async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> std::result::Result<Self, sqlx::Error> {
                     sqlx::query_as::<_, #ident>(format!("{} WHERE id = $1", Self::base_query()).as_str())
@@ -41,6 +44,9 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         },
         Some(table) => quote! {
+            use async_trait::async_trait as __async_trait;
+
+            #[__async_trait]
             impl GetById for #ident {
                 async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> std::result::Result<Self, sqlx::Error> {
                     sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = $1", Self::base_query(), #table).as_str())

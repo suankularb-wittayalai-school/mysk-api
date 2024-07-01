@@ -46,7 +46,7 @@ async fn create_trade_offer(
         None => {
             return Err(Error::InvalidRequest(
                 "Json deserialize error: field `data` can not be empty".to_string(),
-                format!("/subjects/electives/trade-offers"),
+                "/subjects/electives/trade-offers".to_string(),
             ));
         }
     };

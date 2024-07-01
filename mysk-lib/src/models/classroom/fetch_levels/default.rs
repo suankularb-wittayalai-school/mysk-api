@@ -9,6 +9,7 @@ use crate::{
     },
     prelude::*,
 };
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -24,6 +25,7 @@ pub struct DefaultClassroom {
     pub year: i64,
 }
 
+#[async_trait]
 impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
     async fn from_table(
         pool: &PgPool,

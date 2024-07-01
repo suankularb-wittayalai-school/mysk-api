@@ -179,7 +179,9 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
-            QueryParam::SubmissionStatus(v) => v.encode_by_ref(buf),
+            QueryParam::SubmissionStatus(v) => {
+                <SubmissionStatus as sqlx::Encode<Postgres>>::encode(*v, buf)
+            }
         }
     }
 }

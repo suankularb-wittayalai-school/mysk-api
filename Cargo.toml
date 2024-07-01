@@ -1,3 +1,44 @@
 [workspace]
 members = ["mysk-data-api", "mysk-lib", "mysk-lib-derives", "mysk-lib-macros"]
 resolver = "2"
+
+[workspace.package]
+authors = [
+    "Smart Wattanapornmongkol <smartwattana@gmail.com>",
+    "Phawat Suksiriwan <phawat@suksiriwan.com>",
+    "owo93 <Iztyle30@gmail.com>",
+]
+version = "0.4.0"
+edition = "2021"
+
+[workspace.dependencies]
+actix-cors = "0.7.0"
+actix-web = "4.8.0"
+async-trait = "0.1.80"
+bs58 = "0.5.1"
+chrono = { version = "0.4.38", features = ["serde"] }
+darling = "0.20.9"
+dotenv = "0.15.0"
+env_logger = "0.11.3"
+futures = "0.3.30"
+jsonwebtoken = "9.3.0"
+log = "0.4.22"
+parking_lot = "0.12.3"
+quote = "1.0.36"
+rand = "0.8.5"
+reqwest = { version = "0.12.5", features = ["json"] }
+serde = "1.0.203"
+serde_json = "1.0.118"
+serde_qs = "0.13.0"
+sha2 = "0.10.8"
+sqlx = { version = "0.7.4", features = [
+    "chrono",
+    "json",
+    "macros",
+    "postgres",
+    "runtime-tokio-rustls",
+    "uuid",
+] }
+syn = { version = "2.0.68", features = ["full"] }
+tokio = { version = "1.38.0", features = ["full"] }
+uuid = { version = "1.9.1", features = ["serde", "v4"] }
