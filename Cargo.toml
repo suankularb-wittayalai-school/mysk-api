@@ -5,7 +5,7 @@ resolver = "2"
 [workspace.package]
 authors = [
     "Smart Wattanapornmongkol <smartwattana@gmail.com>",
-    "Phawat Suksiriwan <phawat@suksiriwan.com",
+    "Phawat Suksiriwan <phawat@suksiriwan.com>",
     "owo93 <Iztyle30@gmail.com>",
 ]
 version = "0.4.0"
