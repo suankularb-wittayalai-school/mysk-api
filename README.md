@@ -1,80 +1,32 @@
-<div align=center>
-    <h3 align=center> MySK API </h3>
-    <p>The API Interface for the MySK database</p>
-    <p align='center'>
-        <a href="https://mysk.school"><b>mysk.school</b></a> •
-        <a href="http://api.mysk.school"><b>api.mysk.school</b></a>
-    </p>
-</div>
+# MySK API
 
-<br />
+MySK API is a monolithic backend which acts as an API server. It is the middleman between the
+frontend deployment and the MySK database.
 
-## 📦 Setup
+## Issues and Requests
 
-1) To get set up, clone the repository and ensure that these tools & dependencies are installed on your system
-    - [rust](https://rustup.rs/)
-    - [npm](https://www.npmjs.com/)
-    - [mprocs](https://github.com/pvolok/mprocs) (see [using-mprocs](#🛠️-using-mprocs))
-    - git🙄
+If you have any issues or requests, file an issue
+[here](https://github.com/suankularb-wittayalai-school/mysk-api/issues). Please look through the
+existing issues before submitting a new one. Both Thai and English are welcome.
 
-2) Run the following command in `/mysk-api-test-web-server`
+## Development
 
-```sh
-# install dependencies for the API client server
-$ npm i
-```
+### Commands
 
-### :herb: Environment
+Run these while at the project root.
 
-| File                                                                                  | Description                   |
-| ------------------------------------------------------------------------------------- | ----------------------------- |
-| [`.env`](.env.template)                                                               | Global configuration file     |
-| [`mysk-api-test-web-server/.env.local`](mysk-api-test-web-server/.env.local.template) | Web server configuration file |
+| Command        | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| `cargo fmt`    | Formats the entire project with `rustfmt`.                 |
+| `cargo clippy` | Lints the code with `clippy`. Required before pushing.     |
+| `cargo run`    | Compiles and runs MySK API, defaults to running in debug.  |
+| `cargo build`  | Compiles MySK API without running it.                      |
 
-> [!CAUTION]
-> Do not commit `.env` and `.env.local` files to the repository. These files contain sensitive information and should be kept private.
+### Directories
 
-<br />
-
-## 🚀 Development
-
-### 🛠️ Using mprocs
-
-If [mprocs](https://github.com/pvolok/mprocs) is installed, run the following command:
-
-```sh
-# This command will look for an mprocs.yaml configuration and start necessary services automatically
-$ mprocs --config ./mprocs.yaml
-```
-
-### ⚙️  Manually
-
-To start services manually run the following commands:
-
-```sh
-# Build and run cargo workspace at root
-$ cargo run
-
-# Start API testing client server at /mysk-api-test-web-server
-$ npm run dev
-```
-
-<br />
-
-### 📁 Basic structure
-
-This repository contains libraries and tools needed to get set up for developing on MySK's API. The basic structure of the monorepo are as follows:
-
-```
-.
-├── mysk-api-test-web-server                                            // testing client
-├── mysk-data-api/                                                      // API
-│   └── src/
-│       ├── extractors/                                                 // extractor funtions
-│       └── routes/                                                     // route definitions
-│           └── v1
-├── mysk-lib-derives/                                                   // derived traits
-├── mysk-lib-macros/                                                    // macros
-├── mysk-lib/                                                           // libraries
-└── Cargo.toml                                                          // cargo workspace
-```
+| Directory                       | Description                               |
+| ------------------------------- | ----------------------------------------- |
+| `mysk-data-api/`                | The main codebase of MySK API.            |
+| `mysk-lib/`                     | The library that MySK API utilises.       |
+| `mysk-lib-derives/`             | Derive macros to ease development.        |
+| `mysk-lib-macros/`              | Procedural macros to ease development.    |

@@ -1,9 +1,0 @@
-procs:
-  mysk-api-server:
-    shell: "cargo run -q"
-    autorestart: true
-
-  test-web-server:
-    cwd: "./mysk-api-test-web-server"
-    shell: "npm run dev"
-    autorestart: true
