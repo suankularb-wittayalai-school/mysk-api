@@ -1,5 +1,4 @@
-use super::ExtractorFuture;
-use crate::AppState;
+use crate::{extractors::ExtractorFuture, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use futures::future;
 use mysk_lib::{

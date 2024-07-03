@@ -1,9 +1,8 @@
 use crate::{
-    common::{requests::FetchLevel, response::ResponseType},
+    common::requests::FetchLevel,
     models::traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
     prelude::*,
 };
-use actix_web::{HttpResponse, Responder};
 use async_trait::async_trait;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
@@ -178,76 +177,5 @@ where
         }
 
         Ok(result)
-    }
-}
-
-impl<DbVariant, IdOnly, Compact, Default, Detailed>
-    From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
-    for ResponseType<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>>
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
-        ResponseType::new(variant, None)
-    }
-}
-
-impl<DbVariant, IdOnly, Compact, Default, Detailed>
-    From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for HttpResponse
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
-        let response_type: ResponseType<
-            TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>,
-        > = variant.into();
-
-        HttpResponse::Ok().json(response_type)
-    }
-}
-
-impl<DbVariant, IdOnly, Compact, Default, Detailed>
-    From<TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>> for Result<HttpResponse>
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    fn from(variant: TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>) -> Self {
-        let response_type: ResponseType<
-            TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>,
-        > = variant.into();
-
-        Ok(HttpResponse::Ok().json(response_type))
-    }
-}
-
-impl<DbVariant, IdOnly, Compact, Default, Detailed> Responder
-    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    type Body = actix_web::body::BoxBody;
-
-    fn respond_to(self, _req: &actix_web::HttpRequest) -> actix_web::HttpResponse {
-        let response_type: ResponseType<
-            TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>,
-        > = self.into();
-
-        HttpResponse::Ok().json(response_type)
     }
 }

@@ -1,5 +1,4 @@
-use super::ExtractorFuture;
-use crate::{extractors::logged_in::LoggedIn, AppState};
+use crate::{extractors::logged_in::LoggedIn, extractors::ExtractorFuture, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use mysk_lib::{
     models::{enums::UserRole, student::Student},

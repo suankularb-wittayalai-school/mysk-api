@@ -1,11 +1,14 @@
-use self::{
-    db::DbClub,
-    fetch_levels::{
-        compact::CompactClub, default::DefaultClub, detailed::DetailedClub, id_only::IdOnlyClub,
+use crate::models::{
+    club::{
+        db::DbClub,
+        fetch_levels::{
+            compact::CompactClub, default::DefaultClub, detailed::DetailedClub, id_only::IdOnlyClub,
+        },
+        request::{queryable::QueryableClub, sortable::SortableClub},
     },
-    request::{queryable::QueryableClub, sortable::SortableClub},
+    top_level_variant::TopLevelVariant,
+    traits::TopLevelQuery,
 };
-use crate::models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery};
 
 pub mod db;
 pub mod fetch_levels;

@@ -1,5 +1,4 @@
-use super::ExtractorFuture;
-use crate::AppState;
+use crate::{extractors::ExtractorFuture, AppState};
 use actix_web::{dev::Payload, http::header, web::Data, FromRequest, HttpRequest};
 use futures::future;
 use jsonwebtoken::{decode, DecodingKey, Validation};

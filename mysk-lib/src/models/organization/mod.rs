@@ -1,6 +1,6 @@
-use self::db::DbOrganization;
 use crate::{
     common::string::{FlexibleMultiLangString, MultiLangString},
+    models::organization::db::DbOrganization,
     prelude::*,
 };
 use chrono::{DateTime, Utc};

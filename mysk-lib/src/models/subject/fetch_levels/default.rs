@@ -4,8 +4,7 @@ use crate::{
         string::{FlexibleMultiLangString, MultiLangString},
     },
     models::{
-        subject::{db::DbSubject, enums::subject_type::SubjectType},
-        subject_group::SubjectGroup,
+        enums::SubjectType, subject::db::DbSubject, subject_group::SubjectGroup,
         traits::FetchLevelVariant,
     },
     prelude::*,

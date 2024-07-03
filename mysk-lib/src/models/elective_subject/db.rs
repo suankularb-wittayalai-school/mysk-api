@@ -1,12 +1,14 @@
-use super::request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject};
 use crate::{
     common::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
     },
     models::{
+        elective_subject::request::{
+            queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
+        },
+        enums::SubjectType,
         student::db::DbStudent,
-        subject::enums::subject_type::SubjectType,
         traits::{QueryDb, Queryable as _},
     },
     prelude::*,

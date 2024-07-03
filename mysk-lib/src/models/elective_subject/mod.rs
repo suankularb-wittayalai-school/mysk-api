@@ -1,12 +1,15 @@
-use self::{
-    db::DbElectiveSubject,
-    fetch_levels::{
-        compact::CompactElectiveSubject, default::DefaultElectiveSubject,
-        detailed::DetailedElectiveSubject, id_only::IdOnlyElectiveSubject,
+use crate::models::{
+    elective_subject::{
+        db::DbElectiveSubject,
+        fetch_levels::{
+            compact::CompactElectiveSubject, default::DefaultElectiveSubject,
+            detailed::DetailedElectiveSubject, id_only::IdOnlyElectiveSubject,
+        },
+        request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
     },
-    request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
+    top_level_variant::TopLevelVariant,
+    traits::TopLevelQuery,
 };
-use crate::models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery};
 
 pub mod db;
 pub mod fetch_levels;

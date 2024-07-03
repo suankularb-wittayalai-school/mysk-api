@@ -1,6 +1,6 @@
-use super::enums::subject_type::SubjectType;
 use crate::{
-    common::string::MultiLangString, helpers::date::get_current_academic_year, prelude::*,
+    common::string::MultiLangString, helpers::date::get_current_academic_year,
+    models::enums::SubjectType, prelude::*,
 };
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};

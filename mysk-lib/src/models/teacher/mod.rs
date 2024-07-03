@@ -1,11 +1,13 @@
-use self::{
-    db::DbTeacher,
-    fetch_levels::{
-        compact::CompactTeacher, default::DefaultTeacher, detailed::DetailedTeacher,
-        id_only::IdOnlyTeacher,
+use crate::models::{
+    teacher::{
+        db::DbTeacher,
+        fetch_levels::{
+            compact::CompactTeacher, default::DefaultTeacher, detailed::DetailedTeacher,
+            id_only::IdOnlyTeacher,
+        },
     },
+    top_level_variant::TopLevelVariant,
 };
-use crate::models::top_level_variant::TopLevelVariant;
 
 pub mod db;
 pub mod fetch_levels;

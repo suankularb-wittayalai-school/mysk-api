@@ -1,5 +1,4 @@
-use super::gsi_login::GoogleTokenResponse;
-use crate::AppState;
+use crate::{routes::auth::gsi_login::GoogleTokenResponse, AppState};
 use actix_web::{
     cookie::{time::Duration as ActixWebDuration, Cookie},
     get,

@@ -1,9 +1,12 @@
-use self::{
-    db::DbClubRequest,
-    fetch_levels::{default::DefaultClubRequest, id_only::IdOnlyClubRequest},
-    request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
+use crate::models::{
+    club_request::{
+        db::DbClubRequest,
+        fetch_levels::{default::DefaultClubRequest, id_only::IdOnlyClubRequest},
+        request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
+    },
+    top_level_variant::TopLevelVariant,
+    traits::TopLevelQuery,
 };
-use crate::models::{top_level_variant::TopLevelVariant, traits::TopLevelQuery};
 
 pub mod db;
 pub mod fetch_levels;

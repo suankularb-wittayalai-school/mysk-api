@@ -1,10 +1,12 @@
-use self::{
-    db::DbClassroom,
-    fetch_levels::{
-        compact::CompactClassroom, default::DefaultClassroom, id_only::IdOnlyClassroom,
+use crate::models::{
+    classroom::{
+        db::DbClassroom,
+        fetch_levels::{
+            compact::CompactClassroom, default::DefaultClassroom, id_only::IdOnlyClassroom,
+        },
     },
+    top_level_variant::TopLevelVariant,
 };
-use super::top_level_variant::TopLevelVariant;
 use serde::Deserialize;
 use sqlx::FromRow;
 use uuid::Uuid;

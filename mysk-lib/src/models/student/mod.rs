@@ -1,11 +1,16 @@
-use self::{
-    db::DbStudent,
-    fetch_levels::{
-        compact::CompactStudent, default::DefaultStudent, detailed::DetailedStudent,
-        id_only::IdOnlyStudent,
+use crate::{
+    models::{
+        student::{
+            db::DbStudent,
+            fetch_levels::{
+                compact::CompactStudent, default::DefaultStudent, detailed::DetailedStudent,
+                id_only::IdOnlyStudent,
+            },
+        },
+        top_level_variant::TopLevelVariant,
     },
+    prelude::*,
 };
-use crate::{models::top_level_variant::TopLevelVariant, prelude::*};
 use sqlx::PgPool;
 use uuid::Uuid;
 

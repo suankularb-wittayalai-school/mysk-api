@@ -5,7 +5,8 @@ use crate::{
     },
     models::{
         classroom::Classroom,
-        subject::{db::DbSubject, enums::subject_type::SubjectType},
+        enums::SubjectType,
+        subject::db::DbSubject,
         subject_group::SubjectGroup,
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById},

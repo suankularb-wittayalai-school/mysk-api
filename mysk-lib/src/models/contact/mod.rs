@@ -1,7 +1,7 @@
-use self::db::DbContact;
 use crate::{
     common::{requests::FetchLevel, string::FlexibleMultiLangString},
     models::{
+        contact::db::DbContact,
         enums::ContactType,
         traits::{TopLevelFromTable, TopLevelGetById},
     },

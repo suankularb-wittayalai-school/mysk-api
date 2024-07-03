@@ -1,7 +1,6 @@
-use self::db::DbSubjectGroup;
 use crate::{
     common::{requests::FetchLevel, string::MultiLangString},
-    models::traits::TopLevelFromTable,
+    models::{subject_group::db::DbSubjectGroup, traits::TopLevelFromTable},
     prelude::*,
 };
 use async_trait::async_trait;

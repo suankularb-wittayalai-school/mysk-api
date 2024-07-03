@@ -1,12 +1,12 @@
-use super::request::{
-    queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
-};
 use crate::{
     common::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
     },
     models::{
+        elective_trade_offer::request::{
+            queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
+        },
         enums::SubmissionStatus,
         traits::{QueryDb, Queryable as _},
     },
