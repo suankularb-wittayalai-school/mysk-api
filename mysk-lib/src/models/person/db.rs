@@ -14,7 +14,7 @@ use uuid::Uuid;
         citizen_id, profile, pants_size, shirt_size
     FROM people
 ")]
-pub struct Person {
+pub struct DbPerson {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
     pub prefix_th: String,

@@ -12,4 +12,5 @@ pub mod common;
 pub mod error;
 pub mod helpers;
 pub mod models;
+pub mod permissions;
 pub mod prelude;
