@@ -9,7 +9,7 @@ use crate::{
         subject::db::DbSubject,
         subject_group::SubjectGroup,
         teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
     },
     prelude::*,
 };
@@ -45,9 +45,9 @@ impl FetchLevelVariant<DbSubject> for DetailedSubject {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
 
-        let classroom_ids = DbSubject::get_subject_classrooms(pool, table.id, None).await?;
         let teacher_ids = DbSubject::get_subject_teachers(pool, table.id, None).await?;
         let co_teacher_ids = DbSubject::get_subject_co_teachers(pool, table.id, None).await?;
+        let classroom_ids = DbSubject::get_subject_classrooms(pool, table.id, None).await?;
 
         let description = match (table.description_th, table.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
