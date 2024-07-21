@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -18,6 +18,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
+    permissions::roles::get_authorizer,
     prelude::*,
 };
 use serde::Deserialize;
@@ -33,11 +34,13 @@ struct UpdateClubRequest {
 pub async fn update_club_requests(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     student_id: LoggedInStudent,
     club_request_id: Path<Uuid>,
     request_body: Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let user_id = user.0;
     let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
     let club_request_status = match &request_body.data {
@@ -59,6 +62,7 @@ pub async fn update_club_requests(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let authorizer = get_authorizer(&user_id);
 
     // Check if the club request exists
     let club_request = match ClubRequest::get_by_id(
@@ -66,6 +70,7 @@ pub async fn update_club_requests(
         club_request_id,
         Some(&FetchLevel::Default),
         Some(&FetchLevel::IdOnly),
+        &authorizer,
     )
     .await
     {
@@ -119,8 +124,14 @@ pub async fn update_club_requests(
     .execute(pool)
     .await?;
 
-    let updated_club_request =
-        ClubRequest::get_by_id(pool, club_request_id, fetch_level, descendant_fetch_level).await?;
+    let updated_club_request = ClubRequest::get_by_id(
+        pool,
+        club_request_id,
+        fetch_level,
+        descendant_fetch_level,
+        &authorizer,
+    )
+    .await?;
     let response = ResponseType::new(updated_club_request, None);
 
     Ok(HttpResponse::Ok().json(response))

@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -18,6 +18,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
+    permissions::roles::get_authorizer,
     prelude::*,
 };
 use serde::Deserialize;
@@ -34,6 +35,7 @@ struct UpdatableElectiveOffer {
 async fn update_trade_offer(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     student_id: LoggedInStudent,
     trade_offer_id: Path<Uuid>,
     request_body: Json<
@@ -41,6 +43,7 @@ async fn update_trade_offer(
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let user_id = user.0;
     let client_student_id = student_id.0;
     let trade_offer_id = trade_offer_id.into_inner();
     let trade_offer_status = match &request_body.data {
@@ -62,6 +65,8 @@ async fn update_trade_offer(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+
+    let authorizer = get_authorizer(&user_id);
 
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool).await? {
@@ -199,9 +204,14 @@ async fn update_trade_offer(
     .execute(pool)
     .await?;
 
-    let elective_trade_offer =
-        ElectiveTradeOffer::get_by_id(pool, trade_offer_id, fetch_level, descendant_fetch_level)
-            .await?;
+    let elective_trade_offer = ElectiveTradeOffer::get_by_id(
+        pool,
+        trade_offer_id,
+        fetch_level,
+        descendant_fetch_level,
+        &authorizer,
+    )
+    .await?;
     let response = ResponseType::new(elective_trade_offer, None);
 
     Ok(HttpResponse::Ok().json(response))

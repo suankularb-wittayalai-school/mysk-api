@@ -1,4 +1,7 @@
-use crate::{extractors::api_key::ApiKeyHeader, AppState};
+use crate::{
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
+    AppState,
+};
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use mysk_lib::{
     common::{
@@ -14,6 +17,7 @@ use mysk_lib::{
         },
         traits::TopLevelQuery as _,
     },
+    permissions::roles::get_authorizer,
     prelude::*,
 };
 
@@ -21,6 +25,7 @@ use mysk_lib::{
 pub async fn query_trade_offers(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     request_body: RequestType<
         ElectiveTradeOffer,
         QueryableElectiveTradeOffer,
@@ -28,11 +33,13 @@ pub async fn query_trade_offers(
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let user_id = user.0;
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let filter = request_body.filter.as_ref();
     let sort = request_body.sort.as_ref();
     let pagination = request_body.pagination.as_ref();
+    let authorizer = get_authorizer(&user_id);
 
     let trade_offers = ElectiveTradeOffer::query(
         pool,
@@ -41,6 +48,7 @@ pub async fn query_trade_offers(
         filter,
         sort,
         pagination,
+        &authorizer,
     )
     .await?;
 
