@@ -9,6 +9,7 @@ actix-web.workspace = true
 async-trait.workspace = true
 bs58.workspace = true
 chrono.workspace = true
+dyn-clone.workspace = true
 futures.workspace = true
 jsonwebtoken.workspace = true
 mysk-lib-derives = { path = "../mysk-lib-derives" }
