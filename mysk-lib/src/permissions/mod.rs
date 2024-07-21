@@ -1,2 +1,4 @@
+mod traits;
+
 pub mod roles;
-pub mod traits;
+pub use traits::{ActionType, Authorizer};

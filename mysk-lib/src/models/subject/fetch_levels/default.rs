@@ -10,6 +10,7 @@ use crate::{
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById as _},
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -39,9 +40,10 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
         pool: &PgPool,
         table: DbSubject,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
+            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
         let teacher_ids = DbSubject::get_subject_teachers(pool, table.id, None).await?;
         let co_teacher_ids = DbSubject::get_subject_co_teachers(pool, table.id, None).await?;
 
@@ -80,6 +82,7 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
                 teacher_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             co_teachers: Teacher::get_by_ids(
@@ -87,6 +90,7 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
                 co_teacher_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
         })

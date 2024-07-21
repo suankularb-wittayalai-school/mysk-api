@@ -10,6 +10,7 @@ use crate::{
     prelude::*,
 };
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 use sqlx::PgPool;
 
 pub enum ActionType {
@@ -23,7 +24,10 @@ pub enum ActionType {
 }
 
 #[async_trait]
-pub trait Authorizer {
+pub trait Authorizer: DynClone
+where
+    Self: Send + Sync + 'static,
+{
     async fn authorize_classroom(
         &self,
         classroom: &DbClassroom,

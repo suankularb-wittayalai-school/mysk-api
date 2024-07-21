@@ -10,6 +10,7 @@ use crate::{
         traits::{FetchLevelVariant, TopLevelGetById},
         user::User,
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -45,6 +46,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
         pool: &PgPool,
         table: DbTeacher,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         let contact_ids = DbTeacher::get_teacher_contacts(pool, table.id).await?;
         let classroom_id = DbTeacher::get_teacher_advisor_at(pool, table.id, None).await?;
@@ -55,6 +57,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
             table.subject_group_id,
             descendant_fetch_level,
             Some(&FetchLevel::IdOnly),
+            authorizer,
         )
         .await?;
 
@@ -83,6 +86,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
                 contact_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             class_advisor_at: match classroom_id {
@@ -92,6 +96,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
                         classroom_id,
                         descendant_fetch_level,
                         Some(&FetchLevel::IdOnly),
+                        authorizer,
                     )
                     .await?,
                 ),
@@ -104,6 +109,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
                 subject_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             citizen_id: table.citizen_id,

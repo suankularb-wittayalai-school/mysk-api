@@ -3,13 +3,13 @@ use crate::{
         requests::{FetchLevel, FilterConfig, PaginationConfig, SortingConfig, SqlSection},
         response::PaginationType,
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
 use mysk_lib_macros::traits::db::BaseQuery;
 use sqlx::{PgPool, Postgres, QueryBuilder};
 use std::fmt::Display;
-use uuid::Uuid;
 
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
 /// from DB variant.
@@ -22,6 +22,7 @@ where
         pool: &PgPool,
         table: T,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self>;
 }
 
@@ -36,6 +37,7 @@ where
         table: T,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self>;
 }
 
@@ -44,18 +46,22 @@ pub trait TopLevelGetById
 where
     Self: Sized,
 {
+    type Id;
+
     async fn get_by_id(
         pool: &PgPool,
-        id: Uuid,
+        id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self>;
 
     async fn get_by_ids(
         pool: &PgPool,
-        ids: Vec<Uuid>,
+        ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Vec<Self>>;
 }
 
@@ -74,6 +80,7 @@ where
         filter: Option<&FilterConfig<QueryableObject>>,
         sort: Option<&SortingConfig<SortableObject>>,
         pagination: Option<&PaginationConfig>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Vec<Self>> {
         let models = DbVariant::query(pool, filter, sort, pagination).await?;
         let fetch_level = fetch_level.copied();
@@ -82,6 +89,7 @@ where
             .into_iter()
             .map(|model| {
                 let pool = pool.clone();
+                let authorizer = dyn_clone::clone_box(&**authorizer);
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -89,6 +97,7 @@ where
                         model,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
+                        &authorizer,
                     )
                     .await
                 })

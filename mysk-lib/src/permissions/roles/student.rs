@@ -8,9 +8,15 @@ use crate::{
 };
 use async_trait::async_trait;
 use sqlx::{query, PgPool};
+use uuid::Uuid;
+
+#[derive(Clone)]
+pub struct StudentRole {
+    pub id: Uuid,
+}
 
 #[async_trait]
-impl Authorizer for DbStudent {
+impl Authorizer for StudentRole {
     async fn authorize_classroom(
         &self,
         _: &DbClassroom,

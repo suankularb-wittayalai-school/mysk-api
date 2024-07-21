@@ -6,9 +6,10 @@ macro_rules! impl_fetch_level_variant_from {
         #[__mysk_macros_internal_async_trait]
         impl FetchLevelVariant<$db_type> for $fetch_variant_type {
             async fn from_table(
-                _pool: &PgPool,
+                _: &PgPool,
                 table: $db_type,
-                _descendant_fetch_level: Option<&FetchLevel>,
+                _: Option<&FetchLevel>,
+                authorizer: &Box<dyn crate::permissions::Authorizer>,
             ) -> Result<Self> {
                 Ok(Self::from(table))
             }

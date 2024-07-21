@@ -1,6 +1,7 @@
 use crate::{
     common::requests::FetchLevel,
     models::traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -40,24 +41,49 @@ where
         table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         match fetch_level {
             Some(FetchLevel::IdOnly) | None => Ok(Self::IdOnly(
                 // We don't need to return a pinned box because IdOnly is never recursive
-                Box::new(IdOnly::from_table(pool, table, descendant_fetch_level).await?),
+                Box::new(
+                    IdOnly::from_table(pool, table, descendant_fetch_level, authorizer).await?,
+                ),
                 PhantomData,
             )),
             Some(FetchLevel::Compact) => Ok(Self::Compact(
-                Box::new(Box::pin(Compact::from_table(pool, table, descendant_fetch_level)).await?),
+                Box::new(
+                    Box::pin(Compact::from_table(
+                        pool,
+                        table,
+                        descendant_fetch_level,
+                        authorizer,
+                    ))
+                    .await?,
+                ),
                 PhantomData,
             )),
             Some(FetchLevel::Default) => Ok(Self::Default(
-                Box::new(Box::pin(Default::from_table(pool, table, descendant_fetch_level)).await?),
+                Box::new(
+                    Box::pin(Default::from_table(
+                        pool,
+                        table,
+                        descendant_fetch_level,
+                        authorizer,
+                    ))
+                    .await?,
+                ),
                 PhantomData,
             )),
             Some(FetchLevel::Detailed) => Ok(Self::Detailed(
                 Box::new(
-                    Box::pin(Detailed::from_table(pool, table, descendant_fetch_level)).await?,
+                    Box::pin(Detailed::from_table(
+                        pool,
+                        table,
+                        descendant_fetch_level,
+                        authorizer,
+                    ))
+                    .await?,
                 ),
                 PhantomData,
             )),
@@ -98,11 +124,14 @@ where
     Default: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
     Detailed: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
 {
+    type Id = Uuid;
+
     async fn get_by_id(
         pool: &PgPool,
-        id: Uuid,
+        id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         let variant = match DbVariant::get_by_id(pool, id).await {
             Ok(variant) => variant,
@@ -124,14 +153,22 @@ where
             }
         };
 
-        Self::from_table(pool, variant, fetch_level, descendant_fetch_level).await
+        Self::from_table(
+            pool,
+            variant,
+            fetch_level,
+            descendant_fetch_level,
+            authorizer,
+        )
+        .await
     }
 
     async fn get_by_ids(
         pool: &PgPool,
-        ids: Vec<Uuid>,
+        ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Vec<Self>> {
         let variants = match DbVariant::get_by_ids(pool, ids).await {
             Ok(variants) => variants,
@@ -158,6 +195,7 @@ where
             .into_iter()
             .map(|variant| {
                 let pool = pool.clone();
+                let authorizer = dyn_clone::clone_box(&**authorizer);
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -165,6 +203,7 @@ where
                         variant,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
+                        &authorizer,
                     )
                     .await
                 })

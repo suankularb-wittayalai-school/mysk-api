@@ -8,6 +8,7 @@ use crate::{
         traits::{FetchLevelVariant, TopLevelGetById},
         user::User,
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -40,6 +41,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
         pool: &PgPool,
         table: DbStudent,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
 
@@ -69,6 +71,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
                 contact_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             classroom: match &classroom {
@@ -78,6 +81,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
                         classroom.id,
                         descendant_fetch_level,
                         Some(&FetchLevel::IdOnly),
+                        authorizer,
                     )
                     .await?,
                 ),
