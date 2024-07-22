@@ -5,7 +5,7 @@ use crate::{
         enums::ContactType,
         traits::{TopLevelFromTable, TopLevelGetById},
     },
-    permissions::Authorizer,
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -32,12 +32,16 @@ pub struct Contact {
 #[async_trait]
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
-        _: &PgPool,
+        pool: &PgPool,
         table: DbContact,
         _: Option<&FetchLevel>,
         _: Option<&FetchLevel>,
-        _: &Box<dyn Authorizer>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
+        authorizer
+            .authorize_contact(&table, pool, ActionType::ReadDefault)
+            .await?;
+
         Ok(Self {
             id: table.id,
             created_at: table.created_at,

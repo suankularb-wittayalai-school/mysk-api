@@ -35,4 +35,4 @@ impl From<DbStudent> for CompactStudent {
     }
 }
 
-impl_fetch_level_variant_from!(CompactStudent, DbStudent);
+impl_fetch_level_variant_from!(student, Compact, CompactStudent, DbStudent);

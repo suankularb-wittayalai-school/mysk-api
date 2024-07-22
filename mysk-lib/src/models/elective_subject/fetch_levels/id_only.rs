@@ -13,4 +13,4 @@ pub struct IdOnlyElectiveSubject {
     pub id: Uuid,
 }
 
-impl_id_only_variant_from!(IdOnlyElectiveSubject, DbElectiveSubject);
+impl_id_only_variant_from!(elective_subject, IdOnlyElectiveSubject, DbElectiveSubject);

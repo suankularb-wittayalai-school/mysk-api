@@ -3,7 +3,7 @@ use crate::{
         classroom::db::DbClassroom, contact::db::DbContact, student::db::DbStudent,
         subject::db::DbSubject, teacher::db::DbTeacher,
     },
-    permissions::traits::{ActionType, Authorizer},
+    permissions::authorizer::{ActionType, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -13,6 +13,8 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct StudentRole {
     pub id: Uuid,
+    pub user_id: Uuid,
+    pub source: String,
 }
 
 #[async_trait]
@@ -22,7 +24,6 @@ impl Authorizer for StudentRole {
         _: &DbClassroom,
         _: &PgPool,
         action: ActionType,
-        source: String,
     ) -> Result<()> {
         match action {
             ActionType::ReadIdOnly
@@ -32,7 +33,7 @@ impl Authorizer for StudentRole {
             ActionType::Create | ActionType::Update | ActionType::Delete => {
                 Err(Error::InvalidPermission(
                     "Insufficient permissions to perform this action".to_string(),
-                    source,
+                    self.source.to_string(),
                 ))
             }
         }
@@ -43,7 +44,6 @@ impl Authorizer for StudentRole {
         contact: &DbContact,
         pool: &PgPool,
         action: ActionType,
-        source: String,
     ) -> Result<()> {
         let owned = query!(
             "
@@ -74,7 +74,7 @@ impl Authorizer for StudentRole {
             ActionType::Create | ActionType::Update | ActionType::Delete => {
                 Err(Error::InvalidPermission(
                     "Insufficient permissions to perform this action".to_string(),
-                    source,
+                    self.source.to_string(),
                 ))
             }
         }
@@ -85,9 +85,8 @@ impl Authorizer for StudentRole {
         student: &DbStudent,
         pool: &PgPool,
         action: ActionType,
-        source: String,
     ) -> Result<()> {
-        let owned = self.id == student.id;
+        let owned = self.user_id == student.user_id.unwrap();
         let self_class = DbStudent::get_student_classroom(pool, self.id, None).await?;
         let student_class = DbStudent::get_student_classroom(pool, student.id, None).await?;
         let same_class = self_class.is_some()
@@ -107,18 +106,12 @@ impl Authorizer for StudentRole {
             | ActionType::Update
             | ActionType::Delete => Err(Error::InvalidPermission(
                 "Insufficient permissions to perform this action".to_string(),
-                source,
+                self.source.to_string(),
             )),
         }
     }
 
-    async fn authorize_subject(
-        &self,
-        _: &DbSubject,
-        _: &PgPool,
-        action: ActionType,
-        source: String,
-    ) -> Result<()> {
+    async fn authorize_subject(&self, _: &DbSubject, _: &PgPool, action: ActionType) -> Result<()> {
         match action {
             ActionType::ReadIdOnly
             | ActionType::ReadCompact
@@ -127,19 +120,13 @@ impl Authorizer for StudentRole {
             ActionType::Create | ActionType::Update | ActionType::Delete => {
                 Err(Error::InvalidPermission(
                     "Insufficient permissions to perform this action".to_string(),
-                    source,
+                    self.source.to_string(),
                 ))
             }
         }
     }
 
-    async fn authorize_teacher(
-        &self,
-        _: &DbTeacher,
-        _: &PgPool,
-        action: ActionType,
-        source: String,
-    ) -> Result<()> {
+    async fn authorize_teacher(&self, _: &DbTeacher, _: &PgPool, action: ActionType) -> Result<()> {
         match action {
             ActionType::ReadIdOnly | ActionType::ReadCompact | ActionType::ReadDefault => Ok(()),
             ActionType::Create
@@ -147,7 +134,7 @@ impl Authorizer for StudentRole {
             | ActionType::Update
             | ActionType::Delete => Err(Error::InvalidPermission(
                 "Insufficient permissions to perform this action".to_string(),
-                source,
+                self.source.to_string(),
             )),
         }
     }

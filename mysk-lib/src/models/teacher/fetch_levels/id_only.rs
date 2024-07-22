@@ -13,4 +13,4 @@ pub struct IdOnlyTeacher {
     pub id: Uuid,
 }
 
-impl_id_only_variant_from!(IdOnlyTeacher, DbTeacher);
+impl_id_only_variant_from!(teacher, IdOnlyTeacher, DbTeacher);

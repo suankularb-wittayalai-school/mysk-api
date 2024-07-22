@@ -13,4 +13,8 @@ pub struct IdOnlyElectiveTradeOffer {
     pub id: Uuid,
 }
 
-impl_id_only_variant_from!(IdOnlyElectiveTradeOffer, DbElectiveTradeOffer);
+impl_id_only_variant_from!(
+    elective_trade_offer,
+    IdOnlyElectiveTradeOffer,
+    DbElectiveTradeOffer
+);

@@ -25,4 +25,4 @@ impl From<DbClassroom> for CompactClassroom {
     }
 }
 
-impl_fetch_level_variant_from!(CompactClassroom, DbClassroom);
+impl_fetch_level_variant_from!(classroom, Compact, CompactClassroom, DbClassroom);

@@ -7,7 +7,7 @@ use crate::{
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
-    permissions::Authorizer,
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -34,6 +34,10 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
+        authorizer
+            .authorize_classroom(&table, pool, ActionType::ReadDefault)
+            .await?;
+
         let student_ids = DbClassroom::get_classroom_students(pool, table.id).await?;
         let contact_ids = DbClassroom::get_classroom_contacts(pool, table.id).await?;
         let class_advisor_ids = DbClassroom::get_classroom_advisors(pool, table.id, None).await?;

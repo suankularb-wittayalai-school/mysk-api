@@ -48,4 +48,4 @@ impl From<DbClub> for CompactClub {
     }
 }
 
-impl_fetch_level_variant_from!(CompactClub, DbClub);
+impl_fetch_level_variant_from!(club, Compact, CompactClub, DbClub);

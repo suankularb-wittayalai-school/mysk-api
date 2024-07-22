@@ -13,4 +13,4 @@ pub struct IdOnlyClubRequest {
     pub id: Uuid,
 }
 
-impl_id_only_variant_from!(IdOnlyClubRequest, DbClubRequest);
+impl_id_only_variant_from!(club_request, IdOnlyClubRequest, DbClubRequest);

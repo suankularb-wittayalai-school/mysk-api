@@ -30,4 +30,4 @@ impl From<DbSubject> for CompactSubject {
     }
 }
 
-impl_fetch_level_variant_from!(CompactSubject, DbSubject);
+impl_fetch_level_variant_from!(subject, Compact, CompactSubject, DbSubject);
