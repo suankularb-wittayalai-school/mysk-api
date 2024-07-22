@@ -25,6 +25,7 @@ futures = "0.3.30"
 jsonwebtoken = "9.3.0"
 log = "0.4.22"
 parking_lot = "0.12.3"
+paste = "1.0.15"
 quote = "1.0.36"
 rand = "0.8.5"
 reqwest = { version = "0.12.5", features = ["json"] }
