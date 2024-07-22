@@ -1,16 +1,22 @@
-use crate::{extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn}, AppState};
+use crate::{
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
+    AppState,
+};
 use actix_web::{get, web::Data, HttpResponse, Responder};
 use mysk_lib::{
     common::{
         requests::RequestType,
         response::{MetadataType, ResponseType},
-    }, models::{
+    },
+    models::{
         club::{
             request::{queryable::QueryableClub, sortable::SortableClub},
             Club,
         },
         traits::TopLevelQuery as _,
-    }, permissions::roles::get_authorizer, prelude::*
+    },
+    permissions,
+    prelude::*,
 };
 
 #[get("")]
@@ -21,13 +27,13 @@ pub async fn query_clubs(
     request_query: RequestType<Club, QueryableClub, SortableClub>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
     let filter = request_query.filter.as_ref();
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer = permissions::get_authorizer(pool, &user, "/clubs".to_string()).await?;
 
     let clubs = Club::query(
         pool,
@@ -36,7 +42,7 @@ pub async fn query_clubs(
         filter,
         sort,
         pagination,
-        &authorizer
+        &authorizer,
     )
     .await?;
 

@@ -13,7 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{elective_subject::ElectiveSubject, traits::TopLevelGetById as _},
-    permissions::roles::get_authorizer,
+    permissions,
     prelude::*,
 };
 use uuid::Uuid;
@@ -27,11 +27,11 @@ pub async fn query_elective_details(
     request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer = permissions::get_authorizer(pool, &user, format!("/subjects/electives/{elective_subject_session_id}")).await?;
 
     let elective_subject = ElectiveSubject::get_by_id(
         pool,

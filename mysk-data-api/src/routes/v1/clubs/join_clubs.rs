@@ -11,7 +11,9 @@ use mysk_lib::{
     common::{
         requests::{FetchLevel, RequestType},
         response::ResponseType,
-    }, helpers::date::get_current_academic_year, models::{
+    },
+    helpers::date::get_current_academic_year,
+    models::{
         club::Club,
         club_request::{
             request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
@@ -20,7 +22,9 @@ use mysk_lib::{
         enums::SubmissionStatus,
         student::Student,
         traits::TopLevelGetById as _,
-    }, permissions::roles::get_authorizer, prelude::*
+    },
+    permissions,
+    prelude::*,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -35,13 +39,13 @@ pub async fn join_clubs(
     request_body: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let student_id = student_id.0;
     let club_id = club_id.into_inner();
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let current_year = get_current_academic_year(None);
-    let authorizer = get_authorizer(&user_id);
+    let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
     let club = match Club::get_by_id(
@@ -124,8 +128,14 @@ pub async fn join_clubs(
     .await?
     .id;
 
-    let club_request_id =
-        ClubRequest::get_by_id(pool, club_member_id, fetch_level, descendant_fetch_level, &authorizer).await?;
+    let club_request_id = ClubRequest::get_by_id(
+        pool,
+        club_member_id,
+        fetch_level,
+        descendant_fetch_level,
+        &authorizer,
+    )
+    .await?;
     let response = ResponseType::new(club_request_id, None);
 
     Ok(HttpResponse::Ok().json(response))

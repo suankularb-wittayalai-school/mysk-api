@@ -17,7 +17,7 @@ use mysk_lib::{
         club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
         traits::TopLevelGetById as _,
     },
-    permissions::roles::get_authorizer,
+    permissions,
     prelude::*,
 };
 use serde::Deserialize;
@@ -42,7 +42,7 @@ pub async fn add_club_members(
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let inviter_student_id = student_id.0;
     let club_id = club_id.into_inner();
     let invitee_student_id = match &request_body.data {
@@ -56,7 +56,7 @@ pub async fn add_club_members(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists

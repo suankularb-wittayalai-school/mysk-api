@@ -13,7 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{student::Student, traits::TopLevelGetById as _},
-    permissions::roles::get_authorizer,
+    permissions,
     prelude::*,
 };
 use uuid::Uuid;
@@ -27,11 +27,12 @@ pub async fn get_student_by_id(
     request_query: RequestType<Student, QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let student_id = id.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer =
+        permissions::get_authorizer(pool, &user, format!("/students/{student_id}")).await?;
 
     let student = Student::get_by_id(
         pool,

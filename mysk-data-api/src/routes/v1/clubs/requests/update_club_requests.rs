@@ -18,7 +18,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
-    permissions::roles::get_authorizer,
+    permissions,
     prelude::*,
 };
 use serde::Deserialize;
@@ -40,7 +40,7 @@ pub async fn update_club_requests(
     request_body: Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
     let club_request_status = match &request_body.data {
@@ -62,7 +62,8 @@ pub async fn update_club_requests(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer =
+    permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}")).await?;
 
     // Check if the club request exists
     let club_request = match ClubRequest::get_by_id(

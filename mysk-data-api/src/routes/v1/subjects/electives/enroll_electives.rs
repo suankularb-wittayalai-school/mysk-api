@@ -17,7 +17,7 @@ use mysk_lib::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
         traits::TopLevelGetById as _,
     },
-    permissions::roles::get_authorizer,
+    permissions,
     prelude::*,
 };
 use mysk_lib_macros::traits::db::GetById;
@@ -35,12 +35,12 @@ pub async fn enroll_elective_subject(
     request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let student_id = student_id.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer = permissions::get_authorizer(pool, &user, format!("/subjects/electives/{elective_subject_session_id}/enroll")).await?;
 
     // Checks if the elective the student is trying to enroll in is available
     let elective = match ElectiveSubject::get_by_id(

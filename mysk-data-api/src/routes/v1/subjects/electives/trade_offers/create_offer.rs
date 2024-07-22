@@ -19,7 +19,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
-    permissions::roles::get_authorizer,
+    permissions,
     prelude::*,
 };
 use serde::Deserialize;
@@ -43,7 +43,7 @@ async fn create_trade_offer(
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user_id = user.0;
+    let user = user.0;
     let receiver_student_id = match &request_body.data {
         Some(request_data) => request_data.receiver_id,
         None => {
@@ -56,7 +56,12 @@ async fn create_trade_offer(
     let sender_student_id = student_id.0;
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = get_authorizer(&user_id);
+    let authorizer = permissions::get_authorizer(
+        pool,
+        &user,
+        "/subjects/electives/trade-offers".to_string(),
+    )
+    .await?;
 
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool).await? {
