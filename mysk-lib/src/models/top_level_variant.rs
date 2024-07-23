@@ -7,7 +7,7 @@ use crate::{
 use async_trait::async_trait;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
-use sqlx::{Error as SqlxError, PgPool};
+use sqlx::PgPool;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
@@ -130,25 +130,7 @@ where
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
-        let variant = match DbVariant::get_by_id(pool, id).await {
-            Ok(variant) => variant,
-            Err(e) => {
-                return Err(match e {
-                    SqlxError::Database(source) => Error::InvalidRequest(
-                        source.message().to_string(),
-                        "TopLevelGetById::get_by_id".to_string(),
-                    ),
-                    SqlxError::RowNotFound => Error::EntityNotFound(
-                        "Entity not found".to_string(),
-                        "TopLevelGetById::get_by_id".to_string(),
-                    ),
-                    _ => Error::InternalSeverError(
-                        "Internal server error".to_string(),
-                        "TopLevelGetById::get_by_id".to_string(),
-                    ),
-                });
-            }
-        };
+        let variant = DbVariant::get_by_id(pool, id).await?;
 
         Self::from_table(
             pool,
@@ -167,25 +149,7 @@ where
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &Box<dyn Authorizer>,
     ) -> Result<Vec<Self>> {
-        let variants = match DbVariant::get_by_ids(pool, ids).await {
-            Ok(variants) => variants,
-            Err(e) => {
-                return Err(match e {
-                    SqlxError::Database(source) => Error::InvalidRequest(
-                        source.message().to_string(),
-                        "TopLevelGetById::get_by_ids".to_string(),
-                    ),
-                    SqlxError::RowNotFound => Error::EntityNotFound(
-                        "Entity not found".to_string(),
-                        "TopLevelGetById::get_by_ids".to_string(),
-                    ),
-                    _ => Error::InternalSeverError(
-                        "Internal server error".to_string(),
-                        "TopLevelGetById::get_by_ids".to_string(),
-                    ),
-                });
-            }
-        };
+        let variants = DbVariant::get_by_ids(pool, ids).await?;
         let fetch_level = fetch_level.copied();
         let descendant_fetch_level = descendant_fetch_level.copied();
         let futures: Vec<_> = variants
@@ -209,7 +173,7 @@ where
 
         let mut result = Vec::with_capacity(futures.len());
         for future in futures {
-            result.push(future.await.unwrap()?);
+            result.push(future.await??);
         }
 
         Ok(result)

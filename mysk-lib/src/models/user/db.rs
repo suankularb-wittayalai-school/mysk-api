@@ -18,33 +18,27 @@ pub struct DbUser {
 }
 
 impl DbUser {
-    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Option<Uuid>> {
+    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Uuid> {
         let res = query!("SELECT id FROM users WHERE email = $1", email)
-            .fetch_optional(pool)
-            .await
-            .map_err(|e| {
-                Error::InternalSeverError(e.to_string(), "DbUser::get_by_email".to_string())
-            })?;
+            .fetch_one(pool)
+            .await?;
 
-        Ok(res.map(|row| row.id))
+        Ok(res.id)
     }
 
     pub async fn get_user_permissions(pool: &PgPool, user_id: Uuid) -> Result<Vec<String>> {
-        let res = sqlx::query_as::<_, (String,)>(
+        let res = query!(
             "
             SELECT permissions.name
             FROM user_permissions
             JOIN permissions ON user_permissions.permission_id = permissions.id
             WHERE user_permissions.user_id = $1
             ",
+            user_id,
         )
-        .bind(user_id)
         .fetch_all(pool)
-        .await
-        .map_err(|e| {
-            Error::InternalSeverError(e.to_string(), "DbUser::get_user_permissions".to_string())
-        })?;
+        .await?;
 
-        Ok(res.into_iter().map(|(name,)| name).collect())
+        Ok(res.into_iter().map(|row| row.name).collect())
     }
 }

@@ -86,11 +86,13 @@ impl Authorizer for StudentRole {
         pool: &PgPool,
         action: ActionType,
     ) -> Result<()> {
+        // Unwrap-safe because it is guaranteed prior by get_authorizer
         let owned = self.user_id == student.user_id.unwrap();
         let self_class = DbStudent::get_student_classroom(pool, self.id, None).await?;
         let student_class = DbStudent::get_student_classroom(pool, student.id, None).await?;
         let same_class = self_class.is_some()
             && student_class.is_some()
+            // Unwrap-safe because it is checked by the prior if statements
             && self_class.unwrap().id == student_class.unwrap().id;
 
         match action {

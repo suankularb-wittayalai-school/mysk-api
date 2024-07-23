@@ -123,7 +123,7 @@ impl TopLevelGetById for Contact {
 
         let mut result = Vec::with_capacity(futures.len());
         for future in futures {
-            result.push(future.await.unwrap()?);
+            result.push(future.await??);
         }
 
         Ok(result)

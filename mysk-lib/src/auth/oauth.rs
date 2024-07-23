@@ -95,7 +95,7 @@ struct GoogleOAuthInitQueryParams {
     prompt: Option<String>,
 }
 
-pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> (String, String) {
+pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> Result<(String, String)> {
     let mut state = [0u8; 32];
     OsRng.fill_bytes(&mut state);
     let state = format!("{:x}", Sha256::new().chain_update(state).finalize());
@@ -120,13 +120,16 @@ pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> (String, 
         prompt: None,
     };
 
-    (
+    Ok((
         format!(
             "https://accounts.google.com/o/oauth2/v2/auth?{}",
-            serde_qs::to_string(&query_params).unwrap(),
+            serde_qs::to_string(&query_params).map_err(|_| Error::InternalSeverError(
+                "Internal server error".to_string(),
+                "/auth/oauth/google".to_string()
+            ))?,
         ),
         state,
-    )
+    ))
 }
 
 #[derive(Debug, Serialize)]
@@ -159,7 +162,10 @@ pub async fn exchange_oauth_code(
     let code_exchange_response = Client::new()
         .post(format!(
             "https://oauth2.googleapis.com/token?{}",
-            serde_qs::to_string(&query_params).unwrap(),
+            serde_qs::to_string(&query_params).map_err(|_| Error::InternalSeverError(
+                "Internal server error".to_string(),
+                "/auth/oauth/google".to_string()
+            ))?,
         ))
         .header(CONTENT_LENGTH, HeaderValue::from_static("0"))
         .send()
@@ -169,11 +175,16 @@ pub async fn exchange_oauth_code(
         Ok(response) => Ok(response
             .json::<CodeExchangeResponse>()
             .await
-            .unwrap()
+            .map_err(|_| {
+                Error::InternalSeverError(
+                    "Internal server error".to_string(),
+                    "/auth/oauth/google".to_string(),
+                )
+            })?
             .id_token),
-        Err(err) => Err(Error::InternalSeverError(
-            err.to_string(),
-            "exchange_oauth_code".to_string(),
+        Err(_) => Err(Error::InternalSeverError(
+            "Internal server error".to_string(),
+            "/auth/oauth/google".to_string(),
         )),
     }
 }

@@ -31,6 +31,7 @@ impl Authorizer for TeacherRole {
 
         match action {
             // Owned
+            // Unwrap-safe because it has already been checked if it is owned
             ActionType::Update if owned && advisor_at.unwrap() == classroom.id => Ok(()),
             // Others
             ActionType::ReadIdOnly
@@ -148,6 +149,7 @@ impl Authorizer for TeacherRole {
         _: &PgPool,
         action: ActionType,
     ) -> Result<()> {
+        // Unwrap-safe because it is guaranteed prior by get_authorizer
         let owned = self.user_id == teacher.user_id.unwrap();
 
         match action {

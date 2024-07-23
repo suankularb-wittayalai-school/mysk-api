@@ -16,7 +16,9 @@ impl FromRequest for LoggedInStudent {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let app_state = req.app_data::<Data<AppState>>().unwrap();
+        let app_state = req
+            .app_data::<Data<AppState>>()
+            .expect("Irrecoverable error, AppState is None");
         let pool = app_state.db.clone();
         let req = req.clone();
         let user = LoggedIn::from_request(&req, payload);

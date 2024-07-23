@@ -149,7 +149,8 @@ async fn modify_elective_subject(
         ",
         elective.id,
         student_id,
-        student_elective_subject.unwrap().elective_subject_session_id, // This can be unwrapped because we have already checked if the student has an elective subject
+        // Unwrap-safe because we have already checked if the student has an elective subject
+        student_elective_subject.unwrap().elective_subject_session_id,
     )
     .execute(pool)
     .await?;

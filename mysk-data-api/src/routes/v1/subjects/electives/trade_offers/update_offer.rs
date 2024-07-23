@@ -157,6 +157,7 @@ async fn update_trade_offer(
         ));
     }
 
+    // Unwrap-safe because we have already checked if the updated status exists
     if let SubmissionStatus::Approved = updated_status.unwrap() {
         // Set the status of all the other trade offers of the sending and receiving students to
         // "declined"
@@ -203,6 +204,7 @@ async fn update_trade_offer(
     // Accept or decline the trade offer
     query!(
         "UPDATE elective_subject_trade_offers SET status = $1 WHERE id = $2",
+        // Unwrap-safe because we have already checked if the updated status exists
         updated_status.unwrap() as SubmissionStatus,
         trade_offer_id,
     )

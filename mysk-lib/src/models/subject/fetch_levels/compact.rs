@@ -1,8 +1,10 @@
 use crate::{
     common::{requests::FetchLevel, string::MultiLangString},
     models::{subject::db::DbSubject, traits::FetchLevelVariant},
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
+use async_trait::async_trait;
 use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
