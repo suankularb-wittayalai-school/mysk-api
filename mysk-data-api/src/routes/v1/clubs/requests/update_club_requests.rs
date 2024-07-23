@@ -63,7 +63,8 @@ pub async fn update_club_requests(
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
-    permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}")).await?;
+        permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
+            .await?;
 
     // Check if the club request exists
     let club_request = match ClubRequest::get_by_id(

@@ -101,10 +101,7 @@ where
     Default: Serialize + FetchLevelVariant<DbVariant>,
     Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
-    fn serialize<S: Serializer>(
-        &self,
-        serializer: S,
-    ) -> std::result::Result<<S as Serializer>::Ok, <S as Serializer>::Error> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
         match self {
             TopLevelVariant::IdOnly(variant, _) => variant.serialize(serializer),
             TopLevelVariant::Compact(variant, _) => variant.serialize(serializer),

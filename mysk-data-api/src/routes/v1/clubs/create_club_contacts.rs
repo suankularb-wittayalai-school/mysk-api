@@ -50,7 +50,8 @@ pub async fn create_club_contacts(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
+    let authorizer =
+        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
 
     // Check if the club exists
     let club = match Club::get_by_id(

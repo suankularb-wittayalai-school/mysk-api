@@ -33,7 +33,8 @@ pub async fn query_club_requests(
     let filter = request_query.filter.as_ref();
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
-    let authorizer = permissions::get_authorizer(pool, &user, "/clubs/requests".to_string()).await?;
+    let authorizer =
+        permissions::get_authorizer(pool, &user, "/clubs/requests".to_string()).await?;
 
     let club_requests = ClubRequest::query(
         pool,

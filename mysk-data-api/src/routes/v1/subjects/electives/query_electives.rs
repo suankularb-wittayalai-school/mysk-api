@@ -33,7 +33,8 @@ pub async fn query_elective_subject(
     let filter = request_query.filter.as_ref();
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
-    let authorizer = permissions::get_authorizer(pool, &user, "/subjects/electives".to_string()).await?;
+    let authorizer =
+        permissions::get_authorizer(pool, &user, "/subjects/electives".to_string()).await?;
 
     let electives = ElectiveSubject::query(
         pool,

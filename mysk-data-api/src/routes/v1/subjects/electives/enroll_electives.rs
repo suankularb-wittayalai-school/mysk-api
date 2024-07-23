@@ -40,7 +40,12 @@ pub async fn enroll_elective_subject(
     let elective_subject_session_id = elective_subject_session_id.into_inner();
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/subjects/electives/{elective_subject_session_id}/enroll")).await?;
+    let authorizer = permissions::get_authorizer(
+        pool,
+        &user,
+        format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+    )
+    .await?;
 
     // Checks if the elective the student is trying to enroll in is available
     let elective = match ElectiveSubject::get_by_id(

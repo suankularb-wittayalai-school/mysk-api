@@ -56,7 +56,8 @@ pub async fn add_club_members(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
+    let authorizer =
+        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists

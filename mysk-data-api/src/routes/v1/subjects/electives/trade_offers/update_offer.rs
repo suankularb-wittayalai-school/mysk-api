@@ -66,7 +66,12 @@ async fn update_trade_offer(
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/subjects/electives/trade-offers/{trade_offer_id}")).await?;
+    let authorizer = permissions::get_authorizer(
+        pool,
+        &user,
+        format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+    )
+    .await?;
 
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool).await? {

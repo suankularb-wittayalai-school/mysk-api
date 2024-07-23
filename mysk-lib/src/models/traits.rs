@@ -14,13 +14,13 @@ use std::fmt::Display;
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
 /// from DB variant.
 #[async_trait]
-pub trait FetchLevelVariant<T>
+pub trait FetchLevelVariant<DbVariant>
 where
     Self: Sized,
 {
     async fn from_table(
         pool: &PgPool,
-        table: T,
+        table: DbVariant,
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self>;
@@ -28,13 +28,13 @@ where
 
 /// A trait for the actual database entity with ability to convert to be converted from DB variant.
 #[async_trait]
-pub trait TopLevelFromTable<T>
+pub trait TopLevelFromTable<DbVariant>
 where
     Self: Sized,
 {
     async fn from_table(
         pool: &PgPool,
-        table: T,
+        table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &Box<dyn Authorizer>,
@@ -69,7 +69,7 @@ where
 pub trait TopLevelQuery<DbVariant, QueryableObject, SortableObject>
 where
     Self: TopLevelFromTable<DbVariant> + Sized + 'static,
-    DbVariant: QueryDb<QueryableObject, SortableObject> + BaseQuery + Send + 'static,
+    DbVariant: BaseQuery + QueryDb<QueryableObject, SortableObject> + Sized + Send + 'static,
     QueryableObject: Queryable + Sync,
     SortableObject: Display + Sync,
 {

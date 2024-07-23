@@ -36,4 +36,9 @@ impl From<DbElectiveSubject> for CompactElectiveSubject {
     }
 }
 
-impl_fetch_level_variant_from!(elective_subject, Compact, CompactElectiveSubject, DbElectiveSubject);
+impl_fetch_level_variant_from!(
+    elective_subject,
+    Compact,
+    CompactElectiveSubject,
+    DbElectiveSubject
+);

@@ -31,7 +31,12 @@ pub async fn query_elective_details(
     let elective_subject_session_id = elective_subject_session_id.into_inner();
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/subjects/electives/{elective_subject_session_id}")).await?;
+    let authorizer = permissions::get_authorizer(
+        pool,
+        &user,
+        format!("/subjects/electives/{elective_subject_session_id}"),
+    )
+    .await?;
 
     let elective_subject = ElectiveSubject::get_by_id(
         pool,

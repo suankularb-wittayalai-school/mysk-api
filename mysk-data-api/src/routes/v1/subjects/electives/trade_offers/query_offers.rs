@@ -39,12 +39,9 @@ pub async fn query_trade_offers(
     let filter = request_body.filter.as_ref();
     let sort = request_body.sort.as_ref();
     let pagination = request_body.pagination.as_ref();
-    let authorizer = permissions::get_authorizer(
-        pool,
-        &user,
-        "/subjects/electives/trade-offers".to_string(),
-    )
-    .await?;
+    let authorizer =
+        permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
+            .await?;
 
     let trade_offers = ElectiveTradeOffer::query(
         pool,

@@ -45,7 +45,8 @@ pub async fn join_clubs(
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let current_year = get_current_academic_year(None);
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
+    let authorizer =
+        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
     let club = match Club::get_by_id(
