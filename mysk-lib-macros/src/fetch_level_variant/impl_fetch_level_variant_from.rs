@@ -9,21 +9,18 @@
 /// `db_type`: The type name of the data model.
 #[macro_export]
 macro_rules! impl_fetch_level_variant_from {
-    ($table_name: ident, $fetch_level: ident, $fetch_variant_type: ty, $db_type: ty) => {
-        use crate::permissions::ActionType;
-        use async_trait::async_trait as __mysk_macros_internal_async_trait;
-
-        #[__mysk_macros_internal_async_trait]
+    ($table: ident, $fetch_level: ident, $fetch_variant_type: ty, $db_type: ty) => {
+        #[async_trait]
         impl FetchLevelVariant<$db_type> for $fetch_variant_type {
             async fn from_table(
                 pool: &PgPool,
                 table: $db_type,
                 _: Option<&FetchLevel>,
-                authorizer: &Box<dyn crate::permissions::Authorizer>,
+                authorizer: &Box<dyn Authorizer>,
             ) -> Result<Self> {
                 $crate::paste::paste! {
                     authorizer
-                        .[<authorize_ $table_name>](&table, pool, ActionType::[<Read $fetch_level>])
+                        .[<authorize_ $table>](&table, pool, ActionType::[<Read $fetch_level>])
                         .await?;
                 }
 
