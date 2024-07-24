@@ -1,8 +1,10 @@
 use crate::{
     common::{requests::FetchLevel, string::MultiLangString},
     models::{student::db::DbStudent, traits::FetchLevelVariant},
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
+use async_trait::async_trait;
 use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -35,4 +37,4 @@ impl From<DbStudent> for CompactStudent {
     }
 }
 
-impl_fetch_level_variant_from!(CompactStudent, DbStudent);
+impl_fetch_level_variant_from!(student, Compact, CompactStudent, DbStudent);

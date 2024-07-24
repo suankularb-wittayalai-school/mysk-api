@@ -6,6 +6,6 @@ edition.workspace = true
 
 [dependencies]
 async-trait.workspace = true
-chrono.workspace = true
+paste.workspace = true
 sqlx.workspace = true
 uuid.workspace = true

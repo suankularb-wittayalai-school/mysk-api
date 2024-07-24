@@ -7,6 +7,7 @@ use crate::{
         student::Student,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -31,6 +32,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
         pool: &PgPool,
         table: DbClubRequest,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -40,6 +42,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
                 table.club_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             student: Student::get_by_id(
@@ -47,6 +50,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
                 table.student_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             year: table.year,

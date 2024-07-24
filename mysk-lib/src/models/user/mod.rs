@@ -1,4 +1,7 @@
-use crate::{models::enums::UserRole, prelude::*};
+use crate::{
+    models::{enums::UserRole, user::db::DbUser},
+    prelude::*,
+};
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
@@ -20,9 +23,8 @@ pub struct User {
 
 impl User {
     pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self> {
-        let user = db::DbUser::get_by_id(pool, id).await?;
-
-        let permissions = db::DbUser::get_user_permissions(pool, user.id).await?;
+        let user = DbUser::get_by_id(pool, id).await?;
+        let permissions = DbUser::get_user_permissions(pool, user.id).await?;
 
         Ok(Self {
             id: user.id,
@@ -35,12 +37,9 @@ impl User {
         })
     }
 
-    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Option<Self>> {
-        let id = db::DbUser::get_by_email(pool, email).await?;
+    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Self> {
+        let id = DbUser::get_by_email(pool, email).await?;
 
-        match id {
-            Some(id) => Self::get_by_id(pool, id).await.map(Some),
-            None => Ok(None),
-        }
+        Self::get_by_id(pool, id).await
     }
 }

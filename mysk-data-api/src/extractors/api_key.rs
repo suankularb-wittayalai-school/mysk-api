@@ -18,7 +18,9 @@ impl FromRequest for ApiKeyHeader {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let app_state = req.app_data::<Data<AppState>>().unwrap();
+        let app_state = req
+            .app_data::<Data<AppState>>()
+            .expect("Irrecoverable error, AppState is None");
         let pool = app_state.db.clone();
         let token = match req.headers().get("X-Api-Key") {
             Some(token) => match token.to_str() {
@@ -46,7 +48,7 @@ impl FromRequest for ApiKeyHeader {
             hasher.update(token.get_long_token().as_bytes());
             let hash = bs58::encode(hasher.finalize()).into_string();
 
-            let api_key = match query_as!(
+            let api_key = query_as!(
                 ApiKey,
                 "
                 SELECT * FROM user_api_keys
@@ -57,24 +59,7 @@ impl FromRequest for ApiKeyHeader {
                 token.get_short_token(),
             )
             .fetch_one(&pool)
-            .await
-            {
-                Ok(api_key) => api_key,
-                Err(err) => match err {
-                    sqlx::Error::RowNotFound => {
-                        return Err(Error::InvalidApiKey(
-                            "Invalid API Key".to_string(),
-                            "extractors::ApiKeyHeader".to_string(),
-                        ))
-                    }
-                    _ => {
-                        return Err(Error::InternalSeverError(
-                            "Internal server error".to_string(),
-                            "extractors::ApiKeyHeader".to_string(),
-                        ))
-                    }
-                },
-            };
+            .await?;
 
             Ok(ApiKeyHeader(api_key))
         })

@@ -9,6 +9,7 @@ use crate::{
         student::Student,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -37,6 +38,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
         pool: &PgPool,
         table: DbClub,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         let staff_ids = DbClub::get_club_staffs(pool, table.id).await?;
         let member_ids = DbClub::get_club_members(pool, table.id).await?;
@@ -66,6 +68,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
                 contact_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             staffs: Student::get_by_ids(
@@ -73,6 +76,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
                 staff_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             members: Student::get_by_ids(
@@ -80,6 +84,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
                 member_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             accent_color: table.accent_color,

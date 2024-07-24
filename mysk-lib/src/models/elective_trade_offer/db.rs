@@ -132,7 +132,7 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
                 })?
                 .get::<i64, _>("count"),
         )
-        .unwrap();
+        .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

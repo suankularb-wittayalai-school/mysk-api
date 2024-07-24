@@ -1,6 +1,11 @@
 use crate::{
     common::{requests::FetchLevel, string::MultiLangString},
-    models::{subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchLevelVariant},
+    models::{
+        subject_group::SubjectGroup,
+        teacher::db::DbTeacher,
+        traits::{FetchLevelVariant, TopLevelGetById as _},
+    },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -22,9 +27,14 @@ pub struct CompactTeacher {
 
 #[async_trait]
 impl FetchLevelVariant<DbTeacher> for CompactTeacher {
-    async fn from_table(pool: &PgPool, table: DbTeacher, _: Option<&FetchLevel>) -> Result<Self> {
+    async fn from_table(
+        pool: &PgPool,
+        table: DbTeacher,
+        _: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
+    ) -> Result<Self> {
         let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
+            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
 
         Ok(Self {
             id: table.id,

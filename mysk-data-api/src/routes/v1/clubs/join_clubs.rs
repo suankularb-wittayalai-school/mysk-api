@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -23,6 +23,7 @@ use mysk_lib::{
         student::Student,
         traits::TopLevelGetById as _,
     },
+    permissions,
     prelude::*,
 };
 use sqlx::query;
@@ -32,16 +33,20 @@ use uuid::Uuid;
 pub async fn join_clubs(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     student_id: LoggedInStudent,
     club_id: Path<Uuid>,
     request_body: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let user = user.0;
     let student_id = student_id.0;
     let club_id = club_id.into_inner();
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let current_year = get_current_academic_year(None);
+    let authorizer =
+        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
     let club = match Club::get_by_id(
@@ -49,6 +54,7 @@ pub async fn join_clubs(
         club_id,
         Some(&FetchLevel::Detailed),
         Some(&FetchLevel::IdOnly),
+        &authorizer,
     )
     .await
     {
@@ -123,8 +129,14 @@ pub async fn join_clubs(
     .await?
     .id;
 
-    let club_request_id =
-        ClubRequest::get_by_id(pool, club_member_id, fetch_level, descendant_fetch_level).await?;
+    let club_request_id = ClubRequest::get_by_id(
+        pool,
+        club_member_id,
+        fetch_level,
+        descendant_fetch_level,
+        &authorizer,
+    )
+    .await?;
     let response = ResponseType::new(club_request_id, None);
 
     Ok(HttpResponse::Ok().json(response))

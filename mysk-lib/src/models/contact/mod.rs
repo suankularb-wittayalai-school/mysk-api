@@ -5,6 +5,7 @@ use crate::{
         enums::ContactType,
         traits::{TopLevelFromTable, TopLevelGetById},
     },
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -31,11 +32,16 @@ pub struct Contact {
 #[async_trait]
 impl TopLevelFromTable<DbContact> for Contact {
     async fn from_table(
-        _: &PgPool,
+        pool: &PgPool,
         table: DbContact,
         _: Option<&FetchLevel>,
         _: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
+        authorizer
+            .authorize_contact(&table, pool, ActionType::ReadDefault)
+            .await?;
+
         Ok(Self {
             id: table.id,
             created_at: table.created_at,
@@ -65,22 +71,33 @@ impl TopLevelFromTable<DbContact> for Contact {
 
 #[async_trait]
 impl TopLevelGetById for Contact {
+    type Id = Uuid;
+
     async fn get_by_id(
         pool: &PgPool,
-        id: Uuid,
+        id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Self> {
         let contact = DbContact::get_by_id(pool, id).await?;
 
-        Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await
+        Self::from_table(
+            pool,
+            contact,
+            fetch_level,
+            descendant_fetch_level,
+            authorizer,
+        )
+        .await
     }
 
     async fn get_by_ids(
         pool: &PgPool,
-        ids: Vec<Uuid>,
+        ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &Box<dyn Authorizer>,
     ) -> Result<Vec<Self>> {
         let contacts = DbContact::get_by_ids(pool, ids).await?;
         let fetch_level = fetch_level.copied();
@@ -89,6 +106,7 @@ impl TopLevelGetById for Contact {
             .into_iter()
             .map(|contact| {
                 let pool = pool.clone();
+                let authorizer = dyn_clone::clone_box(&**authorizer);
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -96,6 +114,7 @@ impl TopLevelGetById for Contact {
                         contact,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
+                        &authorizer,
                     )
                     .await
                 })
@@ -104,7 +123,7 @@ impl TopLevelGetById for Contact {
 
         let mut result = Vec::with_capacity(futures.len());
         for future in futures {
-            result.push(future.await.unwrap()?);
+            result.push(future.await??);
         }
 
         Ok(result)

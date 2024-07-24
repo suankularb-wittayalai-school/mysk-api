@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -19,6 +19,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
+    permissions,
     prelude::*,
 };
 use serde::Deserialize;
@@ -35,12 +36,14 @@ struct ElectiveTradeOfferRequest {
 async fn create_trade_offer(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     student_id: LoggedInStudent,
     request_body: Json<
         RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let user = user.0;
     let receiver_student_id = match &request_body.data {
         Some(request_data) => request_data.receiver_id,
         None => {
@@ -53,6 +56,9 @@ async fn create_trade_offer(
     let sender_student_id = student_id.0;
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let authorizer =
+        permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
+            .await?;
 
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool).await? {
@@ -88,6 +94,7 @@ async fn create_trade_offer(
         receiver_elective_subject_id,
         Some(&FetchLevel::Compact),
         None,
+        &authorizer,
     )
     .await
     {
@@ -164,6 +171,7 @@ async fn create_trade_offer(
         sender_elective_subject_id,
         Some(&FetchLevel::Compact),
         None,
+        &authorizer,
     )
     .await
     {
@@ -300,9 +308,14 @@ async fn create_trade_offer(
     .await?
     .id;
 
-    let elective_trade_offer =
-        ElectiveTradeOffer::get_by_id(pool, trade_offer_id, fetch_level, descendant_fetch_level)
-            .await?;
+    let elective_trade_offer = ElectiveTradeOffer::get_by_id(
+        pool,
+        trade_offer_id,
+        fetch_level,
+        descendant_fetch_level,
+        &authorizer,
+    )
+    .await?;
     let response = ResponseType::new(elective_trade_offer, None);
 
     Ok(HttpResponse::Ok().json(response))
