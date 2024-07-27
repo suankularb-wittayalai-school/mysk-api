@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        requests::{PaginationConfig, QueryParam, SqlSection},
+        requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
     },
     error::Error,
@@ -21,14 +21,16 @@ use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "
+#[base_query(
+    query = "
     SELECT
         teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
         last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
         birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id,
         user_id, subject_group_id
-    FROM teachers INNER JOIN people ON teachers.person_id = people.id
-")]
+    FROM teachers INNER JOIN people ON teachers.person_id = people.id",
+    count_query = "SELECT COUNT(distinct teachers.id) FROM teachers INNER JOIN people ON teachers.person_id = people.id"
+)]
 #[get_by_id(table = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
@@ -169,7 +171,7 @@ impl DbTeacher {
 impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
-        filter: Option<&crate::common::requests::FilterConfig<QueryableTeacher>>,
+        filter: Option<&FilterConfig<QueryableTeacher>>,
     ) where
         Self: Sized,
     {
@@ -199,9 +201,9 @@ impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
 
     async fn query(
         pool: &PgPool,
-        filter: Option<&crate::common::requests::FilterConfig<QueryableTeacher>>,
-        sort: Option<&crate::common::requests::SortingConfig<SortableTeacher>>,
-        pagination: Option<&crate::common::requests::PaginationConfig>,
+        filter: Option<&FilterConfig<QueryableTeacher>>,
+        sort: Option<&SortingConfig<SortableTeacher>>,
+        pagination: Option<&PaginationConfig>,
     ) -> Result<Vec<Self>>
     where
         Self: BaseQuery + Sized,
@@ -241,9 +243,9 @@ impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
 
     async fn response_pagination(
         pool: &sqlx::PgPool,
-        filter: Option<&crate::common::requests::FilterConfig<QueryableTeacher>>,
-        pagination: Option<&crate::common::requests::PaginationConfig>,
-    ) -> Result<crate::common::response::PaginationType>
+        filter: Option<&FilterConfig<QueryableTeacher>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<PaginationType>
     where
         Self: Sized,
     {

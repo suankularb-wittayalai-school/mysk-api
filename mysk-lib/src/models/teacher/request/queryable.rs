@@ -10,8 +10,8 @@ pub struct QueryableTeacher {
     pub ids: Option<Vec<Uuid>>,
     // pub teacher_ids: Option<String>,
     pub subject_group_ids: Option<i64>,
-    // pub person_ids: Option<Vec<Uuid>>,
-    // pub user_ids: Option<Vec<Uuid>>,
+    pub person_ids: Option<Vec<Uuid>>,
+    pub user_ids: Option<Vec<Uuid>>,
 }
 
 impl Queryable for QueryableTeacher {
@@ -29,8 +29,33 @@ impl Queryable for QueryableTeacher {
         // WHERE subject_group_id IN (SELECT id FROM subject_groups WHERE id IN ANY($1))
         if let Some(subject_group_ids) = &self.subject_group_ids {
             where_sections.push(SqlSection {
-                sql: vec!["id IN (SELECT id FROM subject_groups WHERE id = ANY(".to_string()],
+                sql: vec![
+                    "id IN (SELECT id FROM subject_groups WHERE id = ANY(".to_string(),
+                    "))".to_string(),
+                ],
                 params: vec![QueryParam::Int(subject_group_ids.clone())],
+            })
+        }
+
+        // WHERE person_id IN (SELECT id FROM people WHERE id IN ANY($1))
+        if let Some(person_ids) = &self.person_ids {
+            where_sections.push(SqlSection {
+                sql: vec![
+                    "id IN (SELECT id FROM people WHERE id = ANY(".to_string(),
+                    "))".to_string(),
+                ],
+                params: vec![QueryParam::ArrayUuid(person_ids.clone())],
+            })
+        }
+
+        // WHERE user_id IN (SELECT id FROM users WHERE id IN ANY($1))
+        if let Some(user_ids) = &self.user_ids {
+            where_sections.push(SqlSection {
+                sql: vec![
+                    "id IN (SELECT id FROM users WHERE id = ANY(".to_string(),
+                    "))".to_string(),
+                ],
+                params: vec![QueryParam::ArrayUuid(user_ids.clone())],
             })
         }
 
