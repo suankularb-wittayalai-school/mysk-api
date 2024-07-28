@@ -1,4 +1,3 @@
-use super::enums::Sex;
 use crate::{common::string::MultiLangString, models::person::db::DbPerson, prelude::*};
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
@@ -9,12 +8,12 @@ pub mod db;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Person {
-    id: Uuid,
-    prefix: MultiLangString,
-    first_name: MultiLangString,
-    last_name: MultiLangString,
-    middle_name: Option<MultiLangString>,
-    nickname: Option<MultiLangString>,
+    pub id: Uuid,
+    pub prefix: MultiLangString,
+    pub first_name: MultiLangString,
+    pub last_name: MultiLangString,
+    pub middle_name: Option<MultiLangString>,
+    pub nickname: Option<MultiLangString>,
 }
 
 impl Person {

@@ -27,9 +27,9 @@ use uuid::Uuid;
         teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
         last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
         birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id,
-        user_id, subject_group_id, person_id
+        user_id, person_id, subject_group_id
     FROM teachers INNER JOIN people ON teachers.person_id = people.id",
-    count_query = "SELECT COUNT(distinct teachers.id) FROM teachers INNER JOIN people ON teachers.person_id = people.id"
+    count_query = "SELECT COUNT(distinct teachers.id) FROM teachers"
 )]
 #[get_by_id(table = "teachers")]
 pub struct DbTeacher {
