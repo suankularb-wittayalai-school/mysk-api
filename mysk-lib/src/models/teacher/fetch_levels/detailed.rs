@@ -4,6 +4,7 @@ use crate::{
         classroom::Classroom,
         contact::Contact,
         enums::{BloodGroup, Sex},
+        person::Person,
         subject::Subject,
         subject_group::SubjectGroup,
         teacher::db::DbTeacher,
@@ -34,6 +35,7 @@ pub struct DetailedTeacher {
     pub contacts: Vec<Contact>,
     pub class_advisor_at: Option<Classroom>,
     pub user: Option<User>,
+    pub person: Option<Person>,
     pub subject_group: SubjectGroup,
     pub subjects_in_charge: Vec<Subject>,
     pub citizen_id: Option<String>,
@@ -67,6 +69,11 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
 
         let user = match table.user_id {
             Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
+            None => None,
+        };
+
+        let person = match table.person_id {
+            Some(person_id) => Some(Person::get_by_id(pool, person_id).await?),
             None => None,
         };
 
@@ -107,6 +114,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
                 None => None,
             },
             user,
+            person,
             subject_group,
             subjects_in_charge: Subject::get_by_ids(
                 pool,
