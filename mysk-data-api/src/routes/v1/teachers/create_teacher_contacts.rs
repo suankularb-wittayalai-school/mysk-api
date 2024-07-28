@@ -59,15 +59,12 @@ pub async fn create_teacher_contacts(
         permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}/contacts"))
             .await?;
 
-    // Fetch the DbTeacher instance
+    // Fetch and authorize db_teacher instance
     let db_teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
-
-    // Authorize the action
     authorizer
         .authorize_teacher(&db_teacher, pool, ActionType::Create)
         .await?;
 
-    // Check if the teacher exists
     let teacher = match Teacher::get_by_id(
         pool,
         teacher_id,
@@ -78,12 +75,6 @@ pub async fn create_teacher_contacts(
     .await
     {
         Ok(Teacher::Detailed(teacher, _)) => teacher,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Teacher not found".to_string(),
-                format!("/teachers/{teacher_id}/contacts"),
-            ));
-        }
         _ => unreachable!("Teacher::get_by_id should always return a Detailed variant"),
     };
 
