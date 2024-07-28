@@ -30,7 +30,8 @@ impl Queryable for QueryableTeacher {
         if let Some(subject_group_ids) = &self.subject_group_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT id FROM subject_groups WHERE id = ANY(".to_string(),
+                    "subject_group_id IN (SELECT id FROM subject_groups WHERE id = ANY("
+                        .to_string(),
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::Int(subject_group_ids.clone())],
@@ -41,7 +42,7 @@ impl Queryable for QueryableTeacher {
         if let Some(person_ids) = &self.person_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT id FROM people WHERE id = ANY(".to_string(),
+                    "person_id IN (SELECT id FROM people WHERE id = ANY(".to_string(),
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(person_ids.clone())],
@@ -52,7 +53,7 @@ impl Queryable for QueryableTeacher {
         if let Some(user_ids) = &self.user_ids {
             where_sections.push(SqlSection {
                 sql: vec![
-                    "id IN (SELECT id FROM users WHERE id = ANY(".to_string(),
+                    "user_id IN (SELECT id FROM users WHERE id = ANY(".to_string(),
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(user_ids.clone())],
