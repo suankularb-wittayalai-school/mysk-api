@@ -6,14 +6,13 @@ use crate::{
     error::Error,
     helpers::date::get_current_academic_year,
     models::{
-        enums::{BloodGroup, Sex, ShirtSize},
         teacher::request::{queryable::QueryableTeacher, sortable::SortableTeacher},
         traits::{QueryDb, Queryable as _},
     },
     prelude::*,
 };
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::Deserialize;
@@ -23,39 +22,17 @@ use uuid::Uuid;
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
     query = "
-    SELECT
-        teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
-        last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
-        birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id,
-        user_id, person_id, subject_group_id
-    FROM teachers INNER JOIN people ON teachers.person_id = people.id",
-    count_query = "SELECT COUNT(distinct teachers.id) FROM teachers"
+    SELECT id, created_at, teacher_id, subject_group_id, user_id, person_id FROM teachers",
+    count_query = "SELECT COUNT(distinct id) FROM teachers"
 )]
 #[get_by_id(table = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
-    pub prefix_th: String,
-    pub prefix_en: Option<String>,
-    pub first_name_th: String,
-    pub first_name_en: Option<String>,
-    pub last_name_th: String,
-    pub last_name_en: Option<String>,
-    pub middle_name_th: Option<String>,
-    pub middle_name_en: Option<String>,
-    pub nickname_th: Option<String>,
-    pub nickname_en: Option<String>,
-    pub birthdate: Option<NaiveDate>,
-    pub citizen_id: Option<String>,
-    pub profile: Option<String>,
-    pub pants_size: Option<String>,
-    pub shirt_size: Option<ShirtSize>,
-    pub blood_group: Option<BloodGroup>,
-    pub sex: Sex,
     pub teacher_id: Option<String>,
     pub subject_group_id: i64,
-    pub user_id: Option<Uuid>,
     pub person_id: Option<Uuid>,
+    pub user_id: Option<Uuid>,
 }
 
 impl DbTeacher {
