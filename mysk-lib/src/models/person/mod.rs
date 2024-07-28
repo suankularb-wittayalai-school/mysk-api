@@ -22,26 +22,15 @@ impl Person {
 
         Ok(Self {
             id: person.id,
-            prefix: MultiLangString {
-                th: person.prefix_th,
-                en: person.prefix_en,
-            },
-            first_name: MultiLangString {
-                th: person.first_name_th,
-                en: person.first_name_en,
-            },
-            last_name: MultiLangString {
-                th: person.last_name_th,
-                en: person.last_name_en,
-            },
-            middle_name: person.middle_name_th.map(|th| MultiLangString {
-                th,
-                en: person.middle_name_en,
-            }),
-            nickname: person.nickname_th.map(|th| MultiLangString {
-                th,
-                en: person.nickname_en,
-            }),
+            prefix: MultiLangString::new(person.prefix_th, person.prefix_en),
+            first_name: MultiLangString::new(person.first_name_th, person.first_name_en),
+            last_name: MultiLangString::new(person.last_name_th, person.last_name_en),
+            middle_name: person
+                .middle_name_th
+                .map(|th| MultiLangString::new(th, person.middle_name_en)),
+            nickname: person
+                .nickname_th
+                .map(|th| MultiLangString::new(th, person.nickname_en)),
         })
     }
 }

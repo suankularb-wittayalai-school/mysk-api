@@ -1,4 +1,4 @@
-use crate::models::enums::ShirtSize;
+use crate::models::enums::{BloodGroup, Sex, ShirtSize};
 use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
@@ -7,13 +7,13 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "
-    SELECT
-        id, created_at, prefix_th, prefix_en, first_name_th, first_name_en, last_name_th,
-        last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en, birthdate,
-        citizen_id, profile, pants_size, shirt_size
-    FROM people
-")]
+#[base_query(
+    query = "
+        SELECT
+            id, created_at, prefix_en, prefix_th, first_name_en, first_name_th, last_name_en, last_name_th, middle_name_en, middle_name_th, nickname_en, nickname_th, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex
+        FROM people",
+    count_query = "SELECT COUNT(distinct id) FROM people"
+)]
 #[get_by_id(table = "people")]
 pub struct DbPerson {
     pub id: Uuid,
@@ -33,4 +33,6 @@ pub struct DbPerson {
     pub profile: Option<String>,
     pub pants_size: Option<String>,
     pub shirt_size: Option<ShirtSize>,
+    pub blood_group: Option<BloodGroup>,
+    pub sex: Sex,
 }
