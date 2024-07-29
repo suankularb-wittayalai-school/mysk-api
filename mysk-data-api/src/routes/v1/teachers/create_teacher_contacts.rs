@@ -9,15 +9,12 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
         string::MultiLangString,
     },
     models::{
-        contact::Contact,
-        enums::ContactType,
-        teacher::{db::DbTeacher, Teacher},
-        traits::TopLevelGetById as _,
+        contact::Contact, enums::ContactType, teacher::db::DbTeacher, traits::TopLevelGetById as _,
     },
     permissions::{self, ActionType},
     prelude::*,
@@ -60,34 +57,28 @@ pub async fn create_teacher_contacts(
             .await?;
 
     // Fetch and authorize db_teacher instance
-    let db_teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
+    let teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
     authorizer
-        .authorize_teacher(&db_teacher, pool, ActionType::Create)
+        .authorize_teacher(&teacher, pool, ActionType::Create)
         .await?;
 
-    let teacher = match Teacher::get_by_id(
-        pool,
-        teacher_id,
-        Some(&FetchLevel::Detailed),
-        Some(&FetchLevel::IdOnly),
-        &authorizer,
-    )
-    .await
-    {
-        Ok(Teacher::Detailed(teacher, _)) => teacher,
-        _ => unreachable!("Teacher::get_by_id should always return a Detailed variant"),
-    };
-
-    // Check for duplicate contact values
-    if teacher
-        .contacts
-        .iter()
-        .any(|contact| contact.value == teacher_contact.value)
-    {
-        return Err(Error::InvalidRequest(
-            "Contact with same value already exists".to_string(),
-            format!("/teachers/{teacher_id}/contacts"),
-        ));
+    // Check for duplicate contacts
+    let existing_contacts = DbTeacher::get_teacher_contacts(pool, teacher_id).await?;
+    for contact_id in existing_contacts {
+        let contact = Contact::get_by_id(
+            pool,
+            contact_id,
+            fetch_level,
+            descendant_fetch_level,
+            &authorizer,
+        )
+        .await?;
+        if contact.r#type == teacher_contact.r#type && contact.value == teacher_contact.value {
+            return Err(Error::InvalidRequest(
+                "Contact with the same value already exists".to_string(),
+                format!("/teachers/{teacher_id}/contacts"),
+            ));
+        }
     }
 
     // Insert the new contact
@@ -104,7 +95,7 @@ pub async fn create_teacher_contacts(
 
     query!(
         "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-        teacher.person.as_ref().unwrap().id,
+        teacher.person_id,
         new_contact_id,
     )
     .execute(pool)
