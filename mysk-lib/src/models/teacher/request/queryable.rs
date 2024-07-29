@@ -35,7 +35,7 @@ impl Queryable for QueryableTeacher {
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::Int(subject_group_ids.clone())],
-            })
+            });
         }
 
         // WHERE person_id IN (SELECT id FROM people WHERE id IN ANY($1))
@@ -46,7 +46,7 @@ impl Queryable for QueryableTeacher {
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(person_ids.clone())],
-            })
+            });
         }
 
         // WHERE user_id IN (SELECT id FROM users WHERE id IN ANY($1))
@@ -57,7 +57,7 @@ impl Queryable for QueryableTeacher {
                     "))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(user_ids.clone())],
-            })
+            });
         }
 
         where_sections
