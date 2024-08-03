@@ -1,7 +1,7 @@
 use crate::{
     models::{
-        classroom::db::DbClassroom, contact::db::DbContact, student::db::DbStudent,
-        subject::db::DbSubject, teacher::db::DbTeacher,
+        classroom::db::DbClassroom, club::db::DbClub, contact::db::DbContact,
+        student::db::DbStudent, subject::db::DbSubject, teacher::db::DbTeacher,
     },
     permissions::authorizer::{ActionType, Authorizer},
     prelude::*,
@@ -66,6 +66,7 @@ impl Authorizer for StudentRole {
         let mut same_class = false;
         let mut teacher_contact = false;
         let mut club_contact = false;
+        let mut club_staff = false;
 
         if !owned {
             let self_class = DbStudent::get_student_classroom(pool, self.id, None).await?;
@@ -118,19 +119,18 @@ impl Authorizer for StudentRole {
                 .exists
                 .unwrap_or(false)
             };
-            club_contact =
-                if classroom_contact.is_some() || student_contact.is_some() || teacher_contact {
-                    false
-                } else {
-                    query!(
-                        "SELECT EXISTS (SELECT FROM club_contacts WHERE contact_id = $1)",
-                        contact.id,
-                    )
-                    .fetch_one(pool)
-                    .await?
-                    .exists
-                    .unwrap_or(false)
-                };
+            let mut club_id = Uuid::nil();
+            if classroom_contact.is_some() || student_contact.is_some() || teacher_contact {
+                club_contact = false;
+            } else {
+                club_id = query!(
+                    "SELECT club_id FROM club_contacts WHERE contact_id = $1",
+                    contact.id,
+                )
+                .fetch_one(pool)
+                .await?
+                .club_id;
+            };
 
             if classroom_contact.is_some() {
                 same_class = true;
@@ -143,17 +143,29 @@ impl Authorizer for StudentRole {
                     // Unwrap-safe because it is checked by the prior if statements
                     && self_class.unwrap().id == student_class.unwrap().id;
             }
+            if club_contact {
+                let club_staffs = DbClub::get_club_staffs(pool, club_id).await?;
+                if club_staffs.iter().any(|staff_id| *staff_id == self.id) {
+                    club_staff = true;
+                }
+            }
         }
 
         match action {
             // Owned
             _ if owned => Ok(()),
-            // Classroom / Student (Same Class) / Teacher / Club
+            // Classroom / Student (Same Class) / Teacher / Club (Read)
             ActionType::ReadIdOnly
             | ActionType::ReadCompact
             | ActionType::ReadDefault
             | ActionType::ReadDetailed
                 if !owned && (same_class || teacher_contact || club_contact) =>
+            {
+                Ok(())
+            }
+            // Club
+            ActionType::Create | ActionType::Update | ActionType::Delete
+                if !owned && club_staff =>
             {
                 Ok(())
             }
