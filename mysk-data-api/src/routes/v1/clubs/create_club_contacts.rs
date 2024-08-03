@@ -13,12 +13,12 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        club::Club, contact::Contact, enums::ContactType, student::Student,
-        traits::TopLevelGetById as _,
+        club::db::DbClub, contact::Contact, enums::ContactType, traits::TopLevelGetById as _,
     },
     permissions,
     prelude::*,
 };
+use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;
@@ -53,31 +53,11 @@ pub async fn create_club_contacts(
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
 
-    // Check if the club exists
-    let club = match Club::get_by_id(
-        pool,
-        club_id,
-        Some(&FetchLevel::Detailed),
-        Some(&FetchLevel::IdOnly),
-        &authorizer,
-    )
-    .await
-    {
-        Ok(Club::Detailed(club, _)) => club,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club contact not found".to_string(),
-                format!("/clubs/{club_id}/contacts"),
-            ));
-        }
-        _ => unreachable!("Club::get_by_id should always return a Detailed variant"),
-    };
+    let club = DbClub::get_by_id(pool, club_id).await?;
 
     // Check if the student is a staff of the club
-    if !club.staffs.iter().any(|staff| match staff {
-        Student::IdOnly(staff, _) => staff.id == student_id,
-        _ => unreachable!("Staff should always be an IdOnly variant"),
-    }) {
+    let club_staffs = DbClub::get_club_staffs(pool, club_id).await?;
+    if !club_staffs.iter().any(|staff_id| *staff_id == student_id) {
         return Err(Error::InvalidPermission(
             "Student must be a staff of the club to create contacts".to_string(),
             format!("/clubs/{club_id}/contacts"),
@@ -85,23 +65,32 @@ pub async fn create_club_contacts(
     }
 
     // Check if the contact is a duplicate
-    if club
-        .contacts
-        .iter()
-        .any(|contact| contact.value == club_contact.value)
-    {
+    let club_contacts = Contact::get_by_ids(
+        pool,
+        DbClub::get_club_contacts(pool, club_id).await?,
+        Some(&FetchLevel::Default),
+        Some(&FetchLevel::IdOnly),
+        &authorizer,
+    )
+    .await?;
+    if club_contacts.iter().any(|contact| match contact {
+        Contact::Default(contact, _) => contact.value == club_contact.value,
+        _ => unreachable!("Contact::get_by_ids should always return a Default variant"),
+    }) {
         return Err(Error::InvalidRequest(
             "Contact with the same value already exists".to_string(),
             format!("/clubs/{club_id}/contacts"),
         ));
     }
 
+    let mut transaction = pool.begin().await?;
+
     let new_contact_id = query!(
         "INSERT INTO contacts (type, value) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id",
         club_contact.r#type as ContactType,
         club_contact.value,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .id;
 
@@ -110,8 +99,10 @@ pub async fn create_club_contacts(
         club.id,
         new_contact_id,
     )
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     let new_contact = Contact::get_by_id(
         pool,
