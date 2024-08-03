@@ -94,7 +94,7 @@ impl Queryable for QueryableContact {
                 sql: vec![
                     "id IN (SELECT contact_id FROM person_contacts WHERE person_id = ANY(SELECT person_id FROM students WHERE id = ANY("
                         .to_string(),
-                    "))".to_string(),
+                    ")))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(student_ids.clone())],
             });
@@ -107,7 +107,7 @@ impl Queryable for QueryableContact {
                 sql: vec![
                     "id IN (SELECT contact_id FROM person_contacts WHERE person_id = ANY(SELECT person_id FROM teachers WHERE id = ANY("
                         .to_string(),
-                    "))".to_string(),
+                    ")))".to_string(),
                 ],
                 params: vec![QueryParam::ArrayUuid(teacher_ids.clone())],
             });
