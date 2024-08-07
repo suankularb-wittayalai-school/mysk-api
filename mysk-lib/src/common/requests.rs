@@ -1,5 +1,10 @@
-use crate::models::traits::Queryable;
-use crate::{models::enums::SubmissionStatus, prelude::*};
+use crate::{
+    models::{
+        enums::{ContactType, SubmissionStatus},
+        traits::Queryable,
+    },
+    prelude::*,
+};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -161,6 +166,7 @@ pub enum QueryParam {
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
     SubmissionStatus(SubmissionStatus),
+    ContactType(ContactType),
 }
 
 impl Encode<'_, Postgres> for QueryParam {
@@ -182,6 +188,7 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::SubmissionStatus(v) => {
                 <SubmissionStatus as sqlx::Encode<Postgres>>::encode(*v, buf)
             }
+            QueryParam::ContactType(v) => <ContactType as sqlx::Encode<Postgres>>::encode(*v, buf),
         }
     }
 }
