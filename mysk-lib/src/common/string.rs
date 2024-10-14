@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+// NOTE: The "en" field is renamed to "en-US" in the JSON representation
 pub struct MultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,
