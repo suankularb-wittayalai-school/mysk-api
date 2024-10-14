@@ -1,9 +1,12 @@
-use crate::models::enums::{BloodGroup, Sex, ShirtSize};
+use crate::{
+    models::enums::{BloodGroup, Sex, ShirtSize},
+    prelude::*,
+};
 use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::FromRow;
+use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
@@ -31,8 +34,24 @@ pub struct DbPerson {
     pub birthdate: Option<NaiveDate>,
     pub citizen_id: Option<String>,
     pub profile: Option<String>,
-    pub pants_size: Option<String>,
     pub shirt_size: Option<ShirtSize>,
+    pub pants_size: Option<String>,
     pub blood_group: Option<BloodGroup>,
     pub sex: Sex,
+}
+
+impl DbPerson {
+    pub async fn get_person_allergies(pool: &PgPool, person_id: Uuid) -> Result<Vec<String>> {
+        let res = query!(
+            "
+            SELECT allergy_name FROM person_allergies WHERE person_id = $1
+            ",
+            person_id
+        )
+        .fetch_all(pool)
+        .await?;
+        match res {
+            allergies => Ok(allergies.iter().map(|a| a.allergy_name.clone()).collect()),
+        }
+    }
 }
