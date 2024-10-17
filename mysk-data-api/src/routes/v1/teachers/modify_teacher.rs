@@ -13,11 +13,7 @@ use mysk_lib::{
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
-    models::{
-        person::Person,
-        teacher::{db::DbTeacher, Teacher},
-        traits::TopLevelGetById,
-    },
+    models::{person::Person, teacher::db::DbTeacher, traits::TopLevelGetById},
     permissions::{self, ActionType},
     prelude::*,
 };

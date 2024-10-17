@@ -34,7 +34,7 @@ impl Queryable for QueryableTeacher {
                         .to_string(),
                     "))".to_string(),
                 ],
-                params: vec![QueryParam::Int(subject_group_ids.clone())],
+                params: vec![QueryParam::Int(*subject_group_ids)],
             });
         }
 
