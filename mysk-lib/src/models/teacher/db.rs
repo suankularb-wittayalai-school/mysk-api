@@ -168,7 +168,7 @@ impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
                 query_builder.push(sql);
                 if j < section.params.len() {
                     match section.params.get(j) {
-                        Some(QueryParam::Int(v)) => query_builder.push_bind(v.clone()),
+                        Some(QueryParam::Int(v)) => query_builder.push_bind(*v),
                         Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
                         _ => unreachable!(),
                     };
