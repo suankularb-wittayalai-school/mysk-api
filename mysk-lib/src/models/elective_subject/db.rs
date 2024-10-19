@@ -85,6 +85,33 @@ impl DbElectiveSubject {
         Ok(is_eligible.exists.unwrap_or(false))
     }
 
+    pub async fn get_previously_enrolled_electives(
+        pool: &PgPool,
+        student_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
+            "
+            SELECT ess.id
+            FROM elective_subject_sessions AS ess
+            JOIN 
+                elective_subject_session_enrolled_students AS esses
+                ON esses.elective_subject_session_id = ess.id
+            WHERE esses.student_id = $1
+            ",
+            student_id,
+        )
+        .fetch_all(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::get_previously_enrolled_electives".to_string(),
+            )),
+        }
+    }
+
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             "
