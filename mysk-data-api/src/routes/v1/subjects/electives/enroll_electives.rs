@@ -67,7 +67,7 @@ pub async fn enroll_elective_subject(
     };
 
     // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(pool).await? {
+    if !DbElectiveSubject::is_enrollment_period(pool, student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective's enrollment period has ended".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),

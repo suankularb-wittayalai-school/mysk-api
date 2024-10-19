@@ -2,16 +2,14 @@ use crate::{
     common::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
-    },
-    models::{
+    }, helpers::date::get_current_academic_year, models::{
         elective_subject::request::{
             queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
         },
         enums::SubjectType,
         student::db::DbStudent,
         traits::{QueryDb, Queryable as _},
-    },
-    prelude::*,
+    }, prelude::*
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -180,14 +178,24 @@ impl DbElectiveSubject {
         }
     }
 
-    pub async fn is_enrollment_period(pool: &PgPool) -> Result<bool> {
+    pub async fn is_enrollment_period(pool: &PgPool, student_id: Uuid) -> Result<bool> {
         let res = query!(
             "
             SELECT EXISTS (
                 SELECT FROM elective_subject_enrollment_periods
-                WHERE now() BETWEEN start_time AND end_time
+                WHERE 
+                    now() BETWEEN start_time AND end_time
+                    AND (grade IS NULL OR grade = floor((
+                        SELECT number FROM
+                            classrooms AS c
+                            JOIN classroom_students AS cs ON cs.classroom_id = c.id
+                        WHERE cs.student_id = $1 AND year = $2
+                        ) / 100
+                    ))
             )
             ",
+            student_id,
+            get_current_academic_year(None),
         )
         .fetch_one(pool)
         .await;
