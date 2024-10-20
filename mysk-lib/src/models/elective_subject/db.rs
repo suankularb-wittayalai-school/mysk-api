@@ -2,16 +2,14 @@ use crate::{
     common::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
-    },
-    models::{
+    }, helpers::date::get_current_academic_year, models::{
         elective_subject::request::{
             queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
         },
         enums::SubjectType,
         student::db::DbStudent,
         traits::{QueryDb, Queryable as _},
-    },
-    prelude::*,
+    }, prelude::*
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -85,6 +83,33 @@ impl DbElectiveSubject {
         Ok(is_eligible.exists.unwrap_or(false))
     }
 
+    pub async fn get_previously_enrolled_electives(
+        pool: &PgPool,
+        student_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
+        let res = query!(
+            "
+            SELECT ess.id
+            FROM elective_subject_sessions AS ess
+            JOIN 
+                elective_subject_session_enrolled_students AS esses
+                ON esses.elective_subject_session_id = ess.id
+            WHERE esses.student_id = $1
+            ",
+            student_id,
+        )
+        .fetch_all(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbElectiveSubject::get_previously_enrolled_electives".to_string(),
+            )),
+        }
+    }
+
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             "
@@ -153,14 +178,24 @@ impl DbElectiveSubject {
         }
     }
 
-    pub async fn is_enrollment_period(pool: &PgPool) -> Result<bool> {
+    pub async fn is_enrollment_period(pool: &PgPool, student_id: Uuid) -> Result<bool> {
         let res = query!(
             "
             SELECT EXISTS (
                 SELECT FROM elective_subject_enrollment_periods
-                WHERE now() BETWEEN start_time AND end_time
+                WHERE 
+                    now() BETWEEN start_time AND end_time
+                    AND (grade IS NULL OR grade = floor((
+                        SELECT number FROM
+                            classrooms AS c
+                            JOIN classroom_students AS cs ON cs.classroom_id = c.id
+                        WHERE cs.student_id = $1 AND year = $2
+                        ) / 100
+                    ))
             )
             ",
+            student_id,
+            get_current_academic_year(None),
         )
         .fetch_one(pool)
         .await;
