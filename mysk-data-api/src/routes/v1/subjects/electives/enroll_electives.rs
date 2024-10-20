@@ -149,6 +149,27 @@ pub async fn enroll_elective_subject(
         ));
     }
 
+    let blacklisted = query!(
+        "
+        SELECT EXISTS (
+            SELECT student_id
+            FROM elective_subject_session_blacklisted_students
+            WHERE student_id = $1
+        )
+        ",
+        student_id
+    )
+    .fetch_one(pool)
+    .await?
+    .exists
+    .unwrap_or(false);
+    if blacklisted {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
+
     query!(
         "
         INSERT INTO elective_subject_session_enrolled_students
