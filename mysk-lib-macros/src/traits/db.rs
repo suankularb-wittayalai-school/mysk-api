@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{Error as SqlxError, PgPool};
+use sqlx::{Acquire, Error as SqlxError, Postgres};
 use uuid::Uuid;
 
 pub trait BaseQuery {
@@ -13,7 +13,11 @@ pub trait GetById: BaseQuery
 where
     Self: Sized,
 {
-    async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self, SqlxError>;
+    async fn get_by_id<'a, A: Send>(conn: A, id: Uuid) -> Result<Self, SqlxError>
+    where
+        A: Acquire<'a, Database = Postgres>;
 
-    async fn get_by_ids(pool: &PgPool, ids: Vec<Uuid>) -> Result<Vec<Self>, SqlxError>;
+    async fn get_by_ids<'a, A: Send>(conn: A, ids: Vec<Uuid>) -> Result<Vec<Self>, SqlxError>
+    where
+        A: Acquire<'a, Database = Postgres>;
 }

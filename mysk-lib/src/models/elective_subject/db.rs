@@ -2,21 +2,24 @@ use crate::{
     common::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
-    }, helpers::date::get_current_academic_year, models::{
+    },
+    helpers::date::get_current_academic_year,
+    models::{
         elective_subject::request::{
             queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
         },
         enums::SubjectType,
         student::db::DbStudent,
         traits::{QueryDb, Queryable as _},
-    }, prelude::*
+    },
+    prelude::*,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
+use sqlx::{query, Acquire, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -49,13 +52,18 @@ pub struct DbElectiveSubject {
 
 impl DbElectiveSubject {
     /// Checks if the student is in a class available for the elective
-    pub async fn is_student_eligible(
-        pool: &PgPool,
+    pub async fn is_student_eligible<'a, A>(
+        conn: A,
         session_id: Uuid,
         student_id: Uuid,
-    ) -> Result<bool> {
+    ) -> Result<bool>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
+        let mut conn = conn.acquire().await?;
+
         // Checks if the student is in a class available for the elective
-        let student_class = DbStudent::get_student_classroom(pool, student_id, None).await?;
+        let student_class = DbStudent::get_student_classroom(&mut *conn, student_id, None).await?;
 
         let student_classroom_id = match student_class {
             Some(classroom) => classroom.id,
@@ -77,7 +85,7 @@ impl DbElectiveSubject {
             session_id,
             student_classroom_id
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?;
 
         Ok(is_eligible.exists.unwrap_or(false))
@@ -178,7 +186,11 @@ impl DbElectiveSubject {
         }
     }
 
-    pub async fn is_enrollment_period(pool: &PgPool, student_id: Uuid) -> Result<bool> {
+    pub async fn is_enrollment_period<'a, A>(conn: A, student_id: Uuid) -> Result<bool>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
+        let mut conn = conn.acquire().await?;
         let res = query!(
             "
             SELECT EXISTS (
@@ -197,7 +209,7 @@ impl DbElectiveSubject {
             student_id,
             get_current_academic_year(None),
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await;
 
         match res {
