@@ -48,7 +48,7 @@ pub async fn enroll_elective_subject(
     .await
     {
         Ok(ElectiveSubject::Detailed(elective, _)) => {
-            if elective.class_size == elective.cap_size {
+            if elective.class_size >= elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
                     format!("/subjects/electives/{elective_subject_session_id}/enroll"),
