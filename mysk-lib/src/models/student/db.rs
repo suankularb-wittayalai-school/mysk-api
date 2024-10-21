@@ -10,7 +10,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool};
+use sqlx::{query, Acquire, FromRow, PgPool, Postgres};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
@@ -84,11 +84,15 @@ impl DbStudent {
         }
     }
 
-    pub async fn get_student_classroom(
-        pool: &PgPool,
+    pub async fn get_student_classroom<'a, A>(
+        conn: A,
         student_id: Uuid,
         academic_year: Option<i64>,
-    ) -> Result<Option<ClassroomWClassNo>> {
+    ) -> Result<Option<ClassroomWClassNo>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
+        let mut conn = conn.acquire().await?;
         let res = query!(
             "
             SELECT classroom_id, class_no FROM classroom_students
@@ -101,7 +105,7 @@ impl DbStudent {
                 None => get_current_academic_year(None),
             },
         )
-        .fetch_optional(pool)
+        .fetch_optional(&mut *conn)
         .await;
 
         match res {
