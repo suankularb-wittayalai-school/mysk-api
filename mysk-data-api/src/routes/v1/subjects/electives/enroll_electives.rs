@@ -35,6 +35,7 @@ pub async fn enroll_elective_subject(
     request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut transaction = pool.begin().await?;
     let user = user.0;
     let student_id = student_id.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
@@ -47,6 +48,36 @@ pub async fn enroll_elective_subject(
     )
     .await?;
 
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    let blacklisted = query!(
+        "
+        SELECT EXISTS (
+            SELECT student_id
+            FROM elective_subject_session_blacklisted_students
+            WHERE student_id = $1
+        )
+        ",
+        student_id
+    )
+    .fetch_one(&mut *transaction)
+    .await?
+    .exists
+    .unwrap_or(false);
+    if blacklisted {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
+
+    // Check if the current time is within the elective's enrollment period
+    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, student_id).await? {
+        return Err(Error::InvalidPermission(
+            "The elective's enrollment period has ended".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
+
     // Checks if the elective the student is trying to enroll in is available
     let elective = match ElectiveSubject::get_by_id(
         pool,
@@ -58,6 +89,27 @@ pub async fn enroll_elective_subject(
     .await
     {
         Ok(ElectiveSubject::Detailed(elective, _)) => {
+            // We use a transaction-level lock to (hopefully) prevent any race conditions. Using
+            // the session code as the lock's identifier means that it should only lock when
+            // multiple students tries to enroll on the same elective session, and students which
+            // are enrolling on other elective sessions should have their own respective locks.
+            //
+            // P.S. The numbers "69 69 76" are ASCII code that translates to "E E L"
+            //      (Enroll Electives Lock).
+            //
+            // References:
+            //   - https://www.postgresql.org/docs/14/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
+            //   - https://www.postgresql.org/docs/14/explicit-locking.html#ADVISORY-LOCKS
+            query!(
+                "
+                SELECT pg_advisory_xact_lock(696976, session_code::int)
+                FROM elective_subject_sessions WHERE id = $1
+                ",
+                elective_subject_session_id,
+            )
+            .execute(&mut *transaction)
+            .await?;
+
             if elective.class_size >= elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
@@ -76,17 +128,13 @@ pub async fn enroll_elective_subject(
         _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
     };
 
-    // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(pool, student_id).await? {
-        return Err(Error::InvalidPermission(
-            "The elective's enrollment period has ended".to_string(),
-            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-        ));
-    }
-
     // Checks if the student is in a class available for the elective
-    if !DbElectiveSubject::is_student_eligible(pool, elective_subject_session_id, student_id)
-        .await?
+    if !DbElectiveSubject::is_student_eligible(
+        &mut *transaction,
+        elective_subject_session_id,
+        student_id,
+    )
+    .await?
     {
         return Err(Error::InvalidPermission(
             "Student is not eligible to enroll in this elective".to_string(),
@@ -111,7 +159,7 @@ pub async fn enroll_elective_subject(
         student_id,
         subject_id,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?;
 
     let enroll_count: i64 = enroll_count.count.unwrap_or(0);
@@ -138,34 +186,13 @@ pub async fn enroll_elective_subject(
         get_current_academic_year(None),
         get_current_semester(None),
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .exists
     .unwrap_or(false);
     if has_enrolled {
         return Err(Error::InvalidPermission(
             "Student has already enrolled in an elective this semester".to_string(),
-            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-        ));
-    }
-
-    let blacklisted = query!(
-        "
-        SELECT EXISTS (
-            SELECT student_id
-            FROM elective_subject_session_blacklisted_students
-            WHERE student_id = $1
-        )
-        ",
-        student_id
-    )
-    .fetch_one(pool)
-    .await?
-    .exists
-    .unwrap_or(false);
-    if blacklisted {
-        return Err(Error::InvalidPermission(
-            "Student is blacklisted from enrolling in electives".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
         ));
     }
@@ -178,8 +205,10 @@ pub async fn enroll_elective_subject(
         student_id,
         elective.id,
     )
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     // Get the elective subject by session code with the fetch levels requested to return the response
     let elective = ElectiveSubject::get_by_id(

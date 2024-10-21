@@ -35,6 +35,7 @@ async fn modify_elective_subject(
     request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut transaction = pool.begin().await?;
     let user = user.0;
     let student_id = student_id.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
@@ -47,8 +48,30 @@ async fn modify_elective_subject(
     )
     .await?;
 
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    let blacklisted = query!(
+        "
+        SELECT EXISTS (
+            SELECT student_id
+            FROM elective_subject_session_blacklisted_students
+            WHERE student_id = $1
+        )
+        ",
+        student_id
+    )
+    .fetch_one(&mut *transaction)
+    .await?
+    .exists
+    .unwrap_or(false);
+    if blacklisted {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
+
     // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(pool, student_id).await? {
+    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective's enrollment period has ended".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
@@ -58,7 +81,10 @@ async fn modify_elective_subject(
     // Check if the student already has an elective subject
     let student_elective_subject = query!(
         "
-        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
+        SELECT elective_subject_session_id
+        FROM
+            elective_subject_session_enrolled_students AS esses
+            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
         student_id,
@@ -86,6 +112,20 @@ async fn modify_elective_subject(
     .await
     {
         Ok(ElectiveSubject::Detailed(elective, _)) => {
+            // Refer to enroll_electives.rs on line 82 for a detailed explanation.
+            //
+            // P.S. The numbers "77 69 76" are ASCII code that translates to "M E L"
+            //      (Modify Electives Lock).
+            query!(
+                "
+                SELECT pg_advisory_xact_lock(776976, session_code::int)
+                FROM elective_subject_sessions WHERE id = $1
+                ",
+                elective_subject_session_id,
+            )
+            .execute(&mut *transaction)
+            .await?;
+
             if elective.class_size >= elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
@@ -105,8 +145,12 @@ async fn modify_elective_subject(
     };
 
     // Checks if the student is in a class available for the elective
-    if !DbElectiveSubject::is_student_eligible(pool, elective_subject_session_id, student_id)
-        .await?
+    if !DbElectiveSubject::is_student_eligible(
+        &mut *transaction,
+        elective_subject_session_id,
+        student_id,
+    )
+    .await?
     {
         return Err(Error::InvalidPermission(
             "Student is not eligible to enroll in this elective".to_string(),
@@ -124,15 +168,14 @@ async fn modify_elective_subject(
         SELECT 
             COUNT(*) 
         FROM 
-            elective_subject_session_enrolled_students enrolls
-            INNER JOIN elective_subject_sessions electives
-            ON enrolls.elective_subject_session_id = electives.id
+            elective_subject_session_enrolled_students AS esses
+            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
         WHERE student_id = $1 AND subject_id = $2
         ",
         student_id,
         subject_id,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?;
 
     let enroll_count: i64 = enroll_count.count.unwrap_or(0);
@@ -145,15 +188,21 @@ async fn modify_elective_subject(
 
     query!(
         "
-        UPDATE elective_subject_session_enrolled_students SET elective_subject_session_id = $1 WHERE student_id = $2 AND elective_subject_session_id = $3
+        UPDATE elective_subject_session_enrolled_students
+        SET elective_subject_session_id = $1
+        WHERE student_id = $2 AND elective_subject_session_id = $3
         ",
         elective.id,
         student_id,
         // Unwrap-safe because we have already checked if the student has an elective subject
-        student_elective_subject.unwrap().elective_subject_session_id,
+        student_elective_subject
+            .unwrap()
+            .elective_subject_session_id,
     )
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     // Get the updated elective to return to the client
     let elective = ElectiveSubject::get_by_id(
