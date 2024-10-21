@@ -32,17 +32,19 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
             #[__mysk_derives_internal_async_trait]
             impl GetById for #ident {
-                async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> std::result::Result<Self, sqlx::Error> {
+                async fn get_by_id<'a, A: Send>(conn: A, id: Uuid) -> std::result::Result<Self, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                    let mut conn = conn.acquire().await?;
                     sqlx::query_as::<_, #ident>(format!("{} WHERE id = $1", Self::base_query()).as_str())
                         .bind(id)
-                        .fetch_one(pool)
+                        .fetch_one(&mut *conn)
                         .await
                 }
 
-                async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> {
+                async fn get_by_ids<'a, A: Send>(conn: A, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                    let mut conn = conn.acquire().await?;
                     sqlx::query_as::<_, #ident>(format!("{} WHERE id = ANY($1)", Self::base_query()).as_str())
                         .bind(id)
-                        .fetch_all(pool)
+                        .fetch_all(&mut *conn)
                         .await
                 }
             }
@@ -52,17 +54,19 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
             #[__mysk_derives_internal_async_trait]
             impl GetById for #ident {
-                async fn get_by_id(pool: &sqlx::PgPool, id: Uuid) -> std::result::Result<Self, sqlx::Error> {
+                async fn get_by_id<'a, A: Send>(conn: A, id: Uuid) -> std::result::Result<Self, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                    let mut conn = conn.acquire().await?;
                     sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = $1", Self::base_query(), #table).as_str())
                         .bind(id)
-                        .fetch_one(pool)
+                        .fetch_one(&mut *conn)
                         .await
                 }
 
-                async fn get_by_ids(pool: &sqlx::PgPool, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> {
+                async fn get_by_ids<'a, A: Send>(conn: A, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                    let mut conn = conn.acquire().await?;
                     sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = ANY($1)", Self::base_query(), #table).as_str())
                         .bind(id)
-                        .fetch_all(pool)
+                        .fetch_all(&mut *conn)
                         .await
                 }
             }
