@@ -74,6 +74,14 @@ async fn update_trade_offer(
     )
     .await?;
 
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    if DbElectiveSubject::is_student_blacklisted(pool, client_student_id).await? {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+        ));
+    }
+
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool, client_student_id).await? {
         return Err(Error::InvalidPermission(
@@ -183,7 +191,7 @@ async fn update_trade_offer(
         query!(
             "
             UPDATE elective_subject_session_enrolled_students
-                SET elective_subject_session_id = CASE student_id
+                SET updated_at = now(), elective_subject_session_id = CASE student_id
                     WHEN $1 THEN (
                         SELECT elective_subject_session_id
                         FROM

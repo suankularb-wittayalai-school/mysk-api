@@ -48,29 +48,28 @@ pub async fn enroll_elective_subject(
     .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    let blacklisted = query!(
-        "
-        SELECT EXISTS (
-            SELECT FROM elective_subject_session_blacklisted_students WHERE student_id = $1
-        )
-        ",
-        student_id,
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .exists
-    .unwrap_or(false);
-    if blacklisted {
+    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
         ));
     }
 
-    // Check if the current time is within the elective's enrollment period
+    // Checks if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(&mut *transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective's enrollment period has ended".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
+
+    // Checks if the student has already enrolled in an elective in the current semester
+    if DbElectiveSubject::is_currently_enrolled(&mut *transaction, student_id)
+        .await?
+        .is_some()
+    {
+        return Err(Error::InvalidPermission(
+            "Student has already enrolled in an elective this semester".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
         ));
     }
@@ -141,57 +140,10 @@ pub async fn enroll_elective_subject(
         ));
     }
 
-    // Checks if the student has already enrolled in the elective before
-    let enroll_count = query!(
-        "
-        SELECT count(*) FROM elective_subject_session_enrolled_students
-        WHERE student_id = $1 AND elective_subject_session_id = $2
-        ",
-        student_id,
-        elective_subject_session_id,
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .count
-    .unwrap_or(0);
-    if enroll_count > 0 {
-        return Err(Error::InvalidPermission(
-            "Student has already enrolled in this elective before".to_string(),
-            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-        ));
-    }
-
-    // Checks if the student is already enrolled in an elective this semester
-    let has_enrolled = query!(
-        "
-        SELECT EXISTS (
-            SELECT elective_subject_session_id
-            FROM
-                elective_subject_session_enrolled_students AS esses
-                INNER JOIN elective_subject_sessions AS ess
-                ON ess.id = esses.elective_subject_session_id
-            WHERE student_id = $1 AND year = $2 AND semester = $3
-        )
-        ",
-        student_id,
-        get_current_academic_year(None),
-        get_current_semester(None),
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .exists
-    .unwrap_or(false);
-    if has_enrolled {
-        return Err(Error::InvalidPermission(
-            "Student has already enrolled in an elective this semester".to_string(),
-            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-        ));
-    }
-
     query!(
         "
         INSERT INTO elective_subject_session_enrolled_students
-        (student_id, elective_subject_session_id) VALUES ($1, $2) ON CONFLICT DO NOTHING
+        (student_id, elective_subject_session_id) VALUES ($1, $2)
         ",
         student_id,
         elective.id,
@@ -201,7 +153,6 @@ pub async fn enroll_elective_subject(
 
     transaction.commit().await?;
 
-    // Get the elective subject by session code with the fetch levels requested to return the response
     let elective = ElectiveSubject::get_by_id(
         pool,
         elective_subject_session_id,
