@@ -92,6 +92,20 @@ async fn modify_elective_subject(
         ));
     }
 
+    // Refer to enroll_electives.rs on line 72 for a detailed explanation.
+    //
+    // P.S. The numbers "77 69 76" are ASCII code that translates to "M E L"
+    //      (Modify Electives Lock).
+    query!(
+        "
+        SELECT pg_advisory_xact_lock(776976, session_code::int)
+        FROM elective_subject_sessions WHERE id = $1
+        ",
+        elective_subject_session_id,
+    )
+    .execute(&mut *transaction)
+    .await?;
+
     // Checks if the elective the student is trying to enroll in is available
     let elective = match ElectiveSubject::get_by_id(
         pool,
@@ -102,20 +116,6 @@ async fn modify_elective_subject(
     .await
     {
         Ok(ElectiveSubject::Detailed(elective, _)) => {
-            // Refer to enroll_electives.rs on line 82 for a detailed explanation.
-            //
-            // P.S. The numbers "77 69 76" are ASCII code that translates to "M E L"
-            //      (Modify Electives Lock).
-            query!(
-                "
-                SELECT pg_advisory_xact_lock(776976, session_code::int)
-                FROM elective_subject_sessions WHERE id = $1
-                ",
-                elective_subject_session_id,
-            )
-            .execute(&mut *transaction)
-            .await?;
-
             if elective.class_size >= elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
