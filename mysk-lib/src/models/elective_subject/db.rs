@@ -44,6 +44,7 @@ pub struct DbElectiveSubject {
     pub credit: f64,
     pub description_th: Option<String>,
     pub description_en: Option<String>,
+    pub year: Option<i64>,
     pub semester: Option<i64>,
     pub subject_group_id: i64,
     pub syllabus: Option<String>,
