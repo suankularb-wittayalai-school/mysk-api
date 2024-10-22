@@ -98,6 +98,15 @@ async fn modify_elective_subject(
     .await?
     {
         ElectiveSubject::Detailed(elective, _) => {
+            if DbElectiveSubject::get_previously_enrolled_electives(&mut *transaction, student_id)
+                .await?
+                .contains(&elective_subject_session_id)
+            {
+                return Err(Error::InvalidPermission(
+                    "Student cannot re-enroll in the same elective".to_string(),
+                    format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+                ));
+            }
             if elective.year != Some(get_current_academic_year(None))
                 || elective.semester != Some(get_current_semester(None))
             {

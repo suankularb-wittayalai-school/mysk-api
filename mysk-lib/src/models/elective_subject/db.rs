@@ -132,22 +132,33 @@ impl DbElectiveSubject {
         Ok(res.map(|r| r.elective_subject_session_id))
     }
 
-    pub async fn get_previously_enrolled_electives(
-        pool: &PgPool,
+    pub async fn get_previously_enrolled_electives<'a, A>(
+        conn: A,
         student_id: Uuid,
-    ) -> Result<Vec<Uuid>> {
+    ) -> Result<Vec<Uuid>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
         let res = query!(
             "
-            SELECT ess.id
-            FROM elective_subject_sessions AS ess
-            JOIN 
-                elective_subject_session_enrolled_students AS esses
-                ON esses.elective_subject_session_id = ess.id
-            WHERE esses.student_id = $1
+            SELECT ess.id FROM elective_subject_sessions AS ess
+            JOIN subjects AS su ON su.id = ess.subject_id
+            WHERE su.id IN (
+                    SELECT i_su.id FROM subjects AS i_su
+                    JOIN elective_subject_sessions AS i_ess ON i_ess.subject_id = i_su.id
+                    JOIN
+                        elective_subject_session_enrolled_students AS i_esses
+                        ON i_esses.elective_subject_session_id = i_ess.id
+                    WHERE i_esses.student_id = $1
+                )
+            AND ess.year = $2
+            AND ess.semester = $3
             ",
             student_id,
+            get_current_academic_year(None),
+            get_current_semester(None),
         )
-        .fetch_all(pool)
+        .fetch_all(&mut *(conn.acquire().await?))
         .await?;
 
         Ok(res.iter().map(|r| r.id).collect())
