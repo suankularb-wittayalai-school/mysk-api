@@ -12,6 +12,7 @@ use mysk_lib::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
+    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::db::DbElectiveSubject,
         elective_trade_offer::{db::DbElectiveTradeOffer, ElectiveTradeOffer},
@@ -184,18 +185,28 @@ async fn update_trade_offer(
             UPDATE elective_subject_session_enrolled_students
                 SET elective_subject_session_id = CASE student_id
                     WHEN $1 THEN (
-                        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students
-                        WHERE student_id = $2
+                        SELECT elective_subject_session_id
+                        FROM
+                            elective_subject_session_enrolled_students AS esses
+                            JOIN elective_subject_sessions AS ess
+                            ON ess.id = esses.elective_subject_session_id
+                        WHERE student_id = $2 AND year = $3 AND semester = $4
                     )
                     WHEN $2 THEN (
-                        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students
-                        WHERE student_id = $1
+                        SELECT elective_subject_session_id
+                        FROM
+                            elective_subject_session_enrolled_students AS esses
+                            JOIN elective_subject_sessions AS ess
+                            ON ess.id = esses.elective_subject_session_id
+                        WHERE student_id = $1 AND year = $3 AND semester = $4
                     )
                 END
             WHERE student_id IN ($1, $2)
             ",
             client_student_id,
             other_student_id,
+            get_current_academic_year(None),
+            get_current_semester(None),
         )
         .execute(pool)
         .await?;
