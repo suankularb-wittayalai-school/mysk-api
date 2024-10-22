@@ -65,7 +65,10 @@ async fn create_trade_offer(
     // Check if the receiving student has an elective subject
     let Some(receiver_elective_subject_id) = query!(
         "
-        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
+        SELECT elective_subject_session_id
+        FROM
+            elective_subject_session_enrolled_students AS esses
+            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
         receiver_student_id,
@@ -141,7 +144,10 @@ async fn create_trade_offer(
     // Check if the sending student has an elective subject
     let Some(sender_elective_subject_id) = query!(
         "
-        SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students INNER JOIN elective_subject_sessions ON elective_subject_session_enrolled_students.elective_subject_session_id = elective_subject_sessions.id
+        SELECT elective_subject_session_id
+        FROM
+            elective_subject_session_enrolled_students AS esses
+            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
         WHERE student_id = $1 and year = $2 AND semester = $3
         ",
         sender_student_id,
@@ -217,7 +223,8 @@ async fn create_trade_offer(
         SELECT EXISTS (
             SELECT FROM elective_subject_trade_offers
             WHERE sender_id = $1 AND receiver_id = $2 AND status = $3
-            AND sender_elective_subject_session_id = $4 AND receiver_elective_subject_session_id = $5
+            AND sender_elective_subject_session_id = $4
+            AND receiver_elective_subject_session_id = $5
         )
         ",
         sender_student_id,

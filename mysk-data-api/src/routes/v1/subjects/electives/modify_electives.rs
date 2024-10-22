@@ -135,8 +135,12 @@ async fn modify_elective_subject(
     };
 
     // Checks if the student is in a class available for the elective
-    if !DbElectiveSubject::is_student_eligible(&mut *transaction, elective_subject_session_id, student_id)
-        .await?
+    if !DbElectiveSubject::is_student_eligible(
+        &mut *transaction,
+        elective_subject_session_id,
+        student_id,
+    )
+    .await?
     {
         return Err(Error::InvalidPermission(
             "Student is not eligible to enroll in this elective".to_string(),
@@ -182,7 +186,9 @@ async fn modify_elective_subject(
         student_id,
         // This can be unwrapped because we have already checked if the student has an
         // elective subject
-        student_elective_subject.unwrap().elective_subject_session_id,
+        student_elective_subject
+            .unwrap()
+            .elective_subject_session_id,
     )
     .execute(&mut *transaction)
     .await?;
