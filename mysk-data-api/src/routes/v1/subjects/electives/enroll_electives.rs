@@ -78,6 +78,27 @@ pub async fn enroll_elective_subject(
         ));
     }
 
+    // We use a transaction-level lock to (hopefully) prevent any race conditions. Using
+    // the session code as the lock's identifier means that it should only lock when
+    // multiple students tries to enroll on the same elective session, and students which
+    // are enrolling on other elective sessions should have their own respective locks.
+    //
+    // P.S. The numbers "69 69 76" are ASCII code that translates to "E E L"
+    //      (Enroll Electives Lock).
+    //
+    // References:
+    //   - https://www.postgresql.org/docs/14/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
+    //   - https://www.postgresql.org/docs/14/explicit-locking.html#ADVISORY-LOCKS
+    query!(
+        "
+        SELECT pg_advisory_xact_lock(696976, session_code::int)
+        FROM elective_subject_sessions WHERE id = $1
+        ",
+        elective_subject_session_id,
+    )
+    .execute(&mut *transaction)
+    .await?;
+
     // Checks if the elective the student is trying to enroll in is available
     let elective = match ElectiveSubject::get_by_id(
         pool,
@@ -89,27 +110,6 @@ pub async fn enroll_elective_subject(
     .await
     {
         Ok(ElectiveSubject::Detailed(elective, _)) => {
-            // We use a transaction-level lock to (hopefully) prevent any race conditions. Using
-            // the session code as the lock's identifier means that it should only lock when
-            // multiple students tries to enroll on the same elective session, and students which
-            // are enrolling on other elective sessions should have their own respective locks.
-            //
-            // P.S. The numbers "69 69 76" are ASCII code that translates to "E E L"
-            //      (Enroll Electives Lock).
-            //
-            // References:
-            //   - https://www.postgresql.org/docs/14/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
-            //   - https://www.postgresql.org/docs/14/explicit-locking.html#ADVISORY-LOCKS
-            query!(
-                "
-                SELECT pg_advisory_xact_lock(696976, session_code::int)
-                FROM elective_subject_sessions WHERE id = $1
-                ",
-                elective_subject_session_id,
-            )
-            .execute(&mut *transaction)
-            .await?;
-
             if elective.class_size >= elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
