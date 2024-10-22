@@ -19,7 +19,6 @@ use mysk_lib::{
     },
     prelude::*,
 };
-use mysk_lib_macros::traits::db::GetById;
 use sqlx::query;
 use uuid::Uuid;
 
@@ -43,12 +42,10 @@ pub async fn enroll_elective_subject(
     let blacklisted = query!(
         "
         SELECT EXISTS (
-            SELECT student_id
-            FROM elective_subject_session_blacklisted_students
-            WHERE student_id = $1
+            SELECT FROM elective_subject_session_blacklisted_students WHERE student_id = $1
         )
         ",
-        student_id
+        student_id,
     )
     .fetch_one(&mut *transaction)
     .await?
@@ -97,9 +94,17 @@ pub async fn enroll_elective_subject(
         Some(&FetchLevel::Detailed),
         None,
     )
-    .await
+    .await?
     {
-        Ok(ElectiveSubject::Detailed(elective, _)) => {
+        ElectiveSubject::Detailed(elective, _) => {
+            if elective.year != Some(get_current_academic_year(None))
+                || elective.semester != Some(get_current_semester(None))
+            {
+                return Err(Error::InvalidPermission(
+                    "Student cannot enroll in a non-current elective".to_string(),
+                    format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+                ));
+            }
             if elective.class_size >= elective.cap_size {
                 return Err(Error::InvalidPermission(
                     "The elective is already full".to_string(),
@@ -108,12 +113,6 @@ pub async fn enroll_elective_subject(
             }
 
             elective
-        }
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Elective subject not found".to_string(),
-                format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-            ));
         }
         _ => unreachable!("ElectiveSubject::get_by_id should always return a Detailed variant"),
     };
@@ -133,26 +132,18 @@ pub async fn enroll_elective_subject(
     }
 
     // Checks if the student has already enrolled in the elective before
-    let subject_id = DbElectiveSubject::get_by_id(pool, elective_subject_session_id)
-        .await?
-        .subject_id;
-
     let enroll_count = query!(
         "
-        SELECT COUNT(*)
-        FROM
-            elective_subject_session_enrolled_students AS esses
-            INNER JOIN elective_subject_sessions AS ess
-            ON ess.id = esses.elective_subject_session_id
-        WHERE student_id = $1 AND subject_id = $2
+        SELECT count(*) FROM elective_subject_session_enrolled_students
+        WHERE student_id = $1 AND elective_subject_session_id = $2
         ",
         student_id,
-        subject_id,
+        elective_subject_session_id,
     )
     .fetch_one(&mut *transaction)
-    .await?;
-
-    let enroll_count: i64 = enroll_count.count.unwrap_or(0);
+    .await?
+    .count
+    .unwrap_or(0);
     if enroll_count > 0 {
         return Err(Error::InvalidPermission(
             "Student has already enrolled in this elective before".to_string(),
