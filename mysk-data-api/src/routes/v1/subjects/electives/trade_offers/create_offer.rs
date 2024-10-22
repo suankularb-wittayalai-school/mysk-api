@@ -12,7 +12,6 @@ use mysk_lib::{
         requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
         elective_trade_offer::ElectiveTradeOffer,
@@ -54,6 +53,14 @@ async fn create_trade_offer(
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    if DbElectiveSubject::is_student_blacklisted(pool, sender_student_id).await? {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool, sender_student_id).await? {
         return Err(Error::InvalidPermission(
@@ -62,28 +69,25 @@ async fn create_trade_offer(
         ));
     }
 
-    // Check if the receiving student has an elective subject
-    let Some(receiver_elective_subject_id) = query!(
-        "
-        SELECT elective_subject_session_id
-        FROM
-            elective_subject_session_enrolled_students AS esses
-            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
-        WHERE student_id = $1 and year = $2 AND semester = $3
-        ",
-        receiver_student_id,
-        get_current_academic_year(None),
-        get_current_semester(None),
-    )
-    .fetch_optional(pool)
-    .await?
+    // Check if the sending student has already enrolled in an elective in the current semester
+    let Some(sender_elective_subject_id) =
+        DbElectiveSubject::is_currently_enrolled(pool, sender_student_id).await?
     else {
         return Err(Error::InvalidPermission(
-            "Receiving student does not have an elective subject".to_string(),
+            "Student has not enrolled in an elective this semester".to_string(),
             "/subjects/electives/trade-offers".to_string(),
         ));
     };
-    let receiver_elective_subject_id = receiver_elective_subject_id.elective_subject_session_id;
+
+    // Check if the receiving student has already enrolled in an elective in the current semester
+    let Some(receiver_elective_subject_id) =
+        DbElectiveSubject::is_currently_enrolled(pool, receiver_student_id).await?
+    else {
+        return Err(Error::InvalidPermission(
+            "Receiving student has not enrolled in an elective this semester".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    };
 
     // Gets the elective subject of the receiver, and also checks whether they're in a classroom
     let receiver_elective_subject = match ElectiveSubject::get_by_id(
@@ -141,29 +145,6 @@ async fn create_trade_offer(
         _ => unreachable!(),
     };
 
-    // Check if the sending student has an elective subject
-    let Some(sender_elective_subject_id) = query!(
-        "
-        SELECT elective_subject_session_id
-        FROM
-            elective_subject_session_enrolled_students AS esses
-            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
-        WHERE student_id = $1 and year = $2 AND semester = $3
-        ",
-        sender_student_id,
-        get_current_academic_year(None),
-        get_current_semester(None),
-    )
-    .fetch_optional(pool)
-    .await?
-    else {
-        return Err(Error::InvalidPermission(
-            "Student does not have an elective subject".to_string(),
-            "/subjects/electives/trade-offers".to_string(),
-        ));
-    };
-    let sender_elective_subject_id = sender_elective_subject_id.elective_subject_session_id;
-
     // Gets the elective subject of the sender
     let sender_elective_subject = match ElectiveSubject::get_by_id(
         pool,
@@ -208,7 +189,7 @@ async fn create_trade_offer(
     };
 
     // Check if the elective subjects are the same
-    if (sender_elective_subject_id == receiver_elective_subject_id)
+    if (sender_elective_subject.id == receiver_elective_subject.id)
         && (sender_elective_subject.session_code == receiver_elective_subject.session_code)
     {
         return Err(Error::InvalidRequest(
@@ -230,8 +211,8 @@ async fn create_trade_offer(
         sender_student_id,
         receiver_student_id,
         SubmissionStatus::Pending as SubmissionStatus,
-        sender_elective_subject_id,
-        receiver_elective_subject_id,
+        sender_elective_subject.id,
+        receiver_elective_subject.id,
     )
     .fetch_one(pool)
     .await?

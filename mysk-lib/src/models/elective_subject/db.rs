@@ -3,7 +3,7 @@ use crate::{
         requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
         response::PaginationType,
     },
-    helpers::date::get_current_academic_year,
+    helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::request::{
             queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject,
@@ -52,7 +52,7 @@ pub struct DbElectiveSubject {
 }
 
 impl DbElectiveSubject {
-    /// Checks if the student is in a class available for the elective
+    /// Checks if the student is in a class available for the elective.
     pub async fn is_student_eligible<'a, A>(
         conn: A,
         session_id: Uuid,
@@ -62,19 +62,16 @@ impl DbElectiveSubject {
         A: Acquire<'a, Database = Postgres>,
     {
         let mut conn = conn.acquire().await?;
-
-        // Checks if the student is in a class available for the elective
-        let student_class = DbStudent::get_student_classroom(&mut *conn, student_id, None).await?;
-
-        let student_classroom_id = match student_class {
-            Some(classroom) => classroom.id,
-            None => {
-                return Err(Error::InvalidPermission(
-                    "Student has no classroom".to_string(),
-                    "DbElectiveSubject::is_student_eligible".to_string(),
-                ))
-            }
-        };
+        let student_classroom_id =
+            match DbStudent::get_student_classroom(&mut *conn, student_id, None).await? {
+                Some(classroom) => classroom.id,
+                None => {
+                    return Err(Error::InvalidPermission(
+                        "Student has no classroom".to_string(),
+                        "DbElectiveSubject::is_student_eligible".to_string(),
+                    ))
+                }
+            };
 
         let is_eligible = query!(
             "
@@ -84,12 +81,55 @@ impl DbElectiveSubject {
             )
             ",
             session_id,
-            student_classroom_id
+            student_classroom_id,
         )
         .fetch_one(&mut *conn)
         .await?;
 
         Ok(is_eligible.exists.unwrap_or(false))
+    }
+
+    /// Checks if the student is "blacklisted" from enrolling in an elective.
+    pub async fn is_student_blacklisted<'a, A>(conn: A, student_id: Uuid) -> Result<bool>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
+        let res = query!(
+            "
+            SELECT EXISTS (
+                SELECT FROM elective_subject_session_blacklisted_students WHERE student_id = $1
+            )
+            ",
+            student_id,
+        )
+        .fetch_one(&mut *(conn.acquire().await?))
+        .await?;
+
+        Ok(res.exists.unwrap_or(false))
+    }
+
+    /// Checks if the student has already enrolled in an elective in the current semester.
+    /// Returns the elective subject session ID if an enrollment exists.
+    pub async fn is_currently_enrolled<'a, A>(conn: A, student_id: Uuid) -> Result<Option<Uuid>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
+        let res = query!(
+            "
+            SELECT elective_subject_session_id
+            FROM
+                elective_subject_session_enrolled_students AS esses
+                JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
+            WHERE student_id = $1 and year = $2 AND semester = $3
+            ",
+            student_id,
+            get_current_academic_year(None),
+            get_current_semester(None),
+        )
+        .fetch_optional(&mut *(conn.acquire().await?))
+        .await?;
+
+        Ok(res.map(|r| r.elective_subject_session_id))
     }
 
     pub async fn get_previously_enrolled_electives(
@@ -108,15 +148,9 @@ impl DbElectiveSubject {
             student_id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_previously_enrolled_electives".to_string(),
-            )),
-        }
+        Ok(res.iter().map(|r| r.id).collect())
     }
 
     pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
@@ -125,101 +159,71 @@ impl DbElectiveSubject {
             SELECT classroom_id FROM elective_subject_session_classrooms
             WHERE elective_subject_session_id = $1
             ",
-            self.id
+            self.id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.classroom_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_subject_applicable_classrooms".to_string(),
-            )),
-        }
+        Ok(res.iter().map(|r| r.classroom_id).collect())
     }
 
     pub async fn get_enrolled_students(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             "
-            SELECT
-                student_id
-            FROM
-                elective_subject_session_enrolled_students
-            WHERE
-                elective_subject_session_id = $1
+            SELECT student_id FROM elective_subject_session_enrolled_students
+            WHERE elective_subject_session_id = $1
             ",
-            self.id
+            self.id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.student_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_enrolled_students".to_string(),
-            )),
-        }
+        Ok(res.iter().map(|r| r.student_id).collect())
     }
 
-    pub async fn get_randomized_student(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
+    pub async fn get_randomized_students(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
         let res = query!(
             "
-            SELECT
-                student_id
-            FROM
-                elective_subject_session_enrolled_students
-            WHERE
-                elective_subject_session_id = $1 AND is_randomized = true
+            SELECT student_id FROM elective_subject_session_enrolled_students
+            WHERE elective_subject_session_id = $1 AND is_randomized
             ",
-            self.id
+            self.id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.student_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::get_randomized_student".to_string(),
-            )),
-        }
+        Ok(res.iter().map(|r| r.student_id).collect())
     }
 
     pub async fn is_enrollment_period<'a, A>(conn: A, student_id: Uuid) -> Result<bool>
     where
         A: Acquire<'a, Database = Postgres>,
     {
-        let mut conn = conn.acquire().await?;
         let res = query!(
             "
             SELECT EXISTS (
                 SELECT FROM elective_subject_enrollment_periods
                 WHERE 
                     now() BETWEEN start_time AND end_time
-                    AND (grade IS NULL OR grade = floor((
-                        SELECT number FROM
-                            classrooms AS c
-                            JOIN classroom_students AS cs ON cs.classroom_id = c.id
-                        WHERE cs.student_id = $1 AND year = $2
-                        ) / 100
-                    ))
+                    AND (
+                        grade IS NULL OR grade = floor(
+                            (
+                                SELECT number
+                                FROM classrooms AS c
+                                JOIN classroom_students AS cs ON cs.classroom_id = c.id
+                                WHERE cs.student_id = $1 AND year = $2
+                            ) / 100
+                        )
+                    )
             )
             ",
             student_id,
             get_current_academic_year(None),
         )
-        .fetch_one(&mut *conn)
-        .await;
+        .fetch_one(&mut *(conn.acquire().await?))
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.exists.unwrap_or(false)),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbElectiveSubject::is_enrollment_period".to_string(),
-            )),
-        }
+        Ok(res.exists.unwrap_or(false))
     }
 }
 

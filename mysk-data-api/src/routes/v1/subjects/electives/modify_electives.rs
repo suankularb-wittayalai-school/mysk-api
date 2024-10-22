@@ -39,28 +39,14 @@ async fn modify_elective_subject(
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    let blacklisted = query!(
-        "
-        SELECT EXISTS (
-            SELECT student_id
-            FROM elective_subject_session_blacklisted_students
-            WHERE student_id = $1
-        )
-        ",
-        student_id
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .exists
-    .unwrap_or(false);
-    if blacklisted {
+    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
         ));
     }
 
-    // Check if the current time is within the elective's enrollment period
+    // Checks if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(&mut *transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective's enrollment period has ended".to_string(),
@@ -68,29 +54,17 @@ async fn modify_elective_subject(
         ));
     }
 
-    // Check if the student already has an elective subject
-    let student_elective_subject = query!(
-        "
-        SELECT elective_subject_session_id
-        FROM
-            elective_subject_session_enrolled_students AS esses
-            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
-        WHERE student_id = $1 and year = $2 AND semester = $3
-        ",
-        student_id,
-        get_current_academic_year(None),
-        get_current_semester(None),
-    )
-    .fetch_optional(pool)
-    .await?;
-    if student_elective_subject.is_none() {
+    // Checks if the student hasn't enrolled in an elective subject in the current semester yet
+    let Some(current_elective_subject_id) =
+        DbElectiveSubject::is_currently_enrolled(&mut *transaction, student_id).await?
+    else {
         return Err(Error::InvalidPermission(
-            "Student does not have an elective subject".to_string(),
+            "Student has not enrolled in an elective this semester".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
         ));
-    }
+    };
 
-    // Refer to enroll_electives.rs on line 70 for a detailed explanation.
+    // Refer to enroll_electives.rs on line 65 for a detailed explanation.
     //
     // P.S. The numbers "77 69 76" are ASCII code that translates to "M E L"
     //      (Modify Electives Lock).
@@ -148,46 +122,21 @@ async fn modify_elective_subject(
         ));
     }
 
-    // Checks if the student has already enrolled in the elective before
-    let enroll_count = query!(
-        "
-        SELECT count(*) FROM elective_subject_session_enrolled_students
-        WHERE student_id = $1 AND elective_subject_session_id = $2
-        ",
-        student_id,
-        elective_subject_session_id,
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .count
-    .unwrap_or(0);
-    if enroll_count > 0 {
-        return Err(Error::InvalidPermission(
-            "Student has already enrolled in this elective before".to_string(),
-            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-        ));
-    }
-
     query!(
         "
         UPDATE elective_subject_session_enrolled_students
-        SET elective_subject_session_id = $1
+        SET updated_at = now(), elective_subject_session_id = $1
         WHERE student_id = $2 AND elective_subject_session_id = $3
         ",
         elective.id,
         student_id,
-        // This can be unwrapped because we have already checked if the student has an
-        // elective subject
-        student_elective_subject
-            .unwrap()
-            .elective_subject_session_id,
+        current_elective_subject_id,
     )
     .execute(&mut *transaction)
     .await?;
 
     transaction.commit().await?;
 
-    // Get the updated elective to return to the client
     let elective = ElectiveSubject::get_by_id(
         pool,
         elective_subject_session_id,
