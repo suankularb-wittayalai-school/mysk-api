@@ -179,7 +179,7 @@ async fn update_trade_offer(
         // https://dba.stackexchange.com/a/131128
         query!(
             "
-            UPDATE elective_subject_session_enrolled_students
+            UPDATE elective_subject_session_enrolled_students AS esses
                 SET updated_at = now(), elective_subject_session_id = CASE student_id
                     WHEN $1 THEN (
                         SELECT elective_subject_session_id
@@ -198,7 +198,9 @@ async fn update_trade_offer(
                         WHERE student_id = $1 AND year = $3 AND semester = $4
                     )
                 END
-            WHERE student_id IN ($1, $2)
+            FROM elective_subject_sessions AS ess
+            WHERE student_id IN ($1, $2) AND ess.id = esses.elective_subject_session_id
+            AND ess.year = $3 AND ess.semester = $4
             ",
             client_student_id,
             other_student_id,
