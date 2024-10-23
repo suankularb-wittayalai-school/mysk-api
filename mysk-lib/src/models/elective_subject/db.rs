@@ -149,6 +149,7 @@ impl DbElectiveSubject {
                     JOIN
                         elective_subject_session_enrolled_students AS i_esses
                         ON i_esses.elective_subject_session_id = i_ess.id
+                        AND (i_ess.year != $2 OR i_ess.semester != $3)
                     WHERE i_esses.student_id = $1
                 )
             AND ess.year = $2
