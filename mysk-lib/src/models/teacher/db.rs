@@ -88,6 +88,25 @@ impl DbTeacher {
         }
     }
 
+    pub async fn get_teacher_subject_group(pool: &PgPool, teacher_id: Uuid) -> Result<Option<i64>> {
+        let res = query!(
+            "
+            SELECT subject_group_id FROM teachers WHERE id = $1
+            ",
+            teacher_id
+        )
+        .fetch_optional(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.map(|r| r.subject_group_id)),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbTeacher::get_teacher_subject_group".to_string(),
+            )),
+        }
+    }
+
     pub async fn get_subject_in_charge(
         pool: &PgPool,
         teacher_id: Uuid,
