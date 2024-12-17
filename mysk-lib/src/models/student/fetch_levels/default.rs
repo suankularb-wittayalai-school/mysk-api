@@ -1,9 +1,9 @@
 use crate::{
-    common::{requests::FetchLevel, string::MultiLangString},
+    common::requests::FetchLevel,
     models::{
         classroom::Classroom,
         contact::Contact,
-        enums::Sex,
+        person::Person,
         student::db::DbStudent,
         traits::{FetchLevelVariant, TopLevelGetById},
         user::User,
@@ -12,7 +12,6 @@ use crate::{
     prelude::*,
 };
 use async_trait::async_trait;
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -20,19 +19,12 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DefaultStudent {
     pub id: Uuid,
-    pub prefix: MultiLangString,
-    pub first_name: MultiLangString,
-    pub middle_name: Option<MultiLangString>,
-    pub last_name: MultiLangString,
-    pub nickname: Option<MultiLangString>,
     pub student_id: Option<String>,
-    pub profile_url: Option<String>,
-    pub birthdate: Option<NaiveDate>,
-    pub sex: Sex,
     pub contacts: Vec<Contact>,
     pub classroom: Option<Classroom>,
     pub class_no: Option<i64>,
     pub user: Option<User>,
+    pub person: Person,
 }
 
 #[async_trait]
@@ -57,19 +49,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
 
         Ok(Self {
             id: table.id,
-            prefix: MultiLangString::new(table.prefix_th, table.prefix_en),
-            first_name: MultiLangString::new(table.first_name_th, table.first_name_en),
-            last_name: MultiLangString::new(table.last_name_th, table.last_name_en),
-            middle_name: table
-                .middle_name_th
-                .map(|th| MultiLangString::new(th, table.middle_name_en)),
-            nickname: table
-                .nickname_th
-                .map(|th| MultiLangString::new(th, table.nickname_en)),
             student_id: table.student_id,
-            profile_url: table.profile,
-            birthdate: table.birthdate,
-            sex: table.sex,
             contacts: Contact::get_by_ids(
                 pool,
                 contact_ids,
@@ -93,6 +73,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
             },
             class_no: classroom.map(|classroom| classroom.class_no),
             user,
+            person: Person::get_by_id(pool, table.person_id).await?,
         })
     }
 }
