@@ -53,6 +53,7 @@ impl Authorizer for TeacherRole {
         pool: &PgPool,
         action: ActionType,
     ) -> Result<()> {
+        // TODO: Fix for create teacher contacts
         let owned = query!(
             "
             SELECT EXISTS (

@@ -20,9 +20,10 @@ use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "
-    SELECT id, created_at, student_id, user_id, person_id FROM students
-")]
+#[base_query(
+    query = "SELECT id, created_at, student_id, user_id, person_id FROM students",
+    count_query = "SELECT COUNT(DISTINCT id) FROM students"
+)]
 #[get_by_id(table = "students")]
 pub struct DbStudent {
     pub id: Uuid,

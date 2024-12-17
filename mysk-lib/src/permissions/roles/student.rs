@@ -46,6 +46,7 @@ impl Authorizer for StudentRole {
         pool: &PgPool,
         action: ActionType,
     ) -> Result<()> {
+        // TODO: Fix for create student contacts
         let owned = query!(
             "
             SELECT EXISTS (
