@@ -12,13 +12,12 @@ use mysk_lib::{
     common::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::ResponseType,
-        string::MultiLangString,
+        string::FlexibleMultiLangString,
     },
     helpers::date::get_current_academic_year,
     models::{
         enums::{Sex, ShirtSize},
-        person::Person,
-        teacher::{db::DbTeacher, Teacher},
+        teacher::db::DbTeacher,
     },
     permissions::{self, ActionType},
     prelude::*,
@@ -36,16 +35,16 @@ struct UpdateTeacherRequest {
 
 #[derive(Debug, Deserialize)]
 struct UpdatePersonInfo {
-    prefix: MultiLangString,
-    first_name: MultiLangString,
-    last_name: MultiLangString,
-    middle_name: Option<MultiLangString>,
-    nickname: Option<MultiLangString>,
+    prefix: Option<FlexibleMultiLangString>,
+    first_name: Option<FlexibleMultiLangString>,
+    last_name: Option<FlexibleMultiLangString>,
+    middle_name: Option<FlexibleMultiLangString>,
+    nickname: Option<FlexibleMultiLangString>,
     birthdate: Option<NaiveDate>,
-    allergies: Vec<String>,
+    allergies: Option<Vec<String>>,
     shirt_size: Option<ShirtSize>,
     pants_size: Option<String>,
-    sex: Sex,
+    sex: Option<Sex>,
 }
 #[derive(Debug, Deserialize)]
 struct UpdateTeacherInfo {
@@ -73,8 +72,6 @@ pub async fn modify_teacher(
             format!("/teachers/{teacher_id}"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("teachers/{teacher_id}")).await?;
 
@@ -165,101 +162,76 @@ pub async fn modify_teacher(
         ));
     };
 
-    let person = Person::get_by_id(pool, *person_id).await?;
-
     if let Some(person_update) = &update_data.person {
         let mut person_transaction = pool.begin().await?;
         let mut updates = Vec::new();
         let mut bindings = Vec::new();
-
         bindings.insert(0, (*person_id).to_string()); // Populate the first item with the person_id
 
+        // Update allergies on a separate table
+        if let Some(allergies) = &person_update.allergies {
+            dbg!(format!(
+                "DELETE FROM person_allergies WHERE person_id = {}",
+                person_id
+            ));
+
+            for allergy in allergies {
+                dbg!(format!(
+                    "INSERT INTO person_allergies (person_id, allergy_name) VALUES ({}, '{}')",
+                    person_id, allergy
+                ));
+            }
+        }
+
         macro_rules! add_update_field {
-            // Handling `MultilangString`
-            (multilang: $field:ident, $value:expr) => {
-                if let Some(new_value) = $value.as_ref() {
-                    // Compare and update `th`
-                    if person.$field.th != new_value.th {
-                        updates.push(format!(
-                            "{}_th = ${}",
-                            stringify!($field),
-                            bindings.len() + 1
-                        ));
-                        bindings.push(new_value.th.clone());
-                    }
-                    // Compare and update `en`
-                    if person.$field.en != new_value.en {
-                        updates.push(format!(
-                            "{}_en = ${}",
-                            stringify!($field),
-                            bindings.len() + 1
-                        ));
-                        bindings.push(new_value.en.clone().unwrap_or_default());
-                    }
-                }
-            };
-
             // Handling `Option<MultilangString>`
-            (opt_multilang: $field:ident, $value:expr) => {
+            (multilang: $field:ident, $value:expr) => {
                 if let Some(new_value) = $value {
-                    if let Some(person_field) = &person.$field {
-                        if person_field.th != new_value.th {
-                            updates.push(format!(
-                                "{}_th = ${}",
-                                stringify!($field),
-                                bindings.len() + 1
-                            ));
-                            bindings.push(new_value.th.clone());
-                        }
-
-                        if person_field.en != new_value.en {
-                            updates.push(format!(
-                                "{}_en = ${}",
-                                stringify!($field),
-                                bindings.len() + 1
-                            ));
-                            bindings.push(new_value.en.clone().unwrap_or_default());
-                        }
-                    } else {
+                    if new_value.th.is_some() {
                         updates.push(format!(
-                            "{}_th = ${}",
+                            "{}_th = COALESCE(${}, {}_th)",
                             stringify!($field),
-                            bindings.len() + 1
-                        ));
-                        bindings.push(new_value.th.clone());
-
-                        updates.push(format!(
-                            "{}_en = ${}",
+                            bindings.len() + 1,
                             stringify!($field),
-                            bindings.len() + 1
                         ));
-                        bindings.push(new_value.en.clone().unwrap_or_default());
+                        bindings.push(new_value.th.clone().unwrap());
                     }
-                }
+
+                    if new_value.en.is_some() {
+                        updates.push(format!(
+                            "{}_en = COALESCE(${}, {}_en)",
+                            stringify!($field),
+                            bindings.len() + 1,
+                            stringify!($field),
+                        ));
+                        bindings.push(new_value.en.clone().unwrap())
+                    }
+                };
             };
 
-            // Generic fields
             ($field:ident, $value:expr) => {
                 if let Some(new_value) = $value {
-                    if person.$field != *new_value {
-                        updates.push(format!("{} = ${}", stringify!($field), bindings.len() + 1));
-                        bindings.push(new_value);
-                    }
+                    updates.push(format!("{} = ${}", stringify!($field), bindings.len() + 1));
+                    bindings.push(new_value.to_string().clone());
                 }
             };
         }
 
         // Use the macro to update fields
-        add_update_field!(multilang: prefix, Some(&person_update.prefix));
-        add_update_field!(multilang: first_name, Some(&person_update.first_name));
-        add_update_field!(multilang: last_name, Some(&person_update.last_name));
-        add_update_field!(opt_multilang: middle_name, person_update.middle_name.as_ref());
-        add_update_field!(opt_multilang: nickname, person_update.nickname.as_ref());
+        add_update_field!(multilang: prefix, &person_update.prefix);
+        add_update_field!(multilang: first_name, &person_update.first_name);
+        add_update_field!(multilang: last_name, &person_update.last_name);
+        add_update_field!(multilang: middle_name, &person_update.middle_name );
+        add_update_field!(multilang: nickname, &person_update.nickname);
+        add_update_field!(birthdate, &person_update.birthdate);
+        add_update_field!(sex, &person_update.sex);
+        add_update_field!(shirt_size, &person_update.shirt_size);
+        add_update_field!(pants_size, &person_update.pants_size);
 
         if !updates.is_empty() {
             let update_query = format!("UPDATE people SET {} WHERE id = $1", updates.join(", "));
 
-            // bindings.insert(0, (*person_id).to_string());
+            bindings.insert(0, (*person_id).to_string());
 
             dbg!(&updates);
             dbg!(&bindings);
@@ -269,6 +241,8 @@ pub async fn modify_teacher(
             //     .execute(&mut *person_transaction)
             //     .await?;
         }
+
+        person_transaction.commit().await?;
     };
 
     let response = ResponseType::new("Teacher updated successfully", None);
