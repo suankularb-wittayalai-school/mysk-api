@@ -17,7 +17,8 @@ use mysk_lib::{
     helpers::date::get_current_academic_year,
     models::{
         enums::{Sex, ShirtSize},
-        teacher::db::DbTeacher,
+        teacher::{db::DbTeacher, Teacher},
+        traits::TopLevelGetById,
     },
     permissions::{self, ActionType},
     prelude::*,
@@ -72,10 +73,15 @@ pub async fn modify_teacher(
             format!("/teachers/{teacher_id}"),
         ));
     };
+    let fetch_level = request_body.fetch_level.as_ref();
+    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("teachers/{teacher_id}")).await?;
 
     let db_teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
+    let person_id = db_teacher
+        .person_id
+        .expect("Every teacher should have a person_id");
 
     authorizer
         .authorize_teacher(&db_teacher, pool, ActionType::Update)
@@ -155,20 +161,12 @@ pub async fn modify_teacher(
     }
 
     // NOTE: Person-related updates
-    let Some(person_id) = &db_teacher.person_id else {
-        return Err(Error::EntityNotFound(
-            "This teacher is not a person".to_string(),
-            format!("teachers/{teacher_id}"),
-        ));
-    };
-
     if let Some(person_update) = &update_data.person {
         let mut person_transaction = pool.begin().await?;
         let mut updates = Vec::new();
         let mut bindings = Vec::new();
-        bindings.insert(0, (*person_id).to_string()); // Populate the first item with the person_id
 
-        // Update allergies on a separate table
+        // Update allergies on a separate table `person_allergies`
         if let Some(allergies) = &person_update.allergies {
             dbg!(format!(
                 "DELETE FROM person_allergies WHERE person_id = {}",
@@ -184,34 +182,34 @@ pub async fn modify_teacher(
         }
 
         macro_rules! add_update_field {
-            // Handling `Option<MultilangString>`
+            // NOTE: This handles `Option<>`
             (multilang: $field:ident, $value:expr) => {
                 if let Some(new_value) = $value {
-                    if new_value.th.is_some() {
+                    if let Some(th) = &new_value.th {
                         updates.push(format!(
                             "{}_th = COALESCE(${}, {}_th)",
                             stringify!($field),
-                            bindings.len() + 1,
+                            bindings.len() + 2,
                             stringify!($field),
                         ));
-                        bindings.push(new_value.th.clone().unwrap());
+                        bindings.push(th.clone());
                     }
 
-                    if new_value.en.is_some() {
+                    if let Some(en) = &new_value.en {
                         updates.push(format!(
-                            "{}_en = COALESCE(${}, {}_en)",
+                            "{}_en = COALESCE(${}, {}_th)",
                             stringify!($field),
-                            bindings.len() + 1,
+                            bindings.len() + 2,
                             stringify!($field),
                         ));
-                        bindings.push(new_value.en.clone().unwrap())
+                        bindings.push(en.clone());
                     }
                 };
             };
 
             ($field:ident, $value:expr) => {
                 if let Some(new_value) = $value {
-                    updates.push(format!("{} = ${}", stringify!($field), bindings.len() + 1));
+                    updates.push(format!("{} = ${}", stringify!($field), bindings.len() + 2));
                     bindings.push(new_value.to_string().clone());
                 }
             };
@@ -229,15 +227,25 @@ pub async fn modify_teacher(
         add_update_field!(pants_size, &person_update.pants_size);
 
         if !updates.is_empty() {
-            let update_query = format!("UPDATE people SET {} WHERE id = $1", updates.join(", "));
-
-            bindings.insert(0, (*person_id).to_string());
+            let update_query = format!("UPDATE people SET {}", updates.join(", "));
 
             dbg!(&updates);
             dbg!(&bindings);
             dbg!(&update_query);
 
-            // sqlx::query_with(&update_query, final_bindings)
+            let mut query = sqlx::QueryBuilder::new(&update_query);
+
+            for binding in bindings {
+                query.push_bind(binding);
+            }
+
+            query.push(" WHERE id = $1");
+            query.push_bind(person_id);
+
+            println!("{}", query.sql())
+
+            // query_builder
+            //     .build()
             //     .execute(&mut *person_transaction)
             //     .await?;
         }
@@ -245,7 +253,15 @@ pub async fn modify_teacher(
         person_transaction.commit().await?;
     };
 
-    let response = ResponseType::new("Teacher updated successfully", None);
+    let updated_teacher = Teacher::get_by_id(
+        pool,
+        db_teacher.id,
+        fetch_level,
+        descendant_fetch_level,
+        &authorizer,
+    )
+    .await?;
+    let response = ResponseType::new(updated_teacher, None);
 
     Ok(HttpResponse::Ok().json(response))
 }
