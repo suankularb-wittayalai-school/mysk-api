@@ -15,3 +15,4 @@ pub mod helpers;
 pub mod models;
 pub mod permissions;
 pub mod prelude;
+pub mod query;
