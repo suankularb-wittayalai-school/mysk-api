@@ -55,6 +55,14 @@ async fn modify_elective_subject(
         ));
     }
 
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, student_id).await? {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
+
     // Checks if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(&mut *transaction, student_id).await? {
         return Err(Error::InvalidPermission(

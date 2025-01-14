@@ -67,6 +67,14 @@ async fn create_trade_offer(
         ));
     }
 
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    if DbElectiveSubject::is_student_blacklisted(pool, sender_student_id).await? {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
+
     // Check if the current time is within the elective's enrollment period
     if !DbElectiveSubject::is_enrollment_period(pool, sender_student_id).await? {
         return Err(Error::InvalidPermission(
