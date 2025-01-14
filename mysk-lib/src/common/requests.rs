@@ -175,8 +175,8 @@ pub enum QueryParam {
 impl Encode<'_, Postgres> for QueryParam {
     fn encode_by_ref(
         &self,
-        buf: &mut <Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
-    ) -> sqlx::encode::IsNull {
+        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
+    ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync + 'static>> {
         match self {
             QueryParam::String(v) => <String as sqlx::Encode<Postgres>>::encode(v.to_string(), buf),
             QueryParam::Int(v) => <i64 as sqlx::Encode<Postgres>>::encode(*v, buf),
