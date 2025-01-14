@@ -8,6 +8,7 @@ use std::fmt::{Display, Formatter};
 pub enum Sex {
     Male,
     Female,
+    Other,
 }
 
 impl Display for Sex {
@@ -15,6 +16,7 @@ impl Display for Sex {
         match self {
             Sex::Male => write!(f, "male"),
             Sex::Female => write!(f, "female"),
+            Sex::Other => write!(f, "other"),
         }
     }
 }

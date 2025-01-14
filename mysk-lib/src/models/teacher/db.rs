@@ -1,47 +1,37 @@
 use crate::{
+    common::{
+        requests::{FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection},
+        response::PaginationType,
+    },
+    error::Error,
     helpers::date::get_current_academic_year,
-    models::enums::{BloodGroup, Sex, ShirtSize},
+    models::{
+        teacher::request::{queryable::QueryableTeacher, sortable::SortableTeacher},
+        traits::{QueryDb, Queryable as _},
+    },
     prelude::*,
 };
-use chrono::{DateTime, NaiveDate, Utc};
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use mysk_lib_derives::{BaseQuery, GetById};
 use mysk_lib_macros::traits::db::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool};
+use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "
-    SELECT
-        teachers.id, teachers.created_at, prefix_th, prefix_en, first_name_th, first_name_en,
-        last_name_th, last_name_en, middle_name_th, middle_name_en, nickname_th, nickname_en,
-        birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex, teacher_id,
-        user_id, subject_group_id
-    FROM teachers INNER JOIN people ON teachers.person_id = people.id
-")]
+#[base_query(
+    query = "
+    SELECT id, created_at, teacher_id, subject_group_id, user_id, person_id FROM teachers",
+    count_query = "SELECT COUNT(distinct id) FROM teachers"
+)]
 #[get_by_id(table = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
-    pub prefix_th: String,
-    pub prefix_en: Option<String>,
-    pub first_name_th: String,
-    pub first_name_en: Option<String>,
-    pub last_name_th: String,
-    pub last_name_en: Option<String>,
-    pub middle_name_th: Option<String>,
-    pub middle_name_en: Option<String>,
-    pub nickname_th: Option<String>,
-    pub nickname_en: Option<String>,
-    pub birthdate: Option<NaiveDate>,
-    pub citizen_id: Option<String>,
-    pub profile: Option<String>,
-    pub pants_size: Option<String>,
-    pub shirt_size: Option<ShirtSize>,
-    pub blood_group: Option<BloodGroup>,
-    pub sex: Sex,
     pub teacher_id: Option<String>,
     pub subject_group_id: i64,
+    pub person_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
 }
 
@@ -94,6 +84,25 @@ impl DbTeacher {
             Err(e) => Err(Error::InternalSeverError(
                 e.to_string(),
                 "DbTeacher::get_teacher_advisor_at".to_string(),
+            )),
+        }
+    }
+
+    pub async fn get_teacher_subject_group(pool: &PgPool, teacher_id: Uuid) -> Result<Option<i64>> {
+        let res = query!(
+            "
+            SELECT subject_group_id FROM teachers WHERE id = $1
+            ",
+            teacher_id
+        )
+        .fetch_optional(pool)
+        .await;
+
+        match res {
+            Ok(res) => Ok(res.map(|r| r.subject_group_id)),
+            Err(e) => Err(Error::InternalSeverError(
+                e.to_string(),
+                "DbTeacher::get_teacher_subject_group".to_string(),
             )),
         }
     }
@@ -152,5 +161,116 @@ impl DbTeacher {
         }
 
         Ok(result)
+    }
+}
+
+#[async_trait]
+impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
+    fn build_shared_query(
+        query_builder: &mut QueryBuilder<'_, Postgres>,
+        filter: Option<&FilterConfig<QueryableTeacher>>,
+    ) where
+        Self: Sized,
+    {
+        let mut where_sections = Vec::<SqlSection>::new();
+
+        if let Some(filter) = filter {
+            if let Some(data) = &filter.data {
+                let mut data_sections = data.to_query_string();
+                where_sections.append(&mut data_sections);
+            }
+        }
+
+        for (i, section) in where_sections.iter().enumerate() {
+            query_builder.push(if i == 0 { " WHERE " } else { " AND " });
+            for (j, sql) in section.sql.iter().enumerate() {
+                query_builder.push(sql);
+                if j < section.params.len() {
+                    match section.params.get(j) {
+                        Some(QueryParam::Int(v)) => query_builder.push_bind(*v),
+                        Some(QueryParam::ArrayUuid(v)) => query_builder.push_bind(v.clone()),
+                        _ => unreachable!(),
+                    };
+                }
+            }
+        }
+    }
+
+    async fn query(
+        pool: &PgPool,
+        filter: Option<&FilterConfig<QueryableTeacher>>,
+        sort: Option<&SortingConfig<SortableTeacher>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<Vec<Self>>
+    where
+        Self: BaseQuery + Sized,
+    {
+        let mut query = QueryBuilder::new(DbTeacher::base_query());
+        Self::build_shared_query(&mut query, filter);
+
+        if let Some(sorting) = sort {
+            query.push(sorting.to_order_by_clause());
+        }
+
+        if let Some(pagination) = pagination {
+            let limit_section = pagination.to_limit_clause()?;
+            query.push(" ");
+            for (i, sql) in limit_section.sql.iter().enumerate() {
+                query.push(sql);
+                if i < limit_section.params.len() {
+                    match limit_section.params.get(i) {
+                        Some(&QueryParam::Int(v)) => query.push_bind(v),
+                        _ => {
+                            return Err(Error::InternalSeverError(
+                                "Invalid pagination params".to_string(),
+                                "DbTeacher::query".to_string(),
+                            ));
+                        }
+                    };
+                }
+            }
+        }
+
+        query
+            .build_query_as::<DbTeacher>()
+            .fetch_all(pool)
+            .await
+            .map_err(|e| Error::InternalSeverError(e.to_string(), "DbTeacher::query".to_string()))
+    }
+
+    async fn response_pagination(
+        pool: &sqlx::PgPool,
+        filter: Option<&FilterConfig<QueryableTeacher>>,
+        pagination: Option<&PaginationConfig>,
+    ) -> Result<PaginationType>
+    where
+        Self: Sized,
+    {
+        let mut query = QueryBuilder::new(DbTeacher::count_query());
+        Self::build_shared_query(&mut query, filter);
+
+        let count = u32::try_from(
+            query
+                .build()
+                .fetch_one(pool)
+                .await
+                .map_err(|e| {
+                    Error::InternalSeverError(
+                        e.to_string(),
+                        "DbTeacher::response_pagination".to_string(),
+                    )
+                })?
+                .get::<i64, _>("count"),
+        )
+        .expect("Irrecoverable error, i64 is out of bounds for u32");
+
+        Ok(PaginationType::new(
+            pagination.unwrap_or(&PaginationConfig::default()).p,
+            pagination
+                .unwrap_or(&PaginationConfig::default())
+                .size
+                .unwrap_or(50),
+            count,
+        ))
     }
 }
