@@ -18,32 +18,37 @@ impl<'sql> SqlSetClause<'sql> {
         SqlSetClause(Vec::new())
     }
 
+    #[must_use]
     pub fn push_sql(mut self, sql: &'sql str) -> Self {
         self.0.push(QueryFragment::Sql(sql));
 
         self
     }
 
+    #[must_use]
     pub fn push_param(mut self, param: QueryParam) -> Self {
         self.0.push(QueryFragment::Param(param));
 
         self
     }
 
+    #[must_use]
     pub fn push_prev_param(mut self) -> Self {
         self.0.push(QueryFragment::PreviousParam);
 
         self
     }
 
+    #[must_use]
     pub fn push_sep(mut self) -> Self {
         if self.0.last().unwrap() != &QueryFragment::Sql(" SET ") {
-            self.0.push(QueryFragment::Separator)
+            self.0.push(QueryFragment::Separator);
         }
 
         self
     }
 
+    #[must_use]
     pub fn push_multilang_update_field(
         self,
         column: &'sql str,
@@ -78,6 +83,7 @@ impl<'sql> SqlSetClause<'sql> {
         }
     }
 
+    #[must_use]
     pub fn push_update_field<T: QueryParamType>(
         self,
         column: &'sql str,
@@ -100,6 +106,7 @@ impl<'sql> SqlSetClause<'sql> {
         }
     }
 
+    #[must_use]
     pub fn push_if_some<T: QueryParamType>(
         mut self,
         param: Option<T>,
@@ -137,7 +144,7 @@ impl<'sql> SqlSetClause<'sql> {
             }
             QueryFragment::PreviousParam => {
                 assert!(
-                    !(param_count == 0),
+                    param_count != 0,
                     "`QueryFragment::PreviousParam` cannot be pushed before a \
                      `QueryFragment::Param` is pushed",
                 );

@@ -109,9 +109,9 @@ pub async fn modify_student(
             .push_multilang_update_field("last_name", pu.last_name)
             .push_multilang_update_field("middle_name", pu.middle_name)
             .push_multilang_update_field("nickname", pu.nickname)
-            .push_update_field("birthdate", pu.birthdate, |p| QueryParam::NaiveDate(p))
-            .push_update_field("shirt_size", pu.shirt_size, |p| QueryParam::ShirtSize(p))
-            .push_update_field("pants_size", pu.pants_size, |p| QueryParam::String(p))
+            .push_update_field("birthdate", pu.birthdate, QueryParam::NaiveDate)
+            .push_update_field("shirt_size", pu.shirt_size, QueryParam::ShirtSize)
+            .push_update_field("pants_size", pu.pants_size, QueryParam::String)
             .into_query_builder("UPDATE people");
 
         qb.push(" WHERE id = ")
