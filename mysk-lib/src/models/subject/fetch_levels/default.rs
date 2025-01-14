@@ -40,7 +40,7 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
         pool: &PgPool,
         table: DbSubject,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         authorizer
             .authorize_subject(&table, pool, ActionType::ReadDefault)

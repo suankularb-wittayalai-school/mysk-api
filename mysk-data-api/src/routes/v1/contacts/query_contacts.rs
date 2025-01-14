@@ -42,7 +42,7 @@ pub async fn query_contacts(
         filter,
         sort,
         pagination,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
 

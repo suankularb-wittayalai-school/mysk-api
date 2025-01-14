@@ -35,7 +35,7 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
         pool: &PgPool,
         table: DbClub,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let contact_ids = DbClub::get_club_contacts(pool, table.id).await?;
 

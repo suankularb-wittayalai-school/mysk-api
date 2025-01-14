@@ -38,7 +38,7 @@ pub async fn query_club_details(
         club_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(club, None);

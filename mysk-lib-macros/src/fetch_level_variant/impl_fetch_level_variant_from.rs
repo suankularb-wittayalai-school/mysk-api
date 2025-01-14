@@ -16,7 +16,7 @@ macro_rules! impl_fetch_level_variant_from {
                 pool: &PgPool,
                 table: $db_type,
                 _: Option<&FetchLevel>,
-                authorizer: &Box<dyn Authorizer>,
+                authorizer: &dyn Authorizer,
             ) -> Result<Self> {
                 $crate::paste::paste! {
                     authorizer

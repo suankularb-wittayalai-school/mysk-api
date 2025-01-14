@@ -70,7 +70,7 @@ pub async fn create_club_contacts(
         DbClub::get_club_contacts(pool, club_id).await?,
         Some(&FetchLevel::Default),
         Some(&FetchLevel::IdOnly),
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     if club_contacts.iter().any(|contact| match contact {
@@ -109,7 +109,7 @@ pub async fn create_club_contacts(
         new_contact_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(new_contact, None);

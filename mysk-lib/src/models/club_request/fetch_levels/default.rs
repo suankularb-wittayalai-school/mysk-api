@@ -32,7 +32,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
         pool: &PgPool,
         table: DbClubRequest,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,

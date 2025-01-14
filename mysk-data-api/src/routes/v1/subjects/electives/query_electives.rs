@@ -43,7 +43,7 @@ pub async fn query_elective_subject(
         filter,
         sort,
         pagination,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
 

@@ -42,7 +42,7 @@ pub async fn query_students(
         filter,
         sort,
         pagination,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
 

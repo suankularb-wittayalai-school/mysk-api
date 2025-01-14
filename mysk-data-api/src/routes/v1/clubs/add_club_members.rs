@@ -66,7 +66,7 @@ pub async fn add_club_members(
         invitee_student_id,
         Some(&FetchLevel::Default),
         Some(&FetchLevel::IdOnly),
-        &authorizer,
+        &*authorizer,
     )
     .await
     {
@@ -93,7 +93,7 @@ pub async fn add_club_members(
         club_id,
         Some(&FetchLevel::Detailed),
         Some(&FetchLevel::IdOnly),
-        &authorizer,
+        &*authorizer,
     )
     .await
     {
@@ -192,7 +192,7 @@ pub async fn add_club_members(
         club_member_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(club_member, None);

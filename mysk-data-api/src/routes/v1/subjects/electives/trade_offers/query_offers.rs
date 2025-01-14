@@ -50,7 +50,7 @@ pub async fn query_trade_offers(
         filter,
         sort,
         pagination,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
 

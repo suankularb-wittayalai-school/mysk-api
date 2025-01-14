@@ -43,7 +43,7 @@ pub async fn query_elective_details(
         elective_subject_session_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(elective_subject, None);

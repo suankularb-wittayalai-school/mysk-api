@@ -12,8 +12,8 @@ use crate::{
     prelude::*,
 };
 use async_trait::async_trait;
-use dyn_clone::DynClone;
 use sqlx::{query, PgPool};
+use std::sync::Arc;
 
 pub enum ActionType {
     Create,
@@ -27,10 +27,7 @@ pub enum ActionType {
 
 #[allow(unused_variables)]
 #[async_trait]
-pub trait Authorizer
-where
-    Self: DynClone + Send + Sync + 'static,
-{
+pub trait Authorizer: Send + Sync {
     async fn authorize_classroom(
         &self,
         classroom: &DbClassroom,
@@ -130,6 +127,8 @@ where
         pool: &PgPool,
         action: ActionType,
     ) -> Result<()>;
+
+    fn clone_to_arc(&self) -> Arc<dyn Authorizer>;
 }
 
 pub async fn get_authorizer(

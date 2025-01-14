@@ -103,7 +103,7 @@ pub async fn create_student_contacts(
         new_contact_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(new_contact, None);

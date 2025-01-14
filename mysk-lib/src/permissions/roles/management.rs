@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::{
     models::{
         classroom::db::DbClassroom, contact::db::DbContact, student::db::DbStudent,
@@ -92,5 +93,9 @@ impl Authorizer for ManagementRole {
                 self.source.to_string(),
             )),
         }
+    }
+
+    fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
+        Arc::new(self.clone())
     }
 }

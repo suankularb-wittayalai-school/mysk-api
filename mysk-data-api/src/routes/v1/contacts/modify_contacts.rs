@@ -103,7 +103,7 @@ pub async fn modify_contacts(
         contact_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(updated_contact, None);

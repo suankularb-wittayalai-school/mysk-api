@@ -72,7 +72,7 @@ pub async fn update_club_requests(
         club_request_id,
         Some(&FetchLevel::Default),
         Some(&FetchLevel::IdOnly),
-        &authorizer,
+        &*authorizer,
     )
     .await
     {
@@ -131,7 +131,7 @@ pub async fn update_club_requests(
         club_request_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(updated_club_request, None);

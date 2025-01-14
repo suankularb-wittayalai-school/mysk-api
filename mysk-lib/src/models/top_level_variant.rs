@@ -41,7 +41,7 @@ where
         table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         match fetch_level {
             Some(FetchLevel::IdOnly) | None => Ok(Self::IdOnly(
@@ -128,7 +128,7 @@ where
         id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let variant = DbVariant::get_by_id(pool, id).await?;
 
@@ -147,7 +147,7 @@ where
         ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>> {
         let variants = DbVariant::get_by_ids(pool, ids).await?;
         let fetch_level = fetch_level.copied();
@@ -156,7 +156,7 @@ where
             .into_iter()
             .map(|variant| {
                 let pool = pool.clone();
-                let authorizer = dyn_clone::clone_box(&**authorizer);
+                let shared_authorizer = authorizer.clone_to_arc();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -164,7 +164,7 @@ where
                         variant,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
-                        &authorizer,
+                        &*shared_authorizer,
                     )
                     .await
                 })

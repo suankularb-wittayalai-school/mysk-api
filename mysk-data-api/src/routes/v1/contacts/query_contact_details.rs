@@ -39,7 +39,7 @@ pub async fn query_contact_details(
         contact_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(contact, None);

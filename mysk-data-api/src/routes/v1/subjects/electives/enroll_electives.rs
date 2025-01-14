@@ -53,7 +53,7 @@ pub async fn enroll_elective_subject(
         elective_subject_session_id,
         Some(&FetchLevel::Detailed),
         None,
-        &authorizer,
+        &*authorizer,
     )
     .await
     {
@@ -166,7 +166,7 @@ pub async fn enroll_elective_subject(
         elective_subject_session_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(elective, None);

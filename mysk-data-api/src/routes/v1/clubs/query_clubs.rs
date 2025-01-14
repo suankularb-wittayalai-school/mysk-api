@@ -42,7 +42,7 @@ pub async fn query_clubs(
         filter,
         sort,
         pagination,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
 

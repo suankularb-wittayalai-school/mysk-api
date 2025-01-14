@@ -44,7 +44,7 @@ pub async fn delete_club_requests(
         club_request_id,
         Some(&FetchLevel::Default),
         Some(&FetchLevel::IdOnly),
-        &authorizer,
+        &*authorizer,
     )
     .await
     {

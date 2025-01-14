@@ -128,7 +128,7 @@ pub async fn modify_student(
         student_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(student, None);

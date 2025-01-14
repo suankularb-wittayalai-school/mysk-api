@@ -36,7 +36,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
         pool: &PgPool,
         table: DbTeacher,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         authorizer
             .authorize_teacher(&table, pool, ActionType::ReadDefault)

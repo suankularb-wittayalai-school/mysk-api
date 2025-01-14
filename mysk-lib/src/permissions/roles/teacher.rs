@@ -9,6 +9,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use sqlx::{query, PgPool};
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -166,5 +167,9 @@ impl Authorizer for TeacherRole {
                 self.source.to_string(),
             )),
         }
+    }
+
+    fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
+        Arc::new(self.clone())
     }
 }

@@ -28,7 +28,7 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
         table: DbSubjectGroup,
         _: Option<&FetchLevel>,
         _: Option<&FetchLevel>,
-        _: &Box<dyn Authorizer>,
+        _: &dyn Authorizer,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -48,7 +48,7 @@ impl TopLevelGetById for SubjectGroup {
         id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let contact = DbSubjectGroup::get_by_id(pool, id).await?;
 
@@ -67,7 +67,7 @@ impl TopLevelGetById for SubjectGroup {
         ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>> {
         let contacts = DbSubjectGroup::get_by_ids(pool, ids).await?;
         let fetch_level = fetch_level.copied();
@@ -76,7 +76,7 @@ impl TopLevelGetById for SubjectGroup {
             .into_iter()
             .map(|contact| {
                 let pool = pool.clone();
-                let authorizer = dyn_clone::clone_box(&**authorizer);
+                let shared_authorizer = authorizer.clone_to_arc();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -84,7 +84,7 @@ impl TopLevelGetById for SubjectGroup {
                         contact,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
-                        &authorizer,
+                        &*shared_authorizer,
                     )
                     .await
                 })

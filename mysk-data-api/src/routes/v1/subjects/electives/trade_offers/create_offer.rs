@@ -94,7 +94,7 @@ async fn create_trade_offer(
         receiver_elective_subject_id,
         Some(&FetchLevel::Compact),
         None,
-        &authorizer,
+        &*authorizer,
     )
     .await
     {
@@ -171,7 +171,7 @@ async fn create_trade_offer(
         sender_elective_subject_id,
         Some(&FetchLevel::Compact),
         None,
-        &authorizer,
+        &*authorizer,
     )
     .await
     {
@@ -313,7 +313,7 @@ async fn create_trade_offer(
         trade_offer_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(elective_trade_offer, None);

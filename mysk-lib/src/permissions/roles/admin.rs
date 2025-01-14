@@ -8,6 +8,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use sqlx::PgPool;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AdminRole;
@@ -32,5 +33,9 @@ impl Authorizer for AdminRole {
 
     async fn authorize_teacher(&self, _: &DbTeacher, _: &PgPool, _: ActionType) -> Result<()> {
         Ok(())
+    }
+
+    fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
+        Arc::new(self.clone())
     }
 }

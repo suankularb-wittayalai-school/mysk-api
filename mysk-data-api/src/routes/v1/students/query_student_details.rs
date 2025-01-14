@@ -39,7 +39,7 @@ pub async fn query_student_details(
         student_id,
         fetch_level,
         descendant_fetch_level,
-        &authorizer,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(student, None);

@@ -46,7 +46,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
         pool: &PgPool,
         table: DbElectiveSubject,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;

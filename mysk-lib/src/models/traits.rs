@@ -22,7 +22,7 @@ where
         pool: &PgPool,
         table: DbVariant,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
 
@@ -37,7 +37,7 @@ where
         table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
 
@@ -53,7 +53,7 @@ where
         id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 
     async fn get_by_ids(
@@ -61,7 +61,7 @@ where
         ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>>;
 }
 
@@ -80,7 +80,7 @@ where
         filter: Option<&FilterConfig<QueryableObject>>,
         sort: Option<&SortingConfig<SortableObject>>,
         pagination: Option<&PaginationConfig>,
-        authorizer: &Box<dyn Authorizer>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>> {
         let models = DbVariant::query(pool, filter, sort, pagination).await?;
         let fetch_level = fetch_level.copied();
@@ -89,7 +89,7 @@ where
             .into_iter()
             .map(|model| {
                 let pool = pool.clone();
-                let authorizer = dyn_clone::clone_box(&**authorizer);
+                let shared_authorizer = authorizer.clone_to_arc();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -97,7 +97,7 @@ where
                         model,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
-                        &authorizer,
+                        &*shared_authorizer,
                     )
                     .await
                 })
