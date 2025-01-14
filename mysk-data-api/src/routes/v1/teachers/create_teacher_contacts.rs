@@ -14,7 +14,10 @@ use mysk_lib::{
         string::MultiLangString,
     },
     models::{
-        contact::Contact, enums::ContactType, teacher::db::DbTeacher, traits::TopLevelGetById as _,
+        contact::{db::DbContact, Contact},
+        enums::ContactType,
+        teacher::db::DbTeacher,
+        traits::TopLevelGetById as _,
     },
     permissions::{self, ActionType},
     prelude::*,
@@ -65,14 +68,7 @@ pub async fn create_teacher_contacts(
     // Check for duplicate contacts
     let existing_contacts = DbTeacher::get_teacher_contacts(pool, teacher_id).await?;
     for contact_id in existing_contacts {
-        let contact = Contact::get_by_id(
-            pool,
-            contact_id,
-            fetch_level,
-            descendant_fetch_level,
-            &authorizer,
-        )
-        .await?;
+        let contact = DbContact::get_by_id(pool, contact_id).await?;
         if contact.r#type == teacher_contact.r#type && contact.value == teacher_contact.value {
             return Err(Error::InvalidRequest(
                 "Contact with the same value already exists".to_string(),
