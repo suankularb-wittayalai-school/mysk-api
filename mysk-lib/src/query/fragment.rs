@@ -44,7 +44,8 @@ pub fn query_param_push_bind(qb: &mut QueryBuilder<'_, Postgres>, param: QueryPa
         QueryParam::ArrayString(v) => qb.push_bind(v),
         QueryParam::ArrayBool(v) => qb.push_bind(v),
         QueryParam::ArrayUuid(v) => qb.push_bind(v),
-        QueryParam::SubmissionStatus(v) => qb.push_bind(v),
+        QueryParam::ContactType(v) => qb.push_bind(v),
         QueryParam::ShirtSize(v) => qb.push_bind(v),
+        QueryParam::SubmissionStatus(v) => qb.push_bind(v),
     };
 }

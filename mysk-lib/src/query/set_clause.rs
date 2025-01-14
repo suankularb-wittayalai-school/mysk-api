@@ -37,7 +37,9 @@ impl<'sql> SqlSetClause<'sql> {
     }
 
     pub fn push_sep(mut self) -> Self {
-        self.0.push(QueryFragment::Separator);
+        if self.0.last().unwrap() != &QueryFragment::Sql(" SET ") {
+            self.0.push(QueryFragment::Separator)
+        }
 
         self
     }
@@ -82,23 +84,9 @@ impl<'sql> SqlSetClause<'sql> {
         param: Option<T>,
         make_variant: impl FnOnce(T) -> QueryParam,
     ) -> Self {
-        let s = if (self.0.last().unwrap() != &QueryFragment::Sql(" SET ")) && param.is_some() {
-            self.push_sep()
-        } else {
-            self
-        };
-
-        s.push_update_field_no_sep(column, param, make_variant)
-    }
-
-    pub fn push_update_field_no_sep<T: QueryParamType>(
-        self,
-        column: &'sql str,
-        param: Option<T>,
-        make_variant: impl FnOnce(T) -> QueryParam,
-    ) -> Self {
         if let Some(param) = param {
             let s = self
+                .push_sep()
                 .push_sql(column)
                 .push_sql(" = COALESCE(")
                 .push_param(make_variant(param))

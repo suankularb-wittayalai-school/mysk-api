@@ -1,7 +1,7 @@
 use crate::{extractors::logged_in::LoggedIn, extractors::ExtractorFuture, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
 use mysk_lib::{
-    models::{enums::UserRole, student::Student},
+    models::{enums::UserRole, student::db::DbStudent},
     prelude::*,
 };
 use serde::Serialize;
@@ -32,7 +32,7 @@ impl FromRequest for LoggedInStudent {
                 ));
             }
 
-            let student_id = Student::get_student_from_user_id(&pool, user.id)
+            let student_id = DbStudent::get_student_from_user_id(&pool, user.id)
                 .await?
                 .ok_or(Error::EntityNotFound(
                     "Student not found".to_string(),

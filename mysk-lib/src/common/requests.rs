@@ -168,8 +168,8 @@ pub enum QueryParam {
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
     ContactType(ContactType),
-    SubmissionStatus(SubmissionStatus),
     ShirtSize(ShirtSize),
+    SubmissionStatus(SubmissionStatus),
 }
 
 impl Encode<'_, Postgres> for QueryParam {
@@ -190,10 +190,10 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
             QueryParam::ContactType(v) => <ContactType as sqlx::Encode<Postgres>>::encode(*v, buf),
+            QueryParam::ShirtSize(v) => <ShirtSize as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::SubmissionStatus(v) => {
                 <SubmissionStatus as sqlx::Encode<Postgres>>::encode(*v, buf)
             }
-            QueryParam::ShirtSize(v) => <ShirtSize as sqlx::Encode<Postgres>>::encode(*v, buf),
         }
     }
 }

@@ -19,7 +19,7 @@ use mysk_lib::{
 use uuid::Uuid;
 
 #[get("/{id}")]
-pub async fn get_teacher_by_id(
+pub async fn query_teacher_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
     user: LoggedIn,
