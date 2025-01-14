@@ -1,6 +1,10 @@
-use crate::models::enums::ShirtSize;
-use crate::models::traits::Queryable;
-use crate::{models::enums::SubmissionStatus, prelude::*};
+use crate::{
+    models::{
+        enums::{ContactType, ShirtSize, SubmissionStatus},
+        traits::Queryable,
+    },
+    prelude::*,
+};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use chrono::NaiveDate;
 use futures::future;
@@ -163,6 +167,7 @@ pub enum QueryParam {
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
+    ContactType(ContactType),
     SubmissionStatus(SubmissionStatus),
     ShirtSize(ShirtSize),
 }
@@ -184,6 +189,7 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
+            QueryParam::ContactType(v) => <ContactType as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::SubmissionStatus(v) => {
                 <SubmissionStatus as sqlx::Encode<Postgres>>::encode(*v, buf)
             }
