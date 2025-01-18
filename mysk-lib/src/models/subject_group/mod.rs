@@ -1,6 +1,10 @@
 use crate::{
     common::{requests::FetchLevel, string::MultiLangString},
-    models::{subject_group::db::DbSubjectGroup, traits::TopLevelFromTable},
+    models::{
+        subject_group::db::DbSubjectGroup,
+        traits::{TopLevelFromTable, TopLevelGetById},
+    },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -24,6 +28,7 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
         table: DbSubjectGroup,
         _: Option<&FetchLevel>,
         _: Option<&FetchLevel>,
+        _: &dyn Authorizer,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -34,23 +39,35 @@ impl TopLevelFromTable<DbSubjectGroup> for SubjectGroup {
 }
 
 // We're not using the GetById derive here because the ID of this table is an integer not a UUID.
-impl SubjectGroup {
-    pub async fn get_by_id(
+#[async_trait]
+impl TopLevelGetById for SubjectGroup {
+    type Id = i64;
+
+    async fn get_by_id(
         pool: &PgPool,
-        id: i64,
+        id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let contact = DbSubjectGroup::get_by_id(pool, id).await?;
 
-        Self::from_table(pool, contact, fetch_level, descendant_fetch_level).await
+        Self::from_table(
+            pool,
+            contact,
+            fetch_level,
+            descendant_fetch_level,
+            authorizer,
+        )
+        .await
     }
 
-    pub async fn get_by_ids(
+    async fn get_by_ids(
         pool: &PgPool,
-        ids: Vec<i64>,
+        ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>> {
         let contacts = DbSubjectGroup::get_by_ids(pool, ids).await?;
         let fetch_level = fetch_level.copied();
@@ -59,6 +76,7 @@ impl SubjectGroup {
             .into_iter()
             .map(|contact| {
                 let pool = pool.clone();
+                let shared_authorizer = authorizer.clone_to_arc();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -66,6 +84,7 @@ impl SubjectGroup {
                         contact,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
+                        &*shared_authorizer,
                     )
                     .await
                 })
@@ -74,7 +93,7 @@ impl SubjectGroup {
 
         let mut result = Vec::with_capacity(futures.len());
         for future in futures {
-            result.push(future.await.unwrap()?);
+            result.push(future.await??);
         }
 
         Ok(result)

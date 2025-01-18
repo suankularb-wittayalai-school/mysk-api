@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::Type as SqlxType;
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, SqlxType)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, SqlxType)]
 #[serde(rename_all = "snake_case")]
 #[sqlx(type_name = "contact_types", rename_all = "snake_case")]
 pub enum ContactType {

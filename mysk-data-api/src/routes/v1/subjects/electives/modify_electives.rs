@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -17,6 +17,7 @@ use mysk_lib::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
         traits::TopLevelGetById as _,
     },
+    permissions,
     prelude::*,
 };
 use sqlx::query;
@@ -27,16 +28,32 @@ use uuid::Uuid;
 async fn modify_elective_subject(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     student_id: LoggedInStudent,
     elective_subject_session_id: Path<Uuid>,
     request_body: Json<RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut transaction = pool.begin().await?;
+    let user = user.0;
     let student_id = student_id.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let authorizer = permissions::get_authorizer(
+        pool,
+        &user,
+        format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+    )
+    .await?;
+
+    // Checks if the student is "blacklisted" from enrolling in an elective
+    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, student_id).await? {
+        return Err(Error::InvalidPermission(
+            "Student is blacklisted from enrolling in electives".to_string(),
+            format!("/subjects/electives/{elective_subject_session_id}/enroll"),
+        ));
+    }
 
     // Checks if the student is "blacklisted" from enrolling in an elective
     if DbElectiveSubject::is_student_blacklisted(&mut *transaction, student_id).await? {
@@ -84,6 +101,7 @@ async fn modify_elective_subject(
         elective_subject_session_id,
         Some(&FetchLevel::Detailed),
         None,
+        &*authorizer,
     )
     .await?
     {
@@ -151,6 +169,7 @@ async fn modify_elective_subject(
         elective_subject_session_id,
         fetch_level,
         descendant_fetch_level,
+        &*authorizer,
     )
     .await?;
     let response = ResponseType::new(elective, None);

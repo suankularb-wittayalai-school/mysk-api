@@ -4,8 +4,10 @@ use crate::{
         string::{FlexibleMultiLangString, MultiLangString},
     },
     models::{club::db::DbClub, traits::FetchLevelVariant},
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
+use async_trait::async_trait;
 use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -48,4 +50,4 @@ impl From<DbClub> for CompactClub {
     }
 }
 
-impl_fetch_level_variant_from!(CompactClub, DbClub);
+impl_fetch_level_variant_from!(club, Compact, CompactClub, DbClub);

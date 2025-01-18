@@ -15,7 +15,9 @@ impl FromRequest for LoggedIn {
     type Future = ExtractorFuture<Self>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
-        let app_state = req.app_data::<Data<AppState>>().unwrap();
+        let app_state = req
+            .app_data::<Data<AppState>>()
+            .expect("Irrecoverable error, AppState is None");
         let pool = app_state.db.clone();
         let jwt_secret = app_state.env.token_secret.clone();
         let Some(authorization_header) = req.headers().get(header::AUTHORIZATION) else {
@@ -24,7 +26,13 @@ impl FromRequest for LoggedIn {
                 "extractors::LoggedIn".to_string(),
             )));
         };
-        let token_parts: Vec<&str> = authorization_header.to_str().unwrap().split(' ').collect();
+        let Ok(token_parts) = authorization_header.to_str() else {
+            return Box::pin(future::err(Error::InternalSeverError(
+                "Internal server error".to_string(),
+                "extractors::LoggedIn".to_string(),
+            )));
+        };
+        let token_parts: Vec<&str> = token_parts.split(' ').collect();
 
         let Some(scheme) = token_parts.first() else {
             return Box::pin(future::err(Error::InvalidAuthorizationScheme(

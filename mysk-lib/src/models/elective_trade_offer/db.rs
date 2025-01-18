@@ -40,9 +40,7 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableElectiveTradeOffer>>,
-    ) where
-        Self: Sized,
-    {
+    ) {
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
         if let Some(filter) = filter {
@@ -72,10 +70,7 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
         filter: Option<&FilterConfig<QueryableElectiveTradeOffer>>,
         sort: Option<&SortingConfig<SortableElectiveTradeOffer>>,
         pagination: Option<&PaginationConfig>,
-    ) -> Result<Vec<Self>>
-    where
-        Self: Sized,
-    {
+    ) -> Result<Vec<Self>> {
         let mut query = QueryBuilder::new(DbElectiveTradeOffer::base_query());
         Self::build_shared_query(&mut query, filter);
 
@@ -132,7 +127,7 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
                 })?
                 .get::<i64, _>("count"),
         )
-        .unwrap();
+        .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

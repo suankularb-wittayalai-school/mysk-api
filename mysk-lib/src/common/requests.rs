@@ -1,6 +1,12 @@
-use crate::models::traits::Queryable;
-use crate::{models::enums::SubmissionStatus, prelude::*};
+use crate::{
+    models::{
+        enums::{ContactType, ShirtSize, SubmissionStatus},
+        traits::Queryable,
+    },
+    prelude::*,
+};
 use actix_web::{dev::Payload, FromRequest, HttpRequest};
+use chrono::NaiveDate;
 use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{Encode, Postgres};
@@ -148,37 +154,43 @@ where
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum QueryParam {
     Int(i64),
     Float(f64),
     String(String),
     Bool(bool),
     Uuid(Uuid),
+    NaiveDate(NaiveDate),
     ArrayInt(Vec<i64>),
     ArrayFloat(Vec<f64>),
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
+    ContactType(ContactType),
+    ShirtSize(ShirtSize),
     SubmissionStatus(SubmissionStatus),
 }
 
 impl Encode<'_, Postgres> for QueryParam {
     fn encode_by_ref(
         &self,
-        buf: &mut <Postgres as sqlx::database::HasArguments<'_>>::ArgumentBuffer,
-    ) -> sqlx::encode::IsNull {
+        buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
+    ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync + 'static>> {
         match self {
             QueryParam::String(v) => <String as sqlx::Encode<Postgres>>::encode(v.to_string(), buf),
             QueryParam::Int(v) => <i64 as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::Float(v) => <f64 as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::Bool(v) => <bool as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::Uuid(v) => <Uuid as sqlx::Encode<Postgres>>::encode(*v, buf),
+            QueryParam::NaiveDate(v) => <NaiveDate as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::ArrayInt(v) => v.encode_by_ref(buf),
             QueryParam::ArrayFloat(v) => v.encode_by_ref(buf),
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
+            QueryParam::ContactType(v) => <ContactType as sqlx::Encode<Postgres>>::encode(*v, buf),
+            QueryParam::ShirtSize(v) => <ShirtSize as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::SubmissionStatus(v) => {
                 <SubmissionStatus as sqlx::Encode<Postgres>>::encode(*v, buf)
             }

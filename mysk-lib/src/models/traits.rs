@@ -3,39 +3,41 @@ use crate::{
         requests::{FetchLevel, FilterConfig, PaginationConfig, SortingConfig, SqlSection},
         response::PaginationType,
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
 use mysk_lib_macros::traits::db::BaseQuery;
 use sqlx::{PgPool, Postgres, QueryBuilder};
 use std::fmt::Display;
-use uuid::Uuid;
 
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
 /// from DB variant.
 #[async_trait]
-pub trait FetchLevelVariant<T>
+pub trait FetchLevelVariant<DbVariant>
 where
     Self: Sized,
 {
     async fn from_table(
         pool: &PgPool,
-        table: T,
+        table: DbVariant,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
 
 /// A trait for the actual database entity with ability to convert to be converted from DB variant.
 #[async_trait]
-pub trait TopLevelFromTable<T>
+pub trait TopLevelFromTable<DbVariant>
 where
     Self: Sized,
 {
     async fn from_table(
         pool: &PgPool,
-        table: T,
+        table: DbVariant,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
 
@@ -44,18 +46,22 @@ pub trait TopLevelGetById
 where
     Self: Sized,
 {
+    type Id;
+
     async fn get_by_id(
         pool: &PgPool,
-        id: Uuid,
+        id: Self::Id,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 
     async fn get_by_ids(
         pool: &PgPool,
-        ids: Vec<Uuid>,
+        ids: Vec<Self::Id>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>>;
 }
 
@@ -63,7 +69,7 @@ where
 pub trait TopLevelQuery<DbVariant, QueryableObject, SortableObject>
 where
     Self: TopLevelFromTable<DbVariant> + Sized + 'static,
-    DbVariant: QueryDb<QueryableObject, SortableObject> + BaseQuery + Send + 'static,
+    DbVariant: BaseQuery + QueryDb<QueryableObject, SortableObject> + Sized + Send + 'static,
     QueryableObject: Queryable + Sync,
     SortableObject: Display + Sync,
 {
@@ -74,6 +80,7 @@ where
         filter: Option<&FilterConfig<QueryableObject>>,
         sort: Option<&SortingConfig<SortableObject>>,
         pagination: Option<&PaginationConfig>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>> {
         let models = DbVariant::query(pool, filter, sort, pagination).await?;
         let fetch_level = fetch_level.copied();
@@ -82,6 +89,7 @@ where
             .into_iter()
             .map(|model| {
                 let pool = pool.clone();
+                let shared_authorizer = authorizer.clone_to_arc();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -89,6 +97,7 @@ where
                         model,
                         fetch_level.as_ref(),
                         descendant_fetch_level.as_ref(),
+                        &*shared_authorizer,
                     )
                     .await
                 })
@@ -97,7 +106,7 @@ where
 
         let mut result = Vec::with_capacity(futures.len());
         for future in futures {
-            result.push(future.await.unwrap()?);
+            result.push(future.await??);
         }
 
         Ok(result)

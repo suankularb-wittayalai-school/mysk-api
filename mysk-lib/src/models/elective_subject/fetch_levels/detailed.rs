@@ -13,6 +13,7 @@ use crate::{
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -51,9 +52,10 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
         pool: &PgPool,
         table: DbElectiveSubject,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None).await?;
+            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
 
         let teacher_ids = DbSubject::get_subject_teachers(pool, table.subject_id, None).await?;
         let co_teacher_ids =
@@ -98,6 +100,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 teacher_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             co_teachers: Teacher::get_by_ids(
@@ -105,6 +108,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 co_teacher_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             class_size: table.class_size,
@@ -115,6 +119,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 applicable_classroom_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             students: Student::get_by_ids(
@@ -122,6 +127,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 student_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             session_code: table.session_code,
@@ -131,6 +137,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 randomized_students_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
         })

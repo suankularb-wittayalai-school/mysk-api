@@ -216,19 +216,15 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
                 })?
                 .get::<i64, _>("count"),
         )
-        .unwrap();
+        .expect("Irrecoverable error, i64 is out of bounds for u32");
 
-        match pagination {
-            Some(pagination) => Ok(PaginationType::new(
-                pagination.p,
-                pagination.size.unwrap(),
-                count,
-            )),
-            None => Ok(PaginationType::new(
-                PaginationConfig::default().p,
-                PaginationConfig::default().size.unwrap(),
-                count,
-            )),
-        }
+        Ok(PaginationType::new(
+            pagination.unwrap_or(&PaginationConfig::default()).p,
+            pagination
+                .unwrap_or(&PaginationConfig::default())
+                .size
+                .unwrap_or(50),
+            count,
+        ))
     }
 }

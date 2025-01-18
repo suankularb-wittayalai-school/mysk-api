@@ -7,6 +7,7 @@ use crate::{
         student::Student,
         traits::{FetchLevelVariant, TopLevelGetById as _},
     },
+    permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
@@ -30,6 +31,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
         pool: &PgPool,
         table: DbElectiveTradeOffer,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,
@@ -38,6 +40,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 table.sender_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             receiver: Student::get_by_id(
@@ -45,6 +48,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 table.receiver_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             sender_elective_subject: ElectiveSubject::get_by_id(
@@ -52,6 +56,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 table.sender_elective_subject_session_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             receiver_elective_subject: ElectiveSubject::get_by_id(
@@ -59,6 +64,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 table.receiver_elective_subject_session_id,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             status: table.status,

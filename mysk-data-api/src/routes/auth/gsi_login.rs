@@ -54,27 +54,14 @@ async fn gsi_handler(data: Data<AppState>, query: Json<OAuthRequest>) -> Result<
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-    let user_id = match User::get_by_email(&data.db, &google_user.email).await {
-        Ok(Some(user)) => user.id,
-        Ok(None) => {
-            return Err(Error::EntityNotFound(
-                "User not found".to_string(),
-                "/auth/oauth/gsi".to_string(),
-            ))
-        }
-        Err(err) => {
-            return Err(Error::InternalSeverError(
-                err.to_string(),
-                "/auth/oauth/gsi".to_string(),
-            ))
-        }
-    };
+    let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
 
     let jwt_secret = data.env.token_secret.clone();
     let now = Utc::now();
-    let iat = usize::try_from(now.timestamp()).unwrap();
+    let iat = usize::try_from(now.timestamp())
+        .expect("Irrecoverable error, i64 is out of range for usize");
     let exp = usize::try_from((now + Duration::minutes(data.env.token_max_age as i64)).timestamp())
-        .unwrap();
+        .expect("Irrecoverable error, i64 is out of range for usize");
     let claims = TokenClaims {
         sub: user_id.to_string(),
         exp,

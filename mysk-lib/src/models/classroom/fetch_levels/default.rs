@@ -7,6 +7,7 @@ use crate::{
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById},
     },
+    permissions::{ActionType, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -31,7 +32,12 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
         pool: &PgPool,
         table: DbClassroom,
         descendant_fetch_level: Option<&FetchLevel>,
+        authorizer: &dyn Authorizer,
     ) -> Result<Self> {
+        authorizer
+            .authorize_classroom(&table, pool, ActionType::ReadDefault)
+            .await?;
+
         let student_ids = DbClassroom::get_classroom_students(pool, table.id).await?;
         let contact_ids = DbClassroom::get_classroom_contacts(pool, table.id).await?;
         let class_advisor_ids = DbClassroom::get_classroom_advisors(pool, table.id, None).await?;
@@ -45,6 +51,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
                 student_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             contacts: Contact::get_by_ids(
@@ -52,6 +59,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
                 contact_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
             year: table.year,
@@ -60,6 +68,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
                 class_advisor_ids,
                 descendant_fetch_level,
                 Some(&FetchLevel::IdOnly),
+                authorizer,
             )
             .await?,
         })

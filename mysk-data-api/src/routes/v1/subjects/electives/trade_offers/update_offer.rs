@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -19,6 +19,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
+    permissions,
     prelude::*,
 };
 use serde::Deserialize;
@@ -35,6 +36,7 @@ struct UpdatableElectiveOffer {
 async fn update_trade_offer(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    user: LoggedIn,
     student_id: LoggedInStudent,
     trade_offer_id: Path<Uuid>,
     request_body: Json<
@@ -42,6 +44,7 @@ async fn update_trade_offer(
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let user = user.0;
     let client_student_id = student_id.0;
     let trade_offer_id = trade_offer_id.into_inner();
     let trade_offer_status = match &request_body.data {
@@ -63,6 +66,13 @@ async fn update_trade_offer(
     };
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+
+    let authorizer = permissions::get_authorizer(
+        pool,
+        &user,
+        format!("/subjects/electives/trade-offers/{trade_offer_id}"),
+    )
+    .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
     if DbElectiveSubject::is_student_blacklisted(pool, client_student_id).await? {
@@ -156,6 +166,7 @@ async fn update_trade_offer(
         ));
     }
 
+    // Unwrap-safe because we have already checked if the updated status exists
     if let SubmissionStatus::Approved = updated_status.unwrap() {
         // Set the status of all the other trade offers of the sending and receiving students to
         // "declined"
@@ -214,15 +225,21 @@ async fn update_trade_offer(
     // Accept or decline the trade offer
     query!(
         "UPDATE elective_subject_trade_offers SET status = $1 WHERE id = $2",
+        // Unwrap-safe because we have already checked if the updated status exists
         updated_status.unwrap() as SubmissionStatus,
         trade_offer_id,
     )
     .execute(pool)
     .await?;
 
-    let elective_trade_offer =
-        ElectiveTradeOffer::get_by_id(pool, trade_offer_id, fetch_level, descendant_fetch_level)
-            .await?;
+    let elective_trade_offer = ElectiveTradeOffer::get_by_id(
+        pool,
+        trade_offer_id,
+        fetch_level,
+        descendant_fetch_level,
+        &*authorizer,
+    )
+    .await?;
     let response = ResponseType::new(elective_trade_offer, None);
 
     Ok(HttpResponse::Ok().json(response))

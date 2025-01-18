@@ -1,3 +1,7 @@
+#![forbid(unsafe_code)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::missing_panics_doc)]
+
 use darling::FromDeriveInput;
 use proc_macro::{self, TokenStream};
 use quote::quote;
