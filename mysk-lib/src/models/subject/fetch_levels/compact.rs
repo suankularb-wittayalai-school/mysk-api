@@ -1,10 +1,4 @@
-use crate::{
-    common::string::MultiLangString,
-    models::{subject::db::DbSubject, traits::FetchLevelVariant},
-    permissions::{ActionType},
-    prelude::*,
-};
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use crate::{common::string::MultiLangString, models::subject::db::DbSubject, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

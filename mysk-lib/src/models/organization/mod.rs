@@ -1,10 +1,9 @@
 use crate::{
     common::string::{FlexibleMultiLangString, MultiLangString},
-    models::organization::db::DbOrganization,
+    models::{organization::db::DbOrganization, traits::GetById as _},
     prelude::*,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;

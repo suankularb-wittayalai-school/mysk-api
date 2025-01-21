@@ -12,11 +12,10 @@ use mysk_lib::{
         requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
         response::{EmptyResponseData, ResponseType},
     },
-    models::contact::db::DbContact,
+    models::{contact::db::DbContact, traits::GetById as _},
     permissions::{self, ActionType},
     prelude::*,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use sqlx::query;
 use std::sync::Arc;
 use uuid::Uuid;

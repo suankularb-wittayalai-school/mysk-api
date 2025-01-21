@@ -1,9 +1,8 @@
 use crate::{
-    models::{enums::UserRole, user::db::DbUser},
+    models::{enums::UserRole, traits::GetById as _, user::db::DbUser},
     prelude::*,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;

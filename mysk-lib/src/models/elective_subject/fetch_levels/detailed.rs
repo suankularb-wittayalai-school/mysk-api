@@ -11,7 +11,7 @@ use crate::{
         subject::db::DbSubject,
         subject_group::SubjectGroup,
         teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
     },
     permissions::Authorizer,
     prelude::*,

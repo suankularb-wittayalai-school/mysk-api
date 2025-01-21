@@ -16,12 +16,11 @@ use mysk_lib::{
     models::{
         contact::{db::DbContact, Contact},
         enums::ContactType,
-        traits::TopLevelGetById as _,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions::{self, ActionType},
     prelude::*,
 };
-use mysk_lib_macros::traits::db::GetById;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;

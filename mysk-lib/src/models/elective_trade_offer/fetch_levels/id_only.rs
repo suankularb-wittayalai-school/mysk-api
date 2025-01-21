@@ -1,9 +1,4 @@
-use crate::{
-    models::{elective_trade_offer::db::DbElectiveTradeOffer, traits::FetchLevelVariant},
-    permissions::{ActionType},
-    prelude::*,
-};
-use mysk_lib_macros::impl_id_only_variant_from;
+use crate::{models::elective_trade_offer::db::DbElectiveTradeOffer, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

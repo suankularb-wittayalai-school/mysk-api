@@ -18,13 +18,12 @@ use mysk_lib::{
     models::{
         enums::ShirtSize,
         teacher::{db::DbTeacher, Teacher},
-        traits::TopLevelGetById,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions::{self, ActionType},
     prelude::*,
     query::set_clause::SqlSetClause,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;

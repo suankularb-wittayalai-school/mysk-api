@@ -5,7 +5,7 @@ use crate::{
         contact::Contact,
         person::Person,
         student::db::DbStudent,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
         user::User,
     },
     permissions::{ActionType, Authorizer},

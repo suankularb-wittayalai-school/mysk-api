@@ -13,8 +13,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
@@ -38,9 +37,7 @@ impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&crate::common::requests::FilterConfig<QueryableClubRequest>>,
-    ) where
-        Self: Sized,
-    {
+    ) {
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
         if let Some(filter) = filter {
@@ -71,10 +68,7 @@ impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
         filter: Option<&crate::common::requests::FilterConfig<QueryableClubRequest>>,
         sort: Option<&crate::common::requests::SortingConfig<SortableClubRequest>>,
         pagination: Option<&crate::common::requests::PaginationConfig>,
-    ) -> Result<Vec<Self>>
-    where
-        Self: BaseQuery + Sized,
-    {
+    ) -> Result<Vec<Self>> {
         let mut query = QueryBuilder::new(DbClubRequest::base_query());
         Self::build_shared_query(&mut query, filter);
 
@@ -114,10 +108,7 @@ impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
         pool: &sqlx::PgPool,
         filter: Option<&crate::common::requests::FilterConfig<QueryableClubRequest>>,
         pagination: Option<&crate::common::requests::PaginationConfig>,
-    ) -> Result<crate::common::response::PaginationType>
-    where
-        Self: Sized,
-    {
+    ) -> Result<crate::common::response::PaginationType> {
         let mut query = QueryBuilder::new(DbClubRequest::count_query());
         Self::build_shared_query(&mut query, filter);
 

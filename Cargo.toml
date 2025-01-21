@@ -1,5 +1,5 @@
 [workspace]
-members = ["mysk-data-api", "mysk-lib", "mysk-lib-derives", "mysk-lib-macros"]
+members = ["mysk-data-api", "mysk-lib", "mysk-lib-macros"]
 resolver = "2"
 
 [workspace.package]
@@ -40,6 +40,6 @@ sqlx = { version = "0.8.3", features = [
   "runtime-tokio-native-tls",
   "uuid",
 ] }
-syn = { version = "2.0.96", features = ["full"] }
+syn = { version = "2.0.96" }
 tokio = { version = "1.43.0", features = ["full"] }
 uuid = { version = "1.12.0", features = ["serde", "v4"] }

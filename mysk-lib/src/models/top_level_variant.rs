@@ -1,11 +1,10 @@
 use crate::{
     common::requests::FetchLevel,
-    models::traits::{FetchLevelVariant, TopLevelFromTable, TopLevelGetById},
+    models::traits::{FetchLevelVariant, GetById, TopLevelFromTable, TopLevelGetById},
     permissions::Authorizer,
     prelude::*,
 };
 use async_trait::async_trait;
-use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::{postgres::PgHasArrayType, Encode, PgPool, Postgres, Type as SqlxType};
 use std::marker::PhantomData;

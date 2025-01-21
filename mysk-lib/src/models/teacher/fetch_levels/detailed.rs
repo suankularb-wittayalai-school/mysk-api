@@ -7,7 +7,7 @@ use crate::{
         subject::Subject,
         subject_group::SubjectGroup,
         teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
         user::User,
     },
     permissions::{ActionType, Authorizer},

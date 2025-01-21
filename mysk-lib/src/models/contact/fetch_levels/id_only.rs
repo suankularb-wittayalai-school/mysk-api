@@ -1,8 +1,4 @@
-use crate::{
-    models::{contact::db::DbContact, traits::FetchLevelVariant},
-    permissions::{ActionType},
-    prelude::*,
-};
+use crate::{models::contact::db::DbContact, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -11,4 +7,4 @@ pub struct IdOnlyContact {
     pub id: Uuid,
 }
 
-mysk_lib_macros::impl_id_only_variant_from!(contact, IdOnlyContact, DbContact);
+impl_id_only_variant_from!(contact, IdOnlyContact, DbContact);

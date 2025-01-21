@@ -8,9 +8,8 @@ use crate::models::{
         request::{queryable::QueryableTeacher, sortable::SortableTeacher},
     },
     top_level_variant::TopLevelVariant,
+    traits::TopLevelQuery,
 };
-
-use super::traits::TopLevelQuery;
 
 pub mod db;
 pub mod fetch_levels;

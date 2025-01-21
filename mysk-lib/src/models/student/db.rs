@@ -13,8 +13,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
 use sqlx::{query, Acquire, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
@@ -115,9 +114,7 @@ impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableStudent>>,
-    ) where
-        Self: Sized,
-    {
+    ) {
         let mut where_sections = Vec::<SqlSection>::new();
 
         if let Some(filter) = filter {
@@ -147,10 +144,7 @@ impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
         filter: Option<&FilterConfig<QueryableStudent>>,
         sort: Option<&SortingConfig<SortableStudent>>,
         pagination: Option<&PaginationConfig>,
-    ) -> Result<Vec<Self>>
-    where
-        Self: BaseQuery + Sized,
-    {
+    ) -> Result<Vec<Self>> {
         let mut query = QueryBuilder::new(DbStudent::base_query());
         Self::build_shared_query(&mut query, filter);
 
@@ -188,10 +182,7 @@ impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
         pool: &sqlx::PgPool,
         filter: Option<&FilterConfig<QueryableStudent>>,
         pagination: Option<&PaginationConfig>,
-    ) -> Result<PaginationType>
-    where
-        Self: Sized,
-    {
+    ) -> Result<PaginationType> {
         let mut query = QueryBuilder::new(DbStudent::count_query());
         Self::build_shared_query(&mut query, filter);
 

@@ -1,8 +1,4 @@
-use crate::{
-    models::{club::db::DbClub, traits::FetchLevelVariant},
-    permissions::{ActionType},
-    prelude::*,
-};
+use crate::{models::club::db::DbClub, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -11,4 +7,4 @@ pub struct IdOnlyClub {
     pub id: Uuid,
 }
 
-mysk_lib_macros::impl_id_only_variant_from!(club, IdOnlyClub, DbClub);
+impl_id_only_variant_from!(club, IdOnlyClub, DbClub);

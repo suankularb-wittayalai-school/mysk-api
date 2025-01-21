@@ -1,6 +1,6 @@
-use super::top_level_variant::TopLevelVariant;
-use crate::models::subject_group::{
-    db::DbSubjectGroup, fetch_levels::default::DefaultSubjectGroup,
+use crate::models::{
+    subject_group::{db::DbSubjectGroup, fetch_levels::default::DefaultSubjectGroup},
+    top_level_variant::TopLevelVariant,
 };
 
 pub mod db;

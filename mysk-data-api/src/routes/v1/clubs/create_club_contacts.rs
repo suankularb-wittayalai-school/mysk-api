@@ -13,12 +13,14 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        club::db::DbClub, contact::Contact, enums::ContactType, traits::TopLevelGetById as _,
+        club::db::DbClub,
+        contact::Contact,
+        enums::ContactType,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;

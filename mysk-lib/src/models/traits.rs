@@ -7,17 +7,37 @@ use crate::{
     prelude::*,
 };
 use async_trait::async_trait;
-use mysk_lib_macros::traits::db::BaseQuery;
-use sqlx::{postgres::PgHasArrayType, Encode, PgPool, Postgres, QueryBuilder, Type as SqlxType};
+use sqlx::{
+    postgres::PgHasArrayType, Acquire, Encode, Error as SqlxError, PgPool, Postgres, QueryBuilder,
+    Type as SqlxType,
+};
 use std::fmt::Display;
+
+pub trait BaseQuery {
+    #[must_use]
+    fn base_query() -> &'static str;
+
+    #[must_use]
+    fn count_query() -> &'static str;
+}
+
+#[async_trait]
+pub trait GetById: BaseQuery + Sized {
+    async fn get_by_id<'c, A, T>(conn: A, id: T) -> Result<Self, SqlxError>
+    where
+        A: Acquire<'c, Database = Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send;
+
+    async fn get_by_ids<'c, A, T>(conn: A, ids: Vec<T>) -> Result<Vec<Self>, SqlxError>
+    where
+        A: Acquire<'c, Database = Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
+}
 
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
 /// from DB variant.
 #[async_trait]
-pub trait FetchLevelVariant<DbVariant>
-where
-    Self: Sized,
-{
+pub trait FetchLevelVariant<DbVariant>: Sized {
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
@@ -28,10 +48,7 @@ where
 
 /// A trait for the actual database entity with ability to convert to be converted from DB variant.
 #[async_trait]
-pub trait TopLevelFromTable<DbVariant>
-where
-    Self: Sized,
-{
+pub trait TopLevelFromTable<DbVariant>: Sized {
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
@@ -42,10 +59,7 @@ where
 }
 
 #[async_trait]
-pub trait TopLevelGetById
-where
-    Self: Sized,
-{
+pub trait TopLevelGetById: Sized {
     async fn get_by_id<T>(
         pool: &PgPool,
         id: T,
@@ -131,12 +145,7 @@ pub trait Queryable {
 
 /// A trait for DB variant to allow querying and creating pagination response.
 #[async_trait]
-pub trait QueryDb<QueryableObject, SortableObject>
-where
-    Self: Sized + BaseQuery,
-    QueryableObject: Queryable,
-    SortableObject: Display,
-{
+pub trait QueryDb<QueryableObject: Queryable, SortableObject: Display>: BaseQuery + Sized {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableObject>>,

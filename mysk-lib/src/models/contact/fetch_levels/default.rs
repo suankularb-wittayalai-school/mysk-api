@@ -1,10 +1,8 @@
 use crate::{
     common::string::FlexibleMultiLangString,
-    models::{contact::db::DbContact, enums::ContactType, traits::FetchLevelVariant},
-    permissions::{ActionType},
+    models::{contact::db::DbContact, enums::ContactType},
     prelude::*,
 };
-use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

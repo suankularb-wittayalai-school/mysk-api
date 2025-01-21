@@ -1,9 +1,4 @@
-use crate::{
-    models::{classroom::db::DbClassroom, traits::FetchLevelVariant},
-    permissions::ActionType,
-    prelude::*,
-};
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use crate::{models::classroom::db::DbClassroom, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

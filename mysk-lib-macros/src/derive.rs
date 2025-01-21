@@ -1,7 +1,3 @@
-#![forbid(unsafe_code)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::missing_panics_doc)]
-
 use darling::FromDeriveInput;
 use proc_macro::{self, TokenStream};
 use quote::quote;
@@ -20,16 +16,18 @@ struct GetByIdOpts {
     table: Option<String>,
 }
 
-#[proc_macro_derive(GetById, attributes(get_by_id))]
-pub fn derive(input: TokenStream) -> TokenStream {
+pub(crate) fn get_by_id(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let opts = GetByIdOpts::from_derive_input(&input).expect("Wrong options");
     let DeriveInput { ident, .. } = input;
 
     let expanded = match opts.table {
         None => quote! {
+            use crate::models::traits::BaseQuery as _;
+
+            #[automatically_derived]
             #[::async_trait::async_trait]
-            impl GetById for #ident {
+            impl crate::models::traits::GetById for #ident {
                 async fn get_by_id<'c, A, T>(
                     conn: A,
                     id: T,
@@ -42,7 +40,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 {
                     let mut conn = conn.acquire().await?;
 
-                    let query = format!("{} WHERE id = $1", Self::base_query());
+                    let query = format!("{} WHERE id = $1", <Self as crate::models::traits::BaseQuery>::base_query());
                     ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_one(&mut *conn)
@@ -62,7 +60,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 {
                     let mut conn = conn.acquire().await?;
 
-                    let query = format!("{} WHERE id = ANY($1)", Self::base_query());
+                    let query = format!("{} WHERE id = ANY($1)", <Self as crate::models::traits::BaseQuery>::base_query());
                     ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_all(&mut *conn)
@@ -71,8 +69,11 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         },
         Some(table) => quote! {
+            use crate::models::traits::BaseQuery as _;
+
+            #[automatically_derived]
             #[::async_trait::async_trait]
-            impl GetById for #ident {
+            impl crate::models::traits::GetById for #ident {
                 async fn get_by_id<'c, A, T>(
                     conn: A,
                     id: T,
@@ -85,7 +86,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 {
                     let mut conn = conn.acquire().await?;
 
-                    let query = format!("{} WHERE {}.id = $1", Self::base_query(), #table);
+                    let query = format!("{} WHERE {}.id = $1", <Self as crate::models::traits::BaseQuery>::base_query(), #table);
                     ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_one(&mut *conn)
@@ -105,7 +106,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
                 {
                     let mut conn = conn.acquire().await?;
 
-                    let query = format!("{} WHERE {}.id = ANY($1)", Self::base_query(), #table);
+                    let query = format!("{} WHERE {}.id = ANY($1)", <Self as crate::models::traits::BaseQuery>::base_query(), #table);
                     ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_all(&mut *conn)
@@ -118,8 +119,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-#[proc_macro_derive(BaseQuery, attributes(base_query, count_query))]
-pub fn derive_base_query(input: TokenStream) -> TokenStream {
+pub(crate) fn base_query(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let opts = BaseQueryOpts::from_derive_input(&input).expect("Wrong options");
     let DeriveInput { ident, .. } = input;
@@ -128,11 +128,14 @@ pub fn derive_base_query(input: TokenStream) -> TokenStream {
     let count_query = opts.count_query;
 
     let expanded = quote! {
-        impl BaseQuery for #ident {
+        #[automatically_derived]
+        impl crate::models::traits::BaseQuery for #ident {
+            #[must_use]
             fn base_query() -> &'static str {
                 #query
             }
 
+            #[must_use]
             fn count_query() -> &'static str {
                 #count_query
             }

@@ -1,8 +1,10 @@
-use super::{
-    fragment::{query_param_push_bind, QueryParamType},
-    QueryFragment,
+use crate::{
+    common::{requests::QueryParam, string::FlexibleMultiLangString},
+    query::{
+        fragment::{query_param_push_bind, QueryParamType},
+        QueryFragment,
+    },
 };
-use crate::common::{requests::QueryParam, string::FlexibleMultiLangString};
 use sqlx::{Postgres, QueryBuilder};
 
 /// A collection of multiple `QueryFragment`s.

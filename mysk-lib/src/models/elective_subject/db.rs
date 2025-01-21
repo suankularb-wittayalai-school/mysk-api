@@ -16,8 +16,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, Acquire, FromRow, PgPool, Postgres, QueryBuilder, Row as _};
 use uuid::Uuid;
@@ -244,9 +243,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
-    ) where
-        Self: Sized,
-    {
+    ) {
         let mut where_sections: Vec<SqlSection> = Vec::new();
 
         if let Some(filter) = filter {
@@ -299,10 +296,7 @@ impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSu
         filter: Option<&FilterConfig<QueryableElectiveSubject>>,
         sort: Option<&SortingConfig<SortableElectiveSubject>>,
         pagination: Option<&PaginationConfig>,
-    ) -> Result<Vec<Self>>
-    where
-        Self: Sized,
-    {
+    ) -> Result<Vec<Self>> {
         let mut query = QueryBuilder::new(DbElectiveSubject::base_query());
         Self::build_shared_query(&mut query, filter);
 

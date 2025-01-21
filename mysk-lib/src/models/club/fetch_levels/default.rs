@@ -6,7 +6,7 @@ use crate::{
     models::{
         club::db::DbClub,
         contact::Contact,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
     },
     permissions::Authorizer,
     prelude::*,
