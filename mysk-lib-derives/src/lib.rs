@@ -28,21 +28,42 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let expanded = match opts.table {
         None => quote! {
-            use async_trait::async_trait as __mysk_derives_internal_async_trait;
-
-            #[__mysk_derives_internal_async_trait]
+            #[::async_trait::async_trait]
             impl GetById for #ident {
-                async fn get_by_id<'a, A: Send>(conn: A, id: Uuid) -> std::result::Result<Self, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                async fn get_by_id<'c, A, T>(
+                    conn: A,
+                    id: T,
+                ) -> ::std::result::Result<Self, sqlx::Error>
+                where
+                    A: sqlx::Acquire<'c, Database = sqlx::Postgres> + Send,
+                    T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
+                        + ::sqlx::Type<::sqlx::Postgres>
+                        + Send,
+                {
                     let mut conn = conn.acquire().await?;
-                    sqlx::query_as::<_, #ident>(format!("{} WHERE id = $1", Self::base_query()).as_str())
+
+                    let query = format!("{} WHERE id = $1", Self::base_query());
+                    ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_one(&mut *conn)
                         .await
                 }
 
-                async fn get_by_ids<'a, A: Send>(conn: A, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                async fn get_by_ids<'c, A, T>(
+                    conn: A,
+                    id: Vec<T>,
+                ) -> ::std::result::Result<Vec<Self>, sqlx::Error>
+                where
+                    A: ::sqlx::Acquire<'c, Database = ::sqlx::Postgres> + Send,
+                    T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
+                        + ::sqlx::Type<::sqlx::Postgres>
+                        + ::sqlx::postgres::PgHasArrayType
+                        + Send,
+                {
                     let mut conn = conn.acquire().await?;
-                    sqlx::query_as::<_, #ident>(format!("{} WHERE id = ANY($1)", Self::base_query()).as_str())
+
+                    let query = format!("{} WHERE id = ANY($1)", Self::base_query());
+                    ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_all(&mut *conn)
                         .await
@@ -50,21 +71,42 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         },
         Some(table) => quote! {
-            use async_trait::async_trait as __mysk_derives_internal_async_trait;
-
-            #[__mysk_derives_internal_async_trait]
+            #[::async_trait::async_trait]
             impl GetById for #ident {
-                async fn get_by_id<'a, A: Send>(conn: A, id: Uuid) -> std::result::Result<Self, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                async fn get_by_id<'c, A, T>(
+                    conn: A,
+                    id: T,
+                ) -> ::std::result::Result<Self, sqlx::Error>
+                where
+                    A: ::sqlx::Acquire<'c, Database = ::sqlx::Postgres> + Send,
+                    T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
+                        + ::sqlx::Type<::sqlx::Postgres>
+                        + Send,
+                {
                     let mut conn = conn.acquire().await?;
-                    sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = $1", Self::base_query(), #table).as_str())
+
+                    let query = format!("{} WHERE {}.id = $1", Self::base_query(), #table);
+                    ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_one(&mut *conn)
                         .await
                 }
 
-                async fn get_by_ids<'a, A: Send>(conn: A, id: Vec<Uuid>) -> std::result::Result<Vec<Self>, sqlx::Error> where A: sqlx::Acquire<'a, Database = sqlx::Postgres> {
+                async fn get_by_ids<'c, A, T>(
+                    conn: A,
+                    id: Vec<T>,
+                ) -> ::std::result::Result<Vec<Self>, sqlx::Error>
+                where
+                    A: ::sqlx::Acquire<'c, Database = ::sqlx::Postgres> + Send,
+                    T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
+                        + ::sqlx::Type<::sqlx::Postgres>
+                        + ::sqlx::postgres::PgHasArrayType
+                        + Send,
+                {
                     let mut conn = conn.acquire().await?;
-                    sqlx::query_as::<_, #ident>(format!("{} WHERE {}.id = ANY($1)", Self::base_query(), #table).as_str())
+
+                    let query = format!("{} WHERE {}.id = ANY($1)", Self::base_query(), #table);
+                    ::sqlx::query_as::<_, #ident>(&query)
                         .bind(id)
                         .fetch_all(&mut *conn)
                         .await

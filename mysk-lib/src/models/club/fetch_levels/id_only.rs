@@ -1,12 +1,9 @@
 use crate::{
-    common::requests::FetchLevel,
     models::{club::db::DbClub, traits::FetchLevelVariant},
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

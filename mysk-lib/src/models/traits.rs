@@ -8,7 +8,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use mysk_lib_macros::traits::db::BaseQuery;
-use sqlx::{PgPool, Postgres, QueryBuilder};
+use sqlx::{postgres::PgHasArrayType, Encode, PgPool, Postgres, QueryBuilder, Type as SqlxType};
 use std::fmt::Display;
 
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
@@ -46,23 +46,25 @@ pub trait TopLevelGetById
 where
     Self: Sized,
 {
-    type Id;
-
-    async fn get_by_id(
+    async fn get_by_id<T>(
         pool: &PgPool,
-        id: Self::Id,
+        id: T,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Self>;
+    ) -> Result<Self>
+    where
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send;
 
-    async fn get_by_ids(
+    async fn get_by_ids<T>(
         pool: &PgPool,
-        ids: Vec<Self::Id>,
+        ids: Vec<T>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Vec<Self>>;
+    ) -> Result<Vec<Self>>
+    where
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
 }
 
 #[async_trait]

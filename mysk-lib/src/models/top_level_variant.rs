@@ -7,9 +7,8 @@ use crate::{
 use async_trait::async_trait;
 use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize, Serializer};
-use sqlx::PgPool;
+use sqlx::{postgres::PgHasArrayType, Encode, PgPool, Postgres, Type as SqlxType};
 use std::marker::PhantomData;
-use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize)]
 pub enum TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
@@ -121,15 +120,16 @@ where
     Default: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
     Detailed: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
 {
-    type Id = Uuid;
-
-    async fn get_by_id(
+    async fn get_by_id<T>(
         pool: &PgPool,
-        id: Self::Id,
+        id: T,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Self> {
+    ) -> Result<Self>
+    where
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send,
+    {
         let variant = DbVariant::get_by_id(pool, id).await?;
 
         Self::from_table(
@@ -142,13 +142,16 @@ where
         .await
     }
 
-    async fn get_by_ids(
+    async fn get_by_ids<T>(
         pool: &PgPool,
-        ids: Vec<Self::Id>,
+        ids: Vec<T>,
         fetch_level: Option<&FetchLevel>,
         descendant_fetch_level: Option<&FetchLevel>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Vec<Self>>
+    where
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send,
+    {
         let variants = DbVariant::get_by_ids(pool, ids).await?;
         let fetch_level = fetch_level.copied();
         let descendant_fetch_level = descendant_fetch_level.copied();

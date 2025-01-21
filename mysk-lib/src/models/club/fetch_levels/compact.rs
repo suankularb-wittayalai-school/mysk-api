@@ -1,16 +1,11 @@
 use crate::{
-    common::{
-        requests::FetchLevel,
-        string::{FlexibleMultiLangString, MultiLangString},
-    },
+    common::string::{FlexibleMultiLangString, MultiLangString},
     models::{club::db::DbClub, traits::FetchLevelVariant},
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType},
     prelude::*,
 };
-use async_trait::async_trait;
 use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

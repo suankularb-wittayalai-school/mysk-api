@@ -10,13 +10,13 @@
 #[macro_export]
 macro_rules! impl_fetch_level_variant_from {
     ($table: ident, $fetch_level: ident, $fetch_variant_type: ty, $db_type: ty) => {
-        #[async_trait]
+        #[::async_trait::async_trait]
         impl FetchLevelVariant<$db_type> for $fetch_variant_type {
             async fn from_table(
-                pool: &PgPool,
+                pool: &::sqlx::PgPool,
                 table: $db_type,
-                _: Option<&FetchLevel>,
-                authorizer: &dyn Authorizer,
+                _: Option<&crate::common::requests::FetchLevel>,
+                authorizer: &dyn crate::permissions::Authorizer,
             ) -> Result<Self> {
                 $crate::paste::paste! {
                     authorizer

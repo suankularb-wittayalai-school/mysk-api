@@ -1,6 +1,8 @@
 use async_trait::async_trait;
-use sqlx::{Acquire, Error as SqlxError, Postgres};
-use uuid::Uuid;
+use sqlx::{
+    postgres::PgHasArrayType, Acquire, Encode, Error as SqlxError, Postgres, Type as SqlxType,
+};
+// use uuid::Uuid;
 
 pub trait BaseQuery {
     fn base_query() -> &'static str;
@@ -9,15 +11,14 @@ pub trait BaseQuery {
 }
 
 #[async_trait]
-pub trait GetById: BaseQuery
-where
-    Self: Sized,
-{
-    async fn get_by_id<'a, A: Send>(conn: A, id: Uuid) -> Result<Self, SqlxError>
+pub trait GetById: BaseQuery + Sized {
+    async fn get_by_id<'c, A, T>(conn: A, id: T) -> Result<Self, SqlxError>
     where
-        A: Acquire<'a, Database = Postgres>;
+        A: Acquire<'c, Database = Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send;
 
-    async fn get_by_ids<'a, A: Send>(conn: A, ids: Vec<Uuid>) -> Result<Vec<Self>, SqlxError>
+    async fn get_by_ids<'c, A, T>(conn: A, ids: Vec<T>) -> Result<Vec<Self>, SqlxError>
     where
-        A: Acquire<'a, Database = Postgres>;
+        A: Acquire<'c, Database = Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
 }
