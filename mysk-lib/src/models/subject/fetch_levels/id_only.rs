@@ -1,4 +1,5 @@
-use crate::{models::subject::db::DbSubject, prelude::*};
+use crate::models::subject::db::DbSubject;
+use mysk_lib_macros::impl_id_only_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

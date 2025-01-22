@@ -1,4 +1,5 @@
-use crate::{models::elective_trade_offer::db::DbElectiveTradeOffer, prelude::*};
+use crate::models::elective_trade_offer::db::DbElectiveTradeOffer;
+use mysk_lib_macros::impl_id_only_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -10,5 +11,5 @@ pub struct IdOnlyElectiveTradeOffer {
 impl_id_only_variant_from!(
     elective_trade_offer,
     IdOnlyElectiveTradeOffer,
-    DbElectiveTradeOffer
+    DbElectiveTradeOffer,
 );

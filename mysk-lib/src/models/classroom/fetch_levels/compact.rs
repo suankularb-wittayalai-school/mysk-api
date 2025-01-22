@@ -1,4 +1,5 @@
-use crate::{models::classroom::db::DbClassroom, prelude::*};
+use crate::models::classroom::db::DbClassroom;
+use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

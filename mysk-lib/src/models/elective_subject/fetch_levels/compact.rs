@@ -1,6 +1,5 @@
-use crate::{
-    common::string::MultiLangString, models::elective_subject::db::DbElectiveSubject, prelude::*,
-};
+use crate::{common::string::MultiLangString, models::elective_subject::db::DbElectiveSubject};
+use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -36,5 +35,5 @@ impl_fetch_level_variant_from!(
     elective_subject,
     Compact,
     CompactElectiveSubject,
-    DbElectiveSubject
+    DbElectiveSubject,
 );

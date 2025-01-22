@@ -1,8 +1,8 @@
 use crate::{
     common::string::{FlexibleMultiLangString, MultiLangString},
     models::club::db::DbClub,
-    prelude::*,
 };
+use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

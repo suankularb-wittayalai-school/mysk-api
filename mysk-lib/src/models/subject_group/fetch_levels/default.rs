@@ -1,7 +1,6 @@
-use crate::{
-    common::string::MultiLangString, models::subject_group::db::DbSubjectGroup, prelude::*,
-};
+use crate::{common::string::MultiLangString, models::subject_group::db::DbSubjectGroup};
 use chrono::{DateTime, Utc};
+use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

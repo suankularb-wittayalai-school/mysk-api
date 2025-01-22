@@ -1,4 +1,5 @@
-use crate::{models::contact::db::DbContact, prelude::*};
+use crate::models::contact::db::DbContact;
+use mysk_lib_macros::impl_id_only_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
