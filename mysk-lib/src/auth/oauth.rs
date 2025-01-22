@@ -123,10 +123,7 @@ pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> Result<(S
     Ok((
         format!(
             "https://accounts.google.com/o/oauth2/v2/auth?{}",
-            serde_qs::to_string(&query_params).map_err(|_| Error::InternalSeverError(
-                "Internal server error".to_string(),
-                "/auth/oauth/google".to_string()
-            ))?,
+            serde_qs::to_string(&query_params)?,
         ),
         state,
     ))
@@ -162,67 +159,30 @@ pub async fn exchange_oauth_code(
     let code_exchange_response = Client::new()
         .post(format!(
             "https://oauth2.googleapis.com/token?{}",
-            serde_qs::to_string(&query_params).map_err(|_| Error::InternalSeverError(
-                "Internal server error".to_string(),
-                "/auth/oauth/google".to_string()
-            ))?,
+            serde_qs::to_string(&query_params)?,
         ))
         .header(CONTENT_LENGTH, HeaderValue::from_static("0"))
         .send()
-        .await;
+        .await?;
 
-    match code_exchange_response {
-        Ok(response) => Ok(response
-            .json::<CodeExchangeResponse>()
-            .await
-            .map_err(|_| {
-                Error::InternalSeverError(
-                    "Internal server error".to_string(),
-                    "/auth/oauth/google".to_string(),
-                )
-            })?
-            .id_token),
-        Err(_) => Err(Error::InternalSeverError(
-            "Internal server error".to_string(),
-            "/auth/oauth/google".to_string(),
-        )),
-    }
+    Ok(code_exchange_response
+        .json::<CodeExchangeResponse>()
+        .await?
+        .id_token)
 }
 
 pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayload> {
     let public_keys_url = "https://www.googleapis.com/oauth2/v3/certs";
-    let public_keys_response = Client::new().get(public_keys_url).send().await;
-
-    let public_keys_response = match public_keys_response {
-        Ok(response) => response,
-        Err(err) => {
-            return Err(Error::InternalSeverError(
-                err.to_string(),
-                "verify_id_token".to_string(),
-            ))
-        }
-    };
-
+    let public_keys_response = Client::new().get(public_keys_url).send().await?;
     if !public_keys_response.status().is_success() {
         return Err(Error::InternalSeverError(
-            "Failed to get public keys".to_string(),
+            "Failed to fetch public keys from googleapis".to_string(),
             "verify_id_token".to_string(),
         ));
     }
 
     // public key response is array of keys convert to hashmap with kid as key
-    let public_keys = public_keys_response.json().await;
-
-    let public_keys: GooglePublicKeys = match public_keys {
-        Ok(keys) => keys,
-        Err(err) => {
-            return Err(Error::InternalSeverError(
-                err.to_string(),
-                "verify_id_token".to_string(),
-            ))
-        }
-    };
-
+    let public_keys = public_keys_response.json::<GooglePublicKeys>().await?;
     let public_keys: HashMap<String, String> = public_keys.keys.into_iter().fold(
         HashMap::new(),
         |mut acc: HashMap<String, String>, key| {
@@ -231,52 +191,21 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
         },
     );
 
-    let header = match jsonwebtoken::decode_header(id_token) {
-        Ok(header) => header,
-        Err(err) => {
-            return Err(Error::InternalSeverError(
-                err.to_string(),
-                "verify_id_token".to_string(),
-            ))
-        }
-    };
-
+    let header = jsonwebtoken::decode_header(id_token)?;
     let Some(kid) = header.kid else {
         return Err(Error::InternalSeverError(
-            "No kid in header".to_string(),
+            "No `kid` field in header".to_string(),
             "verify_id_token".to_string(),
         ));
     };
 
-    let public_key = public_keys[kid.as_str()].as_str();
-
-    let public_key = jsonwebtoken::DecodingKey::from_rsa_components(public_key, "AQAB");
-
-    let public_key = match public_key {
-        Ok(key) => key,
-        Err(err) => {
-            return Err(Error::InternalSeverError(
-                err.to_string(),
-                "verify_id_token".to_string(),
-            ))
-        }
-    };
+    let public_key = jsonwebtoken::DecodingKey::from_rsa_components(&public_keys[&kid], "AQAB")?;
 
     let mut validation = jsonwebtoken::Validation::new(header.alg);
-
     validation.set_audience(&[env.google_oauth_client_id.clone()]);
     validation.iss = Some(HashSet::from(["https://accounts.google.com".to_owned()]));
 
-    let token_payload = jsonwebtoken::decode::<TokenPayload>(id_token, &public_key, &validation);
-    let token_payload = match token_payload {
-        Ok(payload) => payload,
-        Err(err) => {
-            return Err(Error::InternalSeverError(
-                err.to_string(),
-                "verify_id_token".to_string(),
-            ))
-        }
-    };
+    let token_payload = jsonwebtoken::decode::<TokenPayload>(id_token, &public_key, &validation)?;
 
     Ok(token_payload.claims)
 }

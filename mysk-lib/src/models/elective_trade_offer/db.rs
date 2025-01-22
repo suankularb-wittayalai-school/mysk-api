@@ -96,13 +96,10 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
             }
         }
 
-        query
+        Ok(query
             .build_query_as::<DbElectiveTradeOffer>()
             .fetch_all(pool)
-            .await
-            .map_err(|e| {
-                Error::InternalSeverError(e.to_string(), "DbElectiveTradeOffer::query".to_string())
-            })
+            .await?)
     }
 
     async fn response_pagination(
@@ -113,20 +110,8 @@ impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElec
         let mut query = QueryBuilder::new(DbElectiveTradeOffer::count_query());
         Self::build_shared_query(&mut query, filter);
 
-        let count = u32::try_from(
-            query
-                .build()
-                .fetch_one(pool)
-                .await
-                .map_err(|e| {
-                    Error::InternalSeverError(
-                        e.to_string(),
-                        "DbElectiveTradeOffer::response_pagination".to_string(),
-                    )
-                })?
-                .get::<i64, _>("count"),
-        )
-        .expect("Irrecoverable error, i64 is out of bounds for u32");
+        let count = u32::try_from(query.build().fetch_one(pool).await?.get::<i64, _>("count"))
+            .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

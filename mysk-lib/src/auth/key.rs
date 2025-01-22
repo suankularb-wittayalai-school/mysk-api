@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use rand::{rngs::OsRng, RngCore};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::{prelude::FromRow, PgPool};
+use sqlx::{prelude::FromRow, query, PgPool};
 use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
@@ -45,7 +45,7 @@ impl ApiKey {
         hasher.update(long_token.as_bytes());
         let hash = bs58::encode(hasher.finalize()).into_string();
 
-        let res = sqlx::query!(
+        query!(
             "
             INSERT INTO user_api_keys (user_id, short_token, long_token_hash, expire_at)
             VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 DAY'))
@@ -59,15 +59,9 @@ impl ApiKey {
             },
         )
         .execute(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(_) => Ok(format!("mysk_{short_token}_{long_token}")),
-            Err(err) => Err(Error::InternalSeverError(
-                err.to_string(),
-                "ApiKey Model".to_string(),
-            )),
-        }
+        Ok(format!("mysk_{short_token}_{long_token}"))
     }
 }
 

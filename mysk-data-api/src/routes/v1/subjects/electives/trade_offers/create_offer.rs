@@ -104,7 +104,7 @@ async fn create_trade_offer(
     };
 
     // Gets the elective subject of the receiver, and also checks whether they're in a classroom
-    let receiver_elective_subject = match ElectiveSubject::get_by_id(
+    let ElectiveSubject::Compact(receiver_elective_subject, _) = ElectiveSubject::get_by_id(
         pool,
         receiver_elective_subject_id,
         Some(&FetchLevel::Compact),
@@ -112,27 +112,17 @@ async fn create_trade_offer(
         &*authorizer,
     )
     .await
-    {
-        Ok(ElectiveSubject::Compact(receiver_elective_subject, _)) => receiver_elective_subject,
-        Err(Error::InvalidPermission(err, _)) => {
-            return Err(Error::InvalidPermission(
-                err,
-                "/subjects/electives/trade-offers".to_string(),
-            ));
+    .map_err(|e| match e {
+        Error::InvalidPermission(err, _) => {
+            Error::InvalidPermission(err, "/subjects/electives/trade-offers".to_string())
         }
-        Err(Error::EntityNotFound(err, _)) => {
-            return Err(Error::EntityNotFound(
-                err,
-                "/subjects/electives/trade-offers".to_string(),
-            ));
+        Error::EntityNotFound(err, _) => {
+            Error::EntityNotFound(err, "/subjects/electives/trade-offers".to_string())
         }
-        Err(Error::InternalSeverError(err, _)) => {
-            return Err(Error::InternalSeverError(
-                err,
-                "/subjects/electives/trade-offers".to_string(),
-            ));
-        }
-        _ => unreachable!(),
+        _ => e,
+    })?
+    else {
+        unreachable!()
     };
 
     // Checks if the sender is eligible to enroll in the receiver's elective session, also checks
@@ -161,7 +151,7 @@ async fn create_trade_offer(
     };
 
     // Gets the elective subject of the sender
-    let sender_elective_subject = match ElectiveSubject::get_by_id(
+    let ElectiveSubject::Compact(sender_elective_subject, _) = ElectiveSubject::get_by_id(
         pool,
         sender_elective_subject_id,
         Some(&FetchLevel::Compact),
@@ -169,21 +159,17 @@ async fn create_trade_offer(
         &*authorizer,
     )
     .await
-    {
-        Ok(ElectiveSubject::Compact(sender_elective_subject, _)) => sender_elective_subject,
-        Err(Error::EntityNotFound(err, _)) => {
-            return Err(Error::EntityNotFound(
-                err,
-                "/subjects/electives/trade-offers".to_string(),
-            ));
+    .map_err(|e| match e {
+        Error::InvalidPermission(err, _) => {
+            Error::InvalidPermission(err, "/subjects/electives/trade-offers".to_string())
         }
-        Err(Error::InternalSeverError(err, _)) => {
-            return Err(Error::InternalSeverError(
-                err,
-                "/subjects/electives/trade-offers".to_string(),
-            ));
+        Error::EntityNotFound(err, _) => {
+            Error::EntityNotFound(err, "/subjects/electives/trade-offers".to_string())
         }
-        _ => unreachable!(),
+        _ => e,
+    })?
+    else {
+        unreachable!()
     };
 
     // Checks if the receiver is eligible to enroll in the sender's elective session

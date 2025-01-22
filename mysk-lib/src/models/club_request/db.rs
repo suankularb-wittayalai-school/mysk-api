@@ -95,13 +95,10 @@ impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
             }
         }
 
-        query
+        Ok(query
             .build_query_as::<DbClubRequest>()
             .fetch_all(pool)
-            .await
-            .map_err(|e| {
-                Error::InternalSeverError(e.to_string(), "DbClubRequest::query".to_string())
-            })
+            .await?)
     }
 
     async fn response_pagination(
@@ -112,20 +109,8 @@ impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
         let mut query = QueryBuilder::new(DbClubRequest::count_query());
         Self::build_shared_query(&mut query, filter);
 
-        let count = u32::try_from(
-            query
-                .build()
-                .fetch_one(pool)
-                .await
-                .map_err(|e| {
-                    Error::InternalSeverError(
-                        e.to_string(),
-                        "DbClubRequest::response_pagination".to_string(),
-                    )
-                })?
-                .get::<i64, _>("count"),
-        )
-        .expect("Irrecoverable error, i64 is out of bounds for u32");
+        let count = u32::try_from(query.build().fetch_one(pool).await?.get::<i64, _>("count"))
+            .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

@@ -6,7 +6,7 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header};
 use mysk_lib::{
     auth::oauth::{
         exchange_oauth_code, generate_oauth_init_url, verify_id_token, GoogleUserResult,
@@ -96,37 +96,29 @@ pub async fn google_oauth_handler(
         iat,
     };
 
-    let token = encode(
+    let token = jsonwebtoken::encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(jwt_secret.as_ref()),
+    )?;
+
+    let cookie = Cookie::build("token", token.clone())
+        .secure(true)
+        .http_only(true)
+        .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
+        .same_site(actix_web::cookie::SameSite::Strict)
+        .finish();
+
+    let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
+        GoogleTokenResponse {
+            access_token: token,
+            expires_in: data.env.token_max_age * 60,
+            token_type: "Bearer".to_string(),
+            scope: "openid email profile".to_string(),
+            id_token,
+        },
+        None,
     );
 
-    match token {
-        Ok(token) => {
-            let cookie = Cookie::build("token", token.clone())
-                .secure(true)
-                .http_only(true)
-                .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
-                .same_site(actix_web::cookie::SameSite::Strict)
-                .finish();
-
-            let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
-                GoogleTokenResponse {
-                    access_token: token,
-                    expires_in: data.env.token_max_age * 60,
-                    token_type: "Bearer".to_string(),
-                    scope: "openid email profile".to_string(),
-                    id_token,
-                },
-                None,
-            );
-
-            Ok(HttpResponse::Ok().cookie(cookie).json(response))
-        }
-        Err(err) => Err(Error::InternalSeverError(
-            err.to_string(),
-            "/auth/oauth/google".to_string(),
-        )),
-    }
+    Ok(HttpResponse::Ok().cookie(cookie).json(response))
 }

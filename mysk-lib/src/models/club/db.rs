@@ -46,15 +46,9 @@ impl DbClub {
             club_id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.contact_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClub::get_club_contacts".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.contact_id).collect())
     }
 
     pub async fn get_club_members(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
@@ -68,15 +62,9 @@ impl DbClub {
             SubmissionStatus::Approved as SubmissionStatus,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.student_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClub::get_club_members".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.student_id).collect())
     }
 
     pub async fn get_club_staffs(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
@@ -86,15 +74,9 @@ impl DbClub {
             get_current_academic_year(None),
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.student_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClub::get_club_staffs".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.student_id).collect())
     }
 }
 
@@ -179,11 +161,7 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
             }
         }
 
-        query
-            .build_query_as::<DbClub>()
-            .fetch_all(pool)
-            .await
-            .map_err(|e| Error::InternalSeverError(e.to_string(), "DbClub::query".to_string()))
+        Ok(query.build_query_as::<DbClub>().fetch_all(pool).await?)
     }
 
     async fn response_pagination(
@@ -194,20 +172,8 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
         let mut query = QueryBuilder::new(DbClub::count_query());
         Self::build_shared_query(&mut query, filter);
 
-        let count = u32::try_from(
-            query
-                .build()
-                .fetch_one(pool)
-                .await
-                .map_err(|e| {
-                    Error::InternalSeverError(
-                        e.to_string(),
-                        "DbClub::response_pagination".to_string(),
-                    )
-                })?
-                .get::<i64, _>("count"),
-        )
-        .expect("Irrecoverable error, i64 is out of bounds for u32");
+        let count = u32::try_from(query.build().fetch_one(pool).await?.get::<i64, _>("count"))
+            .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

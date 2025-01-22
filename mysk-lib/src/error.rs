@@ -134,6 +134,48 @@ impl From<SqlxError> for Error {
     }
 }
 
+impl From<serde_qs::Error> for Error {
+    fn from(value: serde_qs::Error) -> Self {
+        #[cfg(debug_assertions)]
+        return Error::InternalSeverError(
+            value.to_string(),
+            "/auth/oauth/google (serde_qs)".to_string(),
+        );
+
+        #[cfg(not(debug_assertions))]
+        return Error::InternalSeverError(
+            "Internal server error".to_string(),
+            "/auth/oauth/google".to_string(),
+        );
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(value: reqwest::Error) -> Self {
+        #[cfg(debug_assertions)]
+        return Error::InternalSeverError(value.to_string(), "reqwest".to_string());
+
+        #[cfg(not(debug_assertions))]
+        return Error::InternalSeverError(
+            "Internal server error".to_string(),
+            "reqwest".to_string(),
+        );
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for Error {
+    fn from(value: jsonwebtoken::errors::Error) -> Self {
+        #[cfg(debug_assertions)]
+        return Error::InternalSeverError(value.to_string(), "jsonwebtoken".to_string());
+
+        #[cfg(not(debug_assertions))]
+        return Error::InternalSeverError(
+            "Internal server error".to_string(),
+            "jsonwebtoken".to_string(),
+        );
+    }
+}
+
 impl From<&Error> for HttpResponse {
     fn from(value: &Error) -> Self {
         let response = ErrorResponseType::new(value.into(), None);

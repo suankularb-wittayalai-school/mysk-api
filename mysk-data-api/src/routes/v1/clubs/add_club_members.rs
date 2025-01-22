@@ -69,8 +69,14 @@ pub async fn add_club_members(
         &*authorizer,
     )
     .await
-    {
-        Ok(Student::Default(student, _)) => {
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Invitee student not found".to_string(),
+            format!("/clubs/{club_id}/add"),
+        ),
+        _ => e,
+    })? {
+        Student::Default(student, _) => {
             if student.classroom.is_none() {
                 return Err(Error::EntityNotFound(
                     "Invitee student not found".to_string(),
@@ -78,17 +84,11 @@ pub async fn add_club_members(
                 ));
             }
         }
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Invitee student not found".to_string(),
-                format!("/clubs/{club_id}/add"),
-            ));
-        }
         _ => unreachable!("Student::get_by_id should always return a Default variant"),
     };
 
     // Check if the club exists
-    let club = match Club::get_by_id(
+    let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
         Some(&FetchLevel::Detailed),
@@ -96,15 +96,15 @@ pub async fn add_club_members(
         &*authorizer,
     )
     .await
-    {
-        Ok(Club::Detailed(club, _)) => club,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club contact not found".to_string(),
-                format!("/clubs/{club_id}/add"),
-            ));
-        }
-        _ => unreachable!("Club::get_by_id should always return a Detailed variant"),
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Club contact not found".to_string(),
+            format!("/clubs/{club_id}/add"),
+        ),
+        _ => e,
+    })?
+    else {
+        unreachable!("Club::get_by_id should always return a Detailed variant")
     };
 
     // Check if the inviting student is a staff of the club

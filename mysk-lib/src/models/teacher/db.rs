@@ -55,15 +55,9 @@ impl DbTeacher {
             teacher_id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbTeacher::get_teacher_contacts".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.id).collect())
     }
 
     pub async fn get_teacher_advisor_at(
@@ -84,15 +78,9 @@ impl DbTeacher {
             },
         )
         .fetch_optional(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.map(|r| r.classroom_id)),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbTeacher::get_teacher_advisor_at".to_string(),
-            )),
-        }
+        Ok(res.map(|r| r.classroom_id))
     }
 
     pub async fn get_teacher_subject_group(pool: &PgPool, teacher_id: Uuid) -> Result<Option<i64>> {
@@ -103,15 +91,9 @@ impl DbTeacher {
             teacher_id
         )
         .fetch_optional(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.map(|r| r.subject_group_id)),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbTeacher::get_teacher_subject_group".to_string(),
-            )),
-        }
+        Ok(res.map(|r| r.subject_group_id))
     }
 
     pub async fn get_subject_in_charge(
@@ -128,7 +110,7 @@ impl DbTeacher {
             },
         )
         .fetch_all(pool)
-        .await;
+        .await?;
         let as_co_teacher = query!(
             "SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2",
             teacher_id,
@@ -138,34 +120,15 @@ impl DbTeacher {
             },
         )
         .fetch_all(pool)
-        .await;
-
-        let as_teacher = match as_teacher {
-            Ok(res) => res,
-            Err(e) => {
-                return Err(Error::InternalSeverError(
-                    e.to_string(),
-                    "DbTeacher::get_subject_in_charge".to_string(),
-                ));
-            }
-        };
-        let as_co_teacher = match as_co_teacher {
-            Ok(res) => res,
-            Err(e) => {
-                return Err(Error::InternalSeverError(
-                    e.to_string(),
-                    "DbTeacher::get_subject_in_charge".to_string(),
-                ));
-            }
-        };
+        .await?;
 
         let mut result = Vec::with_capacity(as_teacher.len() + as_co_teacher.len());
-        for record in as_teacher {
-            result.push(record.subject_id);
-        }
-        for record in as_co_teacher {
-            result.push(record.subject_id);
-        }
+        as_teacher
+            .into_iter()
+            .for_each(|record| result.push(record.subject_id));
+        as_co_teacher
+            .into_iter()
+            .for_each(|record| result.push(record.subject_id));
 
         Ok(result)
     }
@@ -233,11 +196,7 @@ impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
             }
         }
 
-        query
-            .build_query_as::<DbTeacher>()
-            .fetch_all(pool)
-            .await
-            .map_err(|e| Error::InternalSeverError(e.to_string(), "DbTeacher::query".to_string()))
+        Ok(query.build_query_as::<DbTeacher>().fetch_all(pool).await?)
     }
 
     async fn response_pagination(
@@ -248,20 +207,8 @@ impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
         let mut query = QueryBuilder::new(DbTeacher::count_query());
         Self::build_shared_query(&mut query, filter);
 
-        let count = u32::try_from(
-            query
-                .build()
-                .fetch_one(pool)
-                .await
-                .map_err(|e| {
-                    Error::InternalSeverError(
-                        e.to_string(),
-                        "DbTeacher::response_pagination".to_string(),
-                    )
-                })?
-                .get::<i64, _>("count"),
-        )
-        .expect("Irrecoverable error, i64 is out of bounds for u32");
+        let count = u32::try_from(query.build().fetch_one(pool).await?.get::<i64, _>("count"))
+            .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

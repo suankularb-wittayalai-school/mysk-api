@@ -34,16 +34,11 @@ pub struct DbStudent {
 
 impl DbStudent {
     pub async fn get_student_from_user_id(pool: &PgPool, user_id: Uuid) -> Result<Option<Uuid>> {
-        query!("SELECT id FROM students WHERE user_id = $1", user_id)
+        let res = query!("SELECT id FROM students WHERE user_id = $1", user_id)
             .fetch_optional(pool)
-            .await
-            .map(|res| res.map(|r| r.id))
-            .map_err(|e| {
-                Error::InternalSeverError(
-                    e.to_string(),
-                    "DbStudent::get_student_from_user_id".to_string(),
-                )
-            })
+            .await?;
+
+        Ok(res.map(|r| r.id))
     }
 
     pub async fn get_student_contacts(pool: &PgPool, student_id: Uuid) -> Result<Vec<Uuid>> {
@@ -58,15 +53,9 @@ impl DbStudent {
             student_id,
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbStudent::get_student_contacts".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.id).collect())
     }
 
     pub async fn get_student_classroom<'a, A>(
@@ -81,7 +70,7 @@ impl DbStudent {
         let res = query!(
             "
             SELECT classroom_id, class_no FROM classroom_students
-            INNER JOIN classrooms ON classrooms.id = classroom_id
+            JOIN classrooms ON classrooms.id = classroom_id
             WHERE student_id = $1 AND year = $2
             ",
             student_id,
@@ -91,21 +80,12 @@ impl DbStudent {
             },
         )
         .fetch_optional(&mut *conn)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => match res {
-                Some(res) => Ok(Some(ClassroomWClassNo {
-                    id: res.classroom_id,
-                    class_no: res.class_no,
-                })),
-                None => Ok(None),
-            },
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbStudent::get_student_classroom".to_string(),
-            )),
-        }
+        Ok(res.map(|res| ClassroomWClassNo {
+            id: res.classroom_id,
+            class_no: res.class_no,
+        }))
     }
 }
 
@@ -171,11 +151,7 @@ impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
             }
         }
 
-        query
-            .build_query_as::<DbStudent>()
-            .fetch_all(pool)
-            .await
-            .map_err(|e| Error::InternalSeverError(e.to_string(), "DbStudent::query".to_string()))
+        Ok(query.build_query_as::<DbStudent>().fetch_all(pool).await?)
     }
 
     async fn response_pagination(
@@ -186,20 +162,8 @@ impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
         let mut query = QueryBuilder::new(DbStudent::count_query());
         Self::build_shared_query(&mut query, filter);
 
-        let count = u32::try_from(
-            query
-                .build()
-                .fetch_one(pool)
-                .await
-                .map_err(|e| {
-                    Error::InternalSeverError(
-                        e.to_string(),
-                        "DbStudent::response_pagination".to_string(),
-                    )
-                })?
-                .get::<i64, _>("count"),
-        )
-        .expect("Irrecoverable error, i64 is out of bounds for u32");
+        let count = u32::try_from(query.build().fetch_one(pool).await?.get::<i64, _>("count"))
+            .expect("Irrecoverable error, i64 is out of bounds for u32");
 
         Ok(PaginationType::new(
             pagination.unwrap_or(&PaginationConfig::default()).p,

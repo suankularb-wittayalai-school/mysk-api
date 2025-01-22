@@ -49,7 +49,7 @@ pub async fn join_clubs(
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
-    let club = match Club::get_by_id(
+    let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
         Some(&FetchLevel::Detailed),
@@ -57,15 +57,15 @@ pub async fn join_clubs(
         &*authorizer,
     )
     .await
-    {
-        Ok(Club::Detailed(club, _)) => club,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club not found".to_string(),
-                format!("/clubs/{club_id}/join"),
-            ))
-        }
-        _ => unreachable!("Club::get_by_id should always return a Detailed variant"),
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Club not found".to_string(),
+            format!("/clubs/{club_id}/join"),
+        ),
+        _ => e,
+    })?
+    else {
+        unreachable!("Club::get_by_id should always return a Detailed variant")
     };
 
     // Check if the student is already a staff of the club

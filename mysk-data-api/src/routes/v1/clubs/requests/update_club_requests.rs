@@ -67,7 +67,7 @@ pub async fn update_club_requests(
             .await?;
 
     // Check if the club request exists
-    let club_request = match ClubRequest::get_by_id(
+    let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
         Some(&FetchLevel::Default),
@@ -75,15 +75,15 @@ pub async fn update_club_requests(
         &*authorizer,
     )
     .await
-    {
-        Ok(ClubRequest::Default(club_request, _)) => club_request,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club request not found".to_string(),
-                format!("/clubs/requests/{club_request_id}"),
-            ))
-        }
-        _ => unreachable!("ClubRequest::get_by_id should always return a Default variant"),
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Club request not found".to_string(),
+            format!("/clubs/requests/{club_request_id}"),
+        ),
+        _ => e,
+    })?
+    else {
+        unreachable!("ClubRequest::get_by_id should always return a Default variant")
     };
 
     // Check if the club request is still pending
