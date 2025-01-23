@@ -5,8 +5,9 @@ use crate::{
             queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
         },
         enums::SubmissionStatus,
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
+    query::Queryable as _,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

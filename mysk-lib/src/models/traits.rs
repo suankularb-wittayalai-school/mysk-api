@@ -1,13 +1,11 @@
 use crate::{
     common::{
-        requests::{
-            FetchLevel, FilterConfig, PaginationConfig, QueryParam, SortingConfig, SqlSection,
-        },
-        response::PaginationType,
+        pagination::{PaginationConfig, PaginationType},
+        requests::{FetchLevel, FilterConfig, SortingConfig},
     },
     permissions::Authorizer,
     prelude::*,
-    query::where_clause::SqlWhereClause,
+    query::Queryable,
 };
 use async_trait::async_trait;
 use sqlx::{
@@ -85,22 +83,6 @@ pub trait TopLevelGetById: Sized {
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
 }
 
-/// A trait for Queryable objects with ability to convert to query string conditions.
-pub trait Queryable: Sized {
-    // Convert to query string conditions
-    #[deprecated(
-        since = "0.6.0",
-        note = "Deprecated due to API refactor. Use `to_where_clause` instead."
-    )]
-    fn to_query_string(&self) -> Vec<SqlSection> {
-        unimplemented!()
-    }
-
-    fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
-        unimplemented!()
-    }
-}
-
 #[async_trait]
 pub trait TopLevelQuery<DbVariant, Q, S>
 where
@@ -109,10 +91,6 @@ where
     Q: Clone + Queryable + Send,
     S: Display + Send,
 {
-    //noinspection ALL
-    //noinspection ALL
-    //noinspection ALL
-    //noinspection ALL
     async fn query(
         pool: &PgPool,
         fetch_level: Option<&FetchLevel>,
@@ -170,10 +148,8 @@ where
         filter: Option<FilterConfig<Q>>,
     );
 
-    //noinspection ALL
-    //noinspection ALL
-    //noinspection ALL
-    //noinspection ALL
+    /// Queries the database with optional filters, sorting, and pagination. If pagination is not
+    /// provided, a default configuration is used.
     async fn query(
         pool: &PgPool,
         filter: Option<FilterConfig<Q>>,
@@ -188,31 +164,14 @@ where
         Self::build_shared_query(&mut query, filter.clone());
 
         if let Some(sorting) = sort {
-            query.push(sorting.to_order_by_clause());
+            sorting.append_into_query_builder(&mut query);
         }
 
-        if let Some(pagination) = &pagination {
-            let limit_section = pagination.to_limit_clause()?;
-            query.push(" ");
-            for (i, sql) in limit_section.sql.iter().enumerate() {
-                query.push(sql);
-                if i < limit_section.params.len() {
-                    match limit_section.params.get(i) {
-                        Some(&QueryParam::Int(v)) => query.push_bind(v),
-                        _ => {
-                            return Err(Error::InternalSeverError(
-                                "Invalid pagination params".to_string(),
-                                "QueryDb::query".to_string(),
-                            ));
-                        }
-                    };
-                }
-            }
-        }
+        let pagination = pagination.unwrap_or_default();
+        pagination.append_into_query_builder(&mut query)?;
 
         let mut count_query = QueryBuilder::new(<Self as BaseQuery>::count_query());
         Self::build_shared_query(&mut count_query, filter);
-
         let count = u32::try_from(
             count_query
                 .build()
@@ -220,16 +179,16 @@ where
                 .await?
                 .get::<i64, _>("count"),
         )
-        .expect("Irrecoverable error, i64 is out of bounds for u32");
-        let PaginationConfig { p, size } = if pagination.is_some() {
-            pagination.unwrap()
-        } else {
-            PaginationConfig::default()
-        };
+        .map_err(|_| {
+            Error::InvalidRequest(
+                "Page number is out of bounds".to_string(),
+                "QueryDb::query".to_string(),
+            )
+        })?;
 
         Ok((
             query.build_query_as::<Self>().fetch_all(pool).await?,
-            PaginationType::new(p, size.unwrap(), count),
+            PaginationType::new(pagination.p, pagination.size.unwrap_or(50), count),
         ))
     }
 }

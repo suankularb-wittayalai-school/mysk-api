@@ -1,7 +1,6 @@
 use crate::{
-    common::requests::QueryParam,
-    models::{enums::ContactType, traits::Queryable},
-    query::SqlWhereClause,
+    models::enums::ContactType,
+    query::{QueryParam, Queryable, SqlWhereClause},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

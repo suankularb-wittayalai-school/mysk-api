@@ -9,7 +9,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
@@ -20,6 +20,7 @@ use mysk_lib::{
     },
     permissions::{self, ActionType},
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;

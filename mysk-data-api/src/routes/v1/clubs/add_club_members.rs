@@ -9,7 +9,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
@@ -19,6 +19,7 @@ use mysk_lib::{
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;

@@ -1,13 +1,13 @@
 use crate::{
-    common::requests::{FilterConfig, QueryParam},
+    common::requests::FilterConfig,
     helpers::date::get_current_academic_year,
     models::{
         club::request::{queryable::QueryableClub, sortable::SortableClub},
         enums::SubmissionStatus,
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
     prelude::*,
-    query::SqlWhereClause,
+    query::{QueryParam, Queryable as _, SqlWhereClause},
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

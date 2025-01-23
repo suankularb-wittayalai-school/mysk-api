@@ -1,4 +1,4 @@
-use crate::{common::requests::QueryParam, models::traits::Queryable, query::SqlWhereClause};
+use crate::query::{QueryParam, Queryable, SqlWhereClause};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

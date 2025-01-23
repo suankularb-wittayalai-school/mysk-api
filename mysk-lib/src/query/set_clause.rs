@@ -1,6 +1,6 @@
 use crate::{
-    common::{requests::QueryParam, string::FlexibleMultiLangString},
-    query::{fragment::QueryParamType, QueryFragment},
+    common::string::FlexibleMultiLangString,
+    query::{building_blocks::QueryParamType, QueryFragment, QueryParam},
 };
 use sqlx::{Postgres, QueryBuilder};
 

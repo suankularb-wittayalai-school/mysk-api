@@ -3,9 +3,10 @@ use crate::{
     helpers::date::get_current_academic_year,
     models::{
         teacher::request::{queryable::QueryableTeacher, sortable::SortableTeacher},
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
     prelude::*,
+    query::Queryable as _,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

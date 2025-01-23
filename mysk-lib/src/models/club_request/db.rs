@@ -3,8 +3,9 @@ use crate::{
     models::{
         club_request::request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
         enums::SubmissionStatus,
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
+    query::Queryable as _,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

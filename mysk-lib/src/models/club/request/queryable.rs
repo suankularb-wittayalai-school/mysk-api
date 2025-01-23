@@ -1,6 +1,6 @@
 use crate::{
-    common::requests::QueryParam, helpers::date::get_current_academic_year,
-    models::traits::Queryable, query::SqlWhereClause,
+    helpers::date::get_current_academic_year,
+    query::{QueryParam, Queryable, SqlWhereClause},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

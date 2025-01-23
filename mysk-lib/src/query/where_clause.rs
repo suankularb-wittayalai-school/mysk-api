@@ -1,7 +1,4 @@
-use crate::{
-    common::requests::QueryParam,
-    query::{fragment::QueryParamType, QueryFragment},
-};
+use crate::query::{building_blocks::QueryParamType, QueryFragment, QueryParam};
 use sqlx::{Postgres, QueryBuilder};
 
 /// A collection of multiple `QueryFragment`s.

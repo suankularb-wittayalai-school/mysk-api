@@ -10,7 +10,7 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{QueryParam, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
@@ -22,7 +22,7 @@ use mysk_lib::{
     },
     permissions::{self, ActionType},
     prelude::*,
-    query::SqlSetClause,
+    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -188,7 +188,6 @@ pub async fn modify_teacher(
             .await?;
         };
 
-        // TODO: Refactor `SqlSetClause` API
         let mut qb = SqlSetClause::new();
         qb.push_multilang_update_field("prefix", pu.prefix)
             .push_multilang_update_field("first_name", pu.first_name)

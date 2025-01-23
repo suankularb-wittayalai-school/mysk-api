@@ -4,9 +4,10 @@ use crate::{
     models::{
         classroom::ClassroomWClassNo,
         student::request::{queryable::QueryableStudent, sortable::SortableStudent},
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
     prelude::*,
+    query::Queryable as _,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

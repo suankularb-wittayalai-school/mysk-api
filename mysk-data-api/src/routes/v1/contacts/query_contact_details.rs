@@ -9,12 +9,13 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{contact::Contact, traits::TopLevelGetById as _},
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 

@@ -3,8 +3,9 @@ use crate::{
     models::{
         contact::request::{queryable::QueryableContact, sortable::SortableContact},
         enums::ContactType,
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
+    query::Queryable as _,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

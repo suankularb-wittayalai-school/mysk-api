@@ -9,12 +9,13 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::{EmptyResponseData, ResponseType},
     },
     models::{contact::db::DbContact, traits::GetById as _},
     permissions::{self, ActionType},
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use std::sync::Arc;

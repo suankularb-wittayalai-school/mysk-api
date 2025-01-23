@@ -1,5 +1,5 @@
 use crate::{
-    common::requests::{FilterConfig, QueryParam},
+    common::requests::FilterConfig,
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::request::{
@@ -7,10 +7,11 @@ use crate::{
         },
         enums::SubjectType,
         student::db::DbStudent,
-        traits::{QueryDb, Queryable as _},
+        traits::QueryDb,
     },
     prelude::*,
-    query::SqlWhereClause,
+    query::Queryable as _,
+    query::{QueryParam, SqlWhereClause},
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
