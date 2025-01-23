@@ -1,6 +1,7 @@
 use crate::{
-    common::requests::{QueryParam, SqlSection},
+    common::requests::QueryParam,
     models::{enums::SubmissionStatus, traits::Queryable},
+    query::SqlWhereClause,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -15,49 +16,41 @@ pub struct QueryableClubRequest {
 }
 
 impl Queryable for QueryableClubRequest {
-    fn to_query_string(&self) -> Vec<SqlSection> {
-        let mut where_sections = Vec::<SqlSection>::new();
+    fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
+        let mut wc = SqlWhereClause::new();
+        wc.push_if_some(self.ids, |mut f, ids| {
+            f.push_sql("id = ANY(")
+                .push_param(QueryParam::ArrayUuid(ids))
+                .push_sql(")");
 
-        // WHERE id = ANY($1)
-        if let Some(ids) = &self.ids {
-            where_sections.push(SqlSection {
-                sql: vec!["id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.club_ids, |mut f, club_ids| {
+            f.push_sql("club_id = ANY(")
+                .push_param(QueryParam::ArrayUuid(club_ids))
+                .push_sql(")");
 
-        // WHERE club_id = ANY($1)
-        if let Some(club_ids) = &self.club_ids {
-            where_sections.push(SqlSection {
-                sql: vec!["club_id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(club_ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.student_ids, |mut f, student_ids| {
+            f.push_sql("student_id = ANY(")
+                .push_param(QueryParam::ArrayUuid(student_ids))
+                .push_sql(")");
 
-        // WHERE student_id = ANY($1)
-        if let Some(student_ids) = &self.student_ids {
-            where_sections.push(SqlSection {
-                sql: vec!["student_id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(student_ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.membership_status, |mut f, membership_status| {
+            f.push_sql("membership_status = ")
+                .push_param(QueryParam::SubmissionStatus(membership_status));
 
-        // WHERE membership_status = $1
-        if let Some(membership_status) = &self.membership_status {
-            where_sections.push(SqlSection {
-                sql: vec!["membership_status = ".to_string()],
-                params: vec![QueryParam::SubmissionStatus(*membership_status)],
-            });
-        }
+            f
+        })
+        .push_if_some(self.year, |mut f, year| {
+            f.push_sql("year = ").push_param(QueryParam::Int(year));
 
-        // WHERE year = $1
-        if let Some(year) = &self.year {
-            where_sections.push(SqlSection {
-                sql: vec!["year = ".to_string()],
-                params: vec![QueryParam::Int(*year)],
-            });
-        }
+            f
+        });
 
-        where_sections
+        wc
     }
 }

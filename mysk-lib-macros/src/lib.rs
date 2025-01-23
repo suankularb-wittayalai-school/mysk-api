@@ -1,8 +1,6 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
 
-extern crate paste;
-
 use proc_macro::TokenStream;
 
 mod derive;

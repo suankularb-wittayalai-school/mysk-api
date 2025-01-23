@@ -21,7 +21,7 @@ use mysk_lib::{
     },
     permissions::{self, ActionType},
     prelude::*,
-    query::set_clause::SqlSetClause,
+    query::SqlSetClause,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -102,17 +102,17 @@ pub async fn modify_student(
         };
 
         // TODO: Refactor `SqlSetClause` API
-        let mut qb = SqlSetClause::new()
-            .push_multilang_update_field("prefix", pu.prefix)
+        let mut qb = SqlSetClause::new();
+        qb.push_multilang_update_field("prefix", pu.prefix)
             .push_multilang_update_field("first_name", pu.first_name)
             .push_multilang_update_field("last_name", pu.last_name)
             .push_multilang_update_field("middle_name", pu.middle_name)
             .push_multilang_update_field("nickname", pu.nickname)
             .push_update_field("birthdate", pu.birthdate, QueryParam::NaiveDate)
             .push_update_field("shirt_size", pu.shirt_size, QueryParam::ShirtSize)
-            .push_update_field("pants_size", pu.pants_size, QueryParam::String)
-            .into_query_builder("UPDATE people");
+            .push_update_field("pants_size", pu.pants_size, QueryParam::String);
 
+        let mut qb = qb.into_query_builder("UPDATE people");
         qb.push(" WHERE id = ")
             .push_bind(person_id)
             .build()

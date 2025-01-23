@@ -36,14 +36,14 @@ pub async fn query_trade_offers(
     let user = user.0;
     let fetch_level = request_body.fetch_level.as_ref();
     let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
-    let filter = request_body.filter.as_ref();
-    let sort = request_body.sort.as_ref();
-    let pagination = request_body.pagination.as_ref();
+    let filter = request_body.filter;
+    let sort = request_body.sort;
+    let pagination = request_body.pagination;
     let authorizer =
         permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
             .await?;
 
-    let trade_offers = ElectiveTradeOffer::query(
+    let (trade_offers, pagination) = ElectiveTradeOffer::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -53,8 +53,6 @@ pub async fn query_trade_offers(
         &*authorizer,
     )
     .await?;
-
-    let pagination = ElectiveTradeOffer::response_pagination(pool, filter, pagination).await?;
     let response = ResponseType::new(trade_offers, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))

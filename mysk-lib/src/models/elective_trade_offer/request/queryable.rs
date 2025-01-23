@@ -1,6 +1,7 @@
 use crate::{
-    common::requests::{QueryParam, SqlSection},
+    common::requests::QueryParam,
     models::{enums::SubmissionStatus, traits::Queryable},
+    query::SqlWhereClause,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -14,41 +15,37 @@ pub struct QueryableElectiveTradeOffer {
 }
 
 impl Queryable for QueryableElectiveTradeOffer {
-    fn to_query_string(&self) -> Vec<SqlSection> {
-        let mut where_sections = Vec::<SqlSection>::new();
+    fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
+        let mut wc = SqlWhereClause::new();
+        wc.push_if_some(self.ids, |mut f, ids| {
+            f.push_sql("ids = ANY(")
+                .push_param(QueryParam::ArrayUuid(ids))
+                .push_sql(")");
 
-        // WHERE id = ANY($1)
-        if let Some(ids) = &self.ids {
-            where_sections.push(SqlSection {
-                sql: vec!["id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.sender_ids, |mut f, sender_ids| {
+            f.push_sql("sender_ids = ANY(")
+                .push_param(QueryParam::ArrayUuid(sender_ids))
+                .push_sql(")");
 
-        // WHERE sender_id = ANY($1)
-        if let Some(sender_ids) = &self.sender_ids {
-            where_sections.push(SqlSection {
-                sql: vec!["sender_id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(sender_ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.receiver_ids, |mut f, receiver_ids| {
+            f.push_sql("receiver_ids = ANY(")
+                .push_param(QueryParam::ArrayUuid(receiver_ids))
+                .push_sql(")");
 
-        // WHERE receiver_id = ANY($1)
-        if let Some(receiver_ids) = &self.receiver_ids {
-            where_sections.push(SqlSection {
-                sql: vec!["receiver_id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(receiver_ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.status, |mut f, status| {
+            f.push_sql("status = ")
+                .push_param(QueryParam::SubmissionStatus(status))
+                .push_sql(")");
 
-        // WHERE status = $1
-        if let Some(status) = &self.status {
-            where_sections.push(SqlSection {
-                sql: vec!["status = ".to_string()],
-                params: vec![QueryParam::SubmissionStatus(*status)],
-            });
-        }
+            f
+        });
 
-        where_sections
+        wc
     }
 }

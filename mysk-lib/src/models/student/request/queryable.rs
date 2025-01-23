@@ -1,7 +1,4 @@
-use crate::{
-    common::requests::{QueryParam, SqlSection},
-    models::traits::Queryable,
-};
+use crate::{common::requests::QueryParam, models::traits::Queryable, query::SqlWhereClause};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -14,47 +11,37 @@ pub struct QueryableStudent {
 }
 
 impl Queryable for QueryableStudent {
-    fn to_query_string(&self) -> Vec<SqlSection> {
-        let mut where_sections = Vec::<SqlSection>::new();
+    fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
+        let mut wc = SqlWhereClause::new();
+        wc.push_if_some(self.ids, |mut f, ids| {
+            f.push_sql("ids = ANY(")
+                .push_param(QueryParam::ArrayUuid(ids))
+                .push_sql(")");
 
-        // WHERE id = ANY($1)
-        if let Some(ids) = &self.ids {
-            where_sections.push(SqlSection {
-                sql: vec!["id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.student_ids, |mut f, student_ids| {
+            f.push_sql("student_ids = ANY(")
+                .push_param(QueryParam::ArrayString(student_ids))
+                .push_sql(")");
 
-        // WHERE student_ids = ANY($1)
-        if let Some(student_ids) = &self.student_ids {
-            where_sections.push(SqlSection {
-                sql: vec!["student_id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayString(student_ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.person_ids, |mut f, person_ids| {
+            f.push_sql("person_id IN (SELECT id FROM people WHERE id = ANY(")
+                .push_param(QueryParam::ArrayUuid(person_ids))
+                .push_sql("))");
 
-        // WHERE person_id IN (SELECT id FROM people WHERE id IN ANY($1))
-        if let Some(person_ids) = &self.person_ids {
-            where_sections.push(SqlSection {
-                sql: vec![
-                    "person_id IN (SELECT id FROM people WHERE id = ANY(".to_string(),
-                    "))".to_string(),
-                ],
-                params: vec![QueryParam::ArrayUuid(person_ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.user_ids, |mut f, user_ids| {
+            f.push_sql("user_id IN (SELECT id FROM users WHERE id = ANY(")
+                .push_param(QueryParam::ArrayUuid(user_ids))
+                .push_sql("))");
 
-        // WHERE user_id IN (SELECT id FROM users WHERE id IN ANY($1))
-        if let Some(user_ids) = &self.user_ids {
-            where_sections.push(SqlSection {
-                sql: vec![
-                    "user_id IN (SELECT id FROM users WHERE id = ANY(".to_string(),
-                    "))".to_string(),
-                ],
-                params: vec![QueryParam::ArrayUuid(user_ids.clone())],
-            });
-        }
+            f
+        });
 
-        where_sections
+        wc
     }
 }

@@ -12,7 +12,6 @@ chrono.workspace = true
 futures.workspace = true
 jsonwebtoken.workspace = true
 mysk-lib-macros = { path = "../mysk-lib-macros" }
-paste.workspace = true
 rand.workspace = true
 reqwest.workspace = true
 serde_json.workspace = true

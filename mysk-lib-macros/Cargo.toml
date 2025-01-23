@@ -9,6 +9,5 @@ proc-macro = true
 
 [dependencies]
 darling.workspace = true
-paste.workspace = true
 quote.workspace = true
 syn.workspace = true

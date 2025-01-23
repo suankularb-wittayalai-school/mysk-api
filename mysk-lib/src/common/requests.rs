@@ -9,7 +9,7 @@ use actix_web::{dev::Payload, FromRequest, HttpRequest};
 use chrono::NaiveDate;
 use futures::future;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use sqlx::{Encode, Postgres};
+use sqlx::{Encode, Postgres, QueryBuilder};
 use std::fmt::{Display, Formatter};
 use std::string::ToString;
 use uuid::Uuid;
@@ -173,6 +173,27 @@ pub enum QueryParam {
     SubmissionStatus(SubmissionStatus),
 }
 
+impl QueryParam {
+    pub fn push_bind(self, qb: &mut QueryBuilder<'_, Postgres>) {
+        match self {
+            QueryParam::Int(v) => qb.push_bind(v),
+            QueryParam::Float(v) => qb.push_bind(v),
+            QueryParam::String(v) => qb.push_bind(v),
+            QueryParam::Bool(v) => qb.push_bind(v),
+            QueryParam::Uuid(v) => qb.push_bind(v),
+            QueryParam::NaiveDate(v) => qb.push_bind(v),
+            QueryParam::ArrayInt(v) => qb.push_bind(v),
+            QueryParam::ArrayFloat(v) => qb.push_bind(v),
+            QueryParam::ArrayString(v) => qb.push_bind(v),
+            QueryParam::ArrayBool(v) => qb.push_bind(v),
+            QueryParam::ArrayUuid(v) => qb.push_bind(v),
+            QueryParam::ContactType(v) => qb.push_bind(v),
+            QueryParam::ShirtSize(v) => qb.push_bind(v),
+            QueryParam::SubmissionStatus(v) => qb.push_bind(v),
+        };
+    }
+}
+
 impl Encode<'_, Postgres> for QueryParam {
     fn encode_by_ref(
         &self,
@@ -200,6 +221,7 @@ impl Encode<'_, Postgres> for QueryParam {
     }
 }
 
+// #[deprecated(since = "0.6.0")]
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct SqlSection {
     pub sql: Vec<String>,
