@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use crate::{
     models::{
         classroom::db::DbClassroom, contact::db::DbContact, student::db::DbStudent,
@@ -9,6 +8,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use sqlx::PgPool;
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Clone)]
