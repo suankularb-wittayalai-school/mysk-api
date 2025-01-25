@@ -1,12 +1,11 @@
 use crate::{
-    // Don't remove the unused imports yet!!! Sorry for the squiggly lines!
     models::{
         classroom::db::DbClassroom, club::db::DbClub, club_request::db::DbClubRequest,
         contact::db::DbContact, elective_subject::db::DbElectiveSubject,
         elective_trade_offer::db::DbElectiveTradeOffer, enums::UserRole,
-        organization::db::DbOrganization, person::db::DbPerson, student::db::DbStudent,
-        subject::db::DbSubject, subject_group::db::DbSubjectGroup, teacher::db::DbTeacher,
-        user::User,
+        online_teaching_reports::db::DbOnlineTeachingReports, organization::db::DbOrganization,
+        person::db::DbPerson, student::db::DbStudent, subject::db::DbSubject,
+        subject_group::db::DbSubjectGroup, teacher::db::DbTeacher, user::User,
     },
     permissions::roles::{AdminRole, ManagementRole, StudentRole, TeacherRole},
     prelude::*,
@@ -70,6 +69,16 @@ pub trait Authorizer: Send + Sync {
     async fn authorize_elective_trade_offer(
         &self,
         elective_trade_offer: &DbElectiveTradeOffer,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> Result<()> {
+        // TODO: Unimplemented
+        Ok(())
+    }
+
+    async fn authorize_online_teaching_reports(
+        &self,
+        online_teaching_reports: &DbOnlineTeachingReports,
         pool: &PgPool,
         action: ActionType,
     ) -> Result<()> {

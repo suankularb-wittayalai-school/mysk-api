@@ -5,6 +5,7 @@ pub mod contact;
 pub mod elective_subject;
 pub mod elective_trade_offer;
 pub mod enums;
+pub mod online_teaching_reports;
 pub mod organization;
 pub mod person;
 pub mod student;
