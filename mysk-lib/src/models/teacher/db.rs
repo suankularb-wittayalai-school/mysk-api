@@ -36,6 +36,14 @@ pub struct DbTeacher {
 }
 
 impl DbTeacher {
+    pub async fn get_teacher_from_user_id(pool: &PgPool, user_id: Uuid) -> Result<Option<Uuid>> {
+        let res = query!("SELECT id FROM teachers WHERE user_id = $1", user_id)
+            .fetch_optional(pool)
+            .await?;
+
+        Ok(res.map(|r| r.id))
+    }
+
     pub async fn get_teacher_contacts(pool: &PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "
