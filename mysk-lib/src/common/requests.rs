@@ -167,6 +167,7 @@ pub enum QueryParam {
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
+    ArrayNaiveDate(Vec<NaiveDate>),
     ContactType(ContactType),
     ShirtSize(ShirtSize),
     SubmissionStatus(SubmissionStatus),
@@ -189,6 +190,7 @@ impl Encode<'_, Postgres> for QueryParam {
             QueryParam::ArrayString(v) => v.encode_by_ref(buf),
             QueryParam::ArrayBool(v) => v.encode_by_ref(buf),
             QueryParam::ArrayUuid(v) => v.encode_by_ref(buf),
+            QueryParam::ArrayNaiveDate(v) => v.encode_by_ref(buf),
             QueryParam::ContactType(v) => <ContactType as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::ShirtSize(v) => <ShirtSize as sqlx::Encode<Postgres>>::encode(*v, buf),
             QueryParam::SubmissionStatus(v) => {

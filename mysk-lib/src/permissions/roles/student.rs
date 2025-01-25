@@ -1,14 +1,15 @@
-use std::sync::Arc;
 use crate::{
     models::{
         classroom::db::DbClassroom, club::db::DbClub, contact::db::DbContact,
-        student::db::DbStudent, subject::db::DbSubject, teacher::db::DbTeacher,
+        online_teaching_reports::db::DbOnlineTeachingReports, student::db::DbStudent,
+        subject::db::DbSubject, teacher::db::DbTeacher,
     },
     permissions::authorizer::{ActionType, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
 use sqlx::{query, PgPool};
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -183,6 +184,18 @@ impl Authorizer for StudentRole {
                 self.source.to_string(),
             )),
         }
+    }
+
+    async fn authorize_online_teaching_reports(
+        &self,
+        _: &DbOnlineTeachingReports,
+        _: &PgPool,
+        _: ActionType,
+    ) -> Result<()> {
+        Err(Error::InvalidPermission(
+            "Insufficient permissions to perform this action".to_string(),
+            self.source.to_string(),
+        ))
     }
 
     async fn authorize_student(
