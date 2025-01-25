@@ -37,7 +37,7 @@ pub async fn query_reports(
     let sort = request_query.sort.as_ref();
     let pagination = request_query.pagination.as_ref();
     let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/reports".to_string()).await?;
+        permissions::get_authorizer(pool, &user, "/subjects/attendance".to_string()).await?;
 
     let reports = OnlineTeachingReports::query(
         pool,

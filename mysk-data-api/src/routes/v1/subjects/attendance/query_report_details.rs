@@ -34,7 +34,7 @@ pub async fn query_report_details(
     let authorizer = permissions::get_authorizer(
         pool,
         &user,
-        format!("/subjects/reports/{online_teaching_report_id}"),
+        format!("/subjects/attendance/{online_teaching_report_id}"),
     )
     .await?;
 
