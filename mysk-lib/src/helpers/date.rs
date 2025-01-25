@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::{Datelike, FixedOffset, NaiveDate, Utc};
 
 pub fn get_current_academic_year(date: Option<NaiveDate>) -> i64 {
     let date = date.unwrap_or_else(|| Utc::now().naive_utc().date());
@@ -24,4 +24,10 @@ pub fn get_current_semester(date: Option<NaiveDate>) -> i64 {
     } else {
         2
     }
+}
+
+pub fn get_current_date() -> NaiveDate {
+    Utc::now()
+        .with_timezone(&FixedOffset::east_opt(7 * 3600).unwrap()) // UTC+7: Asia/Bangkok
+        .date_naive()
 }

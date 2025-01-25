@@ -37,7 +37,7 @@ impl Queryable for QueryableOnlineTeachingReports {
         if let Some(as_teacher_id) = &self.as_teacher_id {
             where_sections.push(SqlSection {
                 sql: vec!["teacher_id = ".to_string()],
-                params: vec![QueryParam::Uuid(as_teacher_id.clone())],
+                params: vec![QueryParam::Uuid(*as_teacher_id)],
             });
         }
 
