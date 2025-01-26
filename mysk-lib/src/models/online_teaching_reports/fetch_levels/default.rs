@@ -26,7 +26,7 @@ pub struct DefaultOnlineTeachingReports {
     pub teaching_methods: Vec<String>,
     pub teaching_topic: String,
     pub suggestions: Option<String>,
-    pub absent_student_no: Option<Vec<i64>>,
+    pub absent_student_no: Vec<i64>,
     pub start_time: i64,
     pub duration: i64,
     pub has_image: bool,
