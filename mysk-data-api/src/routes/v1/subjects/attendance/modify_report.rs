@@ -34,6 +34,9 @@ struct UpdateReportRequest {
     teaching_methods: Option<Vec<String>>,
     teaching_topic: Option<String>,
     suggestions: Option<String>,
+    start_time: Option<i64>,
+    duration: Option<i64>,
+    absent_student_no: Option<Vec<String>>,
 }
 
 #[put("/{id}")]
@@ -91,6 +94,13 @@ pub async fn modify_report(
             QueryParam::String,
         )
         .push_update_field("suggestions", update_data.suggestions, QueryParam::String)
+        .push_update_field("start_time", update_data.start_time, QueryParam::Int)
+        .push_update_field("duration", update_data.duration, QueryParam::Int)
+        .push_update_field(
+            "absent_student_no",
+            update_data.absent_student_no,
+            QueryParam::ArrayString,
+        )
         .into_query_builder("UPDATE online_teaching_reports");
 
     qb.push(" WHERE id = ")

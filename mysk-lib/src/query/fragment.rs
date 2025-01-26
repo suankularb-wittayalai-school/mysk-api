@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 // Additional bounds to enforce strong typing.
 pub trait QueryParamType {}
-impl QueryParamType for u64 {}
+impl QueryParamType for i64 {}
 impl QueryParamType for f64 {}
 impl QueryParamType for String {}
 impl QueryParamType for bool {}
