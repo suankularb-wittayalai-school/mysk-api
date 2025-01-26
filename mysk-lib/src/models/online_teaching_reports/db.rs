@@ -27,13 +27,18 @@ use uuid::Uuid;
 pub struct DbOnlineTeachingReports {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
-    pub subject_id: Uuid,
+    pub subject_id: Option<Uuid>,
     pub teacher_id: Uuid,
-    pub classroom_id: Uuid,
+    pub classroom_id: Option<Uuid>,
     pub date: NaiveDate,
     pub teaching_methods: Vec<String>,
     pub teaching_topic: String,
     pub suggestions: Option<String>,
+    pub absent_student_no: Vec<i64>,
+    pub start_time: i64,
+    pub duration: i64,
+    pub has_image: bool,
+    pub image_ext: Option<String>,
 }
 
 #[async_trait]

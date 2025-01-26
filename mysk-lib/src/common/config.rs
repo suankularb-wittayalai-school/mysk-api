@@ -9,6 +9,8 @@ pub struct Config {
     pub host: IpAddr,
     pub port: u16,
     pub root_uri: String,
+    pub supabase_secret_key: String,
+    pub supabase_uri: String,
     pub token_max_age: u64,
     pub token_secret: String,
 }
@@ -29,6 +31,9 @@ impl Config {
             .parse::<u16>()
             .expect("PORT must be a valid port number");
         let root_uri = var("ROOT_URI").expect("ROOT_URI must be set");
+        let supabase_secret_key =
+            var("SUPABASE_SECRET_KEY").expect("SUPABASE_SECRET_KEY must be set");
+        let supabase_uri = var("SUPABASE_URI").expect("SUPABASE_URI must be set");
         let token_max_age = var("TOKEN_MAXAGE")
             .expect("TOKEN_MAXAGE must be set")
             .parse::<u64>()
@@ -42,6 +47,8 @@ impl Config {
             host,
             port,
             root_uri,
+            supabase_secret_key,
+            supabase_uri,
             token_max_age,
             token_secret,
         }

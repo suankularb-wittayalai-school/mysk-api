@@ -27,7 +27,7 @@ use sqlx::Error as SqlxError;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-struct UpdateClassReportRequest {
+struct UpdateReportRequest {
     subject_id: Option<Uuid>,
     classroom_id: Option<Uuid>,
     date: Option<NaiveDate>,
@@ -37,14 +37,14 @@ struct UpdateClassReportRequest {
 }
 
 #[put("/{id}")]
-pub async fn modify_class_report(
+pub async fn modify_report(
     data: Data<AppState>,
     _: ApiKeyHeader,
     user: LoggedIn,
     teacher_id: LoggedInTeacher,
     report_id: Path<Uuid>,
     Json(request_body): Json<
-        RequestType<UpdateClassReportRequest, QueryablePlaceholder, SortablePlaceholder>,
+        RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;

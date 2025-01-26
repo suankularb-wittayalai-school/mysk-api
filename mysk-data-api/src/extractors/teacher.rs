@@ -25,11 +25,14 @@ impl FromRequest for LoggedInTeacher {
 
         Box::pin(async move {
             let user = user.await?.0;
-            if !matches!(user.role, UserRole::Teacher) {
-                return Err(Error::InvalidPermission(
-                    "User is not a teacher".to_string(),
-                    req.path().to_string(),
-                ));
+            match user.role {
+                UserRole::Teacher | UserRole::Management => (),
+                _ => {
+                    return Err(Error::InvalidPermission(
+                        "User is not a teacher".to_string(),
+                        req.path().to_string(),
+                    ));
+                }
             }
 
             let teacher_id = DbTeacher::get_teacher_from_user_id(&pool, user.id)

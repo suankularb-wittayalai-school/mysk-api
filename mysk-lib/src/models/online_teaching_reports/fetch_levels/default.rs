@@ -19,13 +19,17 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultOnlineTeachingReports {
     pub id: Uuid,
-    pub subject: Subject,
+    pub subject: Option<Subject>,
     pub teacher: Teacher,
-    pub classroom: Classroom,
+    pub classroom: Option<Classroom>,
     pub date: NaiveDate,
     pub teaching_methods: Vec<String>,
     pub teaching_topic: String,
     pub suggestions: Option<String>,
+    pub absent_student_no: Vec<i64>,
+    pub start_time: i64,
+    pub duration: i64,
+    pub has_image: bool,
 }
 
 #[async_trait]
@@ -40,16 +44,38 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
             .authorize_online_teaching_reports(&table, pool, ActionType::ReadDefault)
             .await?;
 
+        let subject = if table.subject_id.is_some() {
+            Some(
+                Subject::get_by_id(
+                    pool,
+                    table.subject_id.unwrap(),
+                    descendant_fetch_level,
+                    Some(&FetchLevel::IdOnly),
+                    authorizer,
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+        let classroom = if table.classroom_id.is_some() {
+            Some(
+                Classroom::get_by_id(
+                    pool,
+                    table.classroom_id.unwrap(),
+                    descendant_fetch_level,
+                    Some(&FetchLevel::IdOnly),
+                    authorizer,
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+
         Ok(Self {
             id: table.id,
-            subject: Subject::get_by_id(
-                pool,
-                table.subject_id,
-                descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
-                authorizer,
-            )
-            .await?,
+            subject,
             teacher: Teacher::get_by_id(
                 pool,
                 table.teacher_id,
@@ -58,18 +84,15 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
                 authorizer,
             )
             .await?,
-            classroom: Classroom::get_by_id(
-                pool,
-                table.classroom_id,
-                descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
-                authorizer,
-            )
-            .await?,
+            classroom,
             date: table.date,
             teaching_methods: table.teaching_methods,
             teaching_topic: table.teaching_topic,
             suggestions: table.suggestions,
+            absent_student_no: table.absent_student_no,
+            start_time: table.start_time,
+            duration: table.duration,
+            has_image: table.has_image,
         })
     }
 }

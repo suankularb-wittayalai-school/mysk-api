@@ -27,23 +27,24 @@ use sqlx::{query, Error as SqlxError};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-struct CreateClassReportRequest {
+struct CreateReportRequest {
     subject_id: Uuid,
     classroom_id: Uuid,
     date: Option<NaiveDate>,
     teaching_methods: Vec<String>,
     teaching_topic: String,
     suggestions: Option<String>,
+    absent_student_no: Option<Vec<i64>>,
 }
 
 #[post("")]
-pub async fn create_class_report(
+pub async fn create_report(
     data: Data<AppState>,
     _: ApiKeyHeader,
     user: LoggedIn,
     teacher_id: LoggedInTeacher,
     Json(request_body): Json<
-        RequestType<CreateClassReportRequest, QueryablePlaceholder, SortablePlaceholder>,
+        RequestType<CreateReportRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
@@ -94,8 +95,8 @@ pub async fn create_class_report(
     let new_class_report_id = query!(
         "
         INSERT INTO online_teaching_reports \
-        (subject_id, teacher_id, classroom_id, date, teaching_methods, teaching_topic, suggestions) \
-        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id\
+        (subject_id, teacher_id, classroom_id, date, teaching_methods, teaching_topic, suggestions, absent_student_no) \
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id\
         ",
         subject_id,
         teacher_id,
@@ -104,6 +105,7 @@ pub async fn create_class_report(
         &class_report.teaching_methods[..],
         class_report.teaching_topic,
         class_report.suggestions,
+        &class_report.absent_student_no.unwrap_or(Vec::new())[..],
     )
     .fetch_one(pool)
     .await?
