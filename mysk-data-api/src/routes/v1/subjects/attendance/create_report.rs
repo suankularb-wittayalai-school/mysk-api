@@ -27,7 +27,7 @@ use sqlx::{query, Error as SqlxError};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-struct CreateClassReportRequest {
+struct CreateReportRequest {
     subject_id: Uuid,
     classroom_id: Uuid,
     date: Option<NaiveDate>,
@@ -37,13 +37,13 @@ struct CreateClassReportRequest {
 }
 
 #[post("")]
-pub async fn create_class_report(
+pub async fn create_report(
     data: Data<AppState>,
     _: ApiKeyHeader,
     user: LoggedIn,
     teacher_id: LoggedInTeacher,
     Json(request_body): Json<
-        RequestType<CreateClassReportRequest, QueryablePlaceholder, SortablePlaceholder>,
+        RequestType<CreateReportRequest, QueryablePlaceholder, SortablePlaceholder>,
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;

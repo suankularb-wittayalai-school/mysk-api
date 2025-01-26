@@ -8,7 +8,7 @@ authors = [
   "Phawat Suksiriwan <phawat@suksiriwan.com>",
   "owo93 <Iztyle30@gmail.com>",
 ]
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 
 [workspace.dependencies]

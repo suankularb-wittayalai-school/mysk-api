@@ -79,7 +79,7 @@ async fn gsi_handler(data: Data<AppState>, query: Json<OAuthRequest>) -> Result<
             let cookie = Cookie::build("token", token.clone())
                 .secure(true)
                 .http_only(true)
-                .max_age(ActixWebDuration::days(30))
+                .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
                 .same_site(actix_web::cookie::SameSite::Strict)
                 .finish();
 

@@ -17,12 +17,13 @@ log.workspace = true
 mysk-lib = { path = "../mysk-lib" }
 mysk-lib-macros = { path = "../mysk-lib-macros" }
 parking_lot.workspace = true
+reqwest.workspace = true
 serde_qs.workspace = true
 serde.workspace = true
 sha2.workspace = true
 sqlx.workspace = true
+tokio.workspace = true
 uuid.workspace = true
-tokio = "1.43.0"
 
 [build-dependencies]
 chrono.workspace = true
