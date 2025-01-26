@@ -26,6 +26,10 @@ pub struct DefaultOnlineTeachingReports {
     pub teaching_methods: Vec<String>,
     pub teaching_topic: String,
     pub suggestions: Option<String>,
+    pub absent_student_no: Option<Vec<i64>>,
+    pub start_time: i64,
+    pub duration: i64,
+    pub has_image: bool,
 }
 
 #[async_trait]
@@ -70,6 +74,10 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
             teaching_methods: table.teaching_methods,
             teaching_topic: table.teaching_topic,
             suggestions: table.suggestions,
+            absent_student_no: table.absent_student_no,
+            start_time: table.start_time,
+            duration: table.duration,
+            has_image: table.has_image,
         })
     }
 }
