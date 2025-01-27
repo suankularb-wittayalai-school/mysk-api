@@ -76,20 +76,22 @@ pub async fn create_report(
         .id;
 
     // Check if classroom exists
-    let classroom_id = if let Some(classroom_id) = classroom_id {
-        Some(DbClassroom::get_by_id(pool, class_report.classroom_id)
-            .await
-            .map_err(|e| match e {
-                SqlxError::RowNotFound => Error::EntityNotFound(
-                    "Classroom not found".to_string(),
-                    "/subjects/attendance".to_string(),
-                ),
-                _ => e.into(),
-            })?
-            .id)
+    let classroom_id = if let Some(classroom_id) = class_report.classroom_id {
+        Some(
+            DbClassroom::get_by_id(pool, classroom_id)
+                .await
+                .map_err(|e| match e {
+                    SqlxError::RowNotFound => Error::EntityNotFound(
+                        "Classroom not found".to_string(),
+                        "/subjects/attendance".to_string(),
+                    ),
+                    _ => e.into(),
+                })?
+                .id,
+        )
     } else {
         None
-    }
+    };
 
     if class_report.teaching_methods.is_empty() {
         return Err(Error::InvalidRequest(
