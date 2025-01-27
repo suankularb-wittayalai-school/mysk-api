@@ -29,7 +29,7 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize)]
 struct CreateReportRequest {
     subject_id: Uuid,
-    classroom_id: Uuid,
+    classroom_id: Option<Uuid>,
     date: Option<NaiveDate>,
     teaching_methods: Vec<String>,
     teaching_topic: String,
