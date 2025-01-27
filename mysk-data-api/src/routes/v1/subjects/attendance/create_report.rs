@@ -36,7 +36,7 @@ struct CreateReportRequest {
     suggestions: Option<String>,
     start_time: i64,
     duration: i64,
-    absent_student_no: Option<Vec<i64>>,
+    absent_student_no: Option<String>,
 }
 
 #[post("")]
@@ -109,7 +109,7 @@ pub async fn create_report(
         class_report.suggestions,
         class_report.start_time,
         class_report.duration,
-        &class_report.absent_student_no.unwrap_or(Vec::new())[..],
+        class_report.absent_student_no,
     )
     .fetch_one(pool)
     .await?

@@ -36,7 +36,7 @@ struct UpdateReportRequest {
     suggestions: Option<String>,
     start_time: Option<i64>,
     duration: Option<i64>,
-    absent_student_no: Option<Vec<String>>,
+    absent_student_no: Option<String>,
 }
 
 #[put("/{id}")]
@@ -99,7 +99,7 @@ pub async fn modify_report(
         .push_update_field(
             "absent_student_no",
             update_data.absent_student_no,
-            QueryParam::ArrayString,
+            QueryParam::String,
         )
         .into_query_builder("UPDATE online_teaching_reports");
 
