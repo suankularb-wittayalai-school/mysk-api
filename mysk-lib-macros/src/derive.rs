@@ -20,21 +20,18 @@ pub(crate) fn get_by_id(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let opts = GetByIdOpts::from_derive_input(&input).expect("Wrong options");
     let DeriveInput { ident, .. } = input;
-    let query_single = if let Some(table) = &opts.table {
-        quote! {
-            "{} WHERE {}.id = $1", <Self as crate::models::traits::BaseQuery>::base_query(), #table
-        }
+    let base_query = quote! { <Self as crate::models::traits::BaseQuery>::base_query() };
+
+    let query_one = if let Some(table) = &opts.table {
+        quote! { "{} WHERE {}.id = $1", #base_query, #table }
     } else {
-        quote! { "{} WHERE id = $1", <Self as crate::models::traits::BaseQuery>::base_query() }
+        quote! { "{} WHERE id = $1", #base_query }
     };
-    let query_multi = if let Some(table) = opts.table {
-        quote! {
-            "{} WHERE {}.id = ANY($1)",
-            <Self as crate::models::traits::BaseQuery>::base_query(),
-            #table,
-        }
+
+    let query_many = if let Some(table) = opts.table {
+        quote! { "{} WHERE {}.id = ANY($1)", #base_query, #table }
     } else {
-        quote! { "{} WHERE id = ANY($1)", <Self as crate::models::traits::BaseQuery>::base_query() }
+        quote! { "{} WHERE id = ANY($1)", #base_query }
     };
 
     let expanded = quote! {
@@ -55,7 +52,7 @@ pub(crate) fn get_by_id(input: TokenStream) -> TokenStream {
             {
                 let mut conn = conn.acquire().await?;
 
-                let query = format!(#query_single);
+                let query = format!(#query_one);
                 ::sqlx::query_as::<_, #ident>(&query)
                     .bind(id)
                     .fetch_one(&mut *conn)
@@ -75,7 +72,7 @@ pub(crate) fn get_by_id(input: TokenStream) -> TokenStream {
             {
                 let mut conn = conn.acquire().await?;
 
-                let query = format!(#query_multi);
+                let query = format!(#query_many);
                 ::sqlx::query_as::<_, #ident>(&query)
                     .bind(id)
                     .fetch_all(&mut *conn)

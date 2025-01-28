@@ -19,7 +19,7 @@ use mysk_lib::{
         teacher::db::DbTeacher,
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions::{self, ActionType},
+    permissions,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -39,6 +39,7 @@ pub async fn create_teacher_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
     user: LoggedIn,
+    // TODO: LoggedInTeacher extractor from 0.5.1
     teacher_id: Path<Uuid>,
     request_body: Json<
         RequestType<TeacherContactRequest, QueryablePlaceholder, SortablePlaceholder>,
@@ -59,11 +60,7 @@ pub async fn create_teacher_contacts(
         permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}/contacts"))
             .await?;
 
-    // Fetch and authorize db_teacher instance
     let teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
-    authorizer
-        .authorize_teacher(&teacher, pool, ActionType::Create)
-        .await?;
 
     // Check for duplicate contacts
     let existing_contacts = DbTeacher::get_teacher_contacts(pool, teacher_id).await?;
@@ -77,25 +74,28 @@ pub async fn create_teacher_contacts(
         }
     }
 
-    // Insert the new contact
+    let mut transaction = pool.begin().await?;
+
     let new_contact_id = query!(
-        "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id",
+        "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) RETURNING id",
         teacher_contact.r#type as ContactType,
         teacher_contact.value,
         teacher_contact.name.th,
         teacher_contact.name.en,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .id;
 
     query!(
-        "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2)",
         teacher.person_id,
         new_contact_id,
     )
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     let new_contact = Contact::get_by_id(
         pool,

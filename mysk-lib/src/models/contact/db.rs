@@ -16,12 +16,7 @@ use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
-    query = "
-    SELECT
-        id, created_at, name_th, name_en, type, value, include_students, include_teachers,
-        include_parents
-    FROM contacts
-    ",
+    query = "SELECT id, created_at, name_th, name_en, type, value FROM contacts",
     count_query = "SELECT COUNT(*) FROM contacts"
 )]
 pub struct DbContact {
@@ -31,9 +26,6 @@ pub struct DbContact {
     pub name_en: Option<String>,
     pub r#type: ContactType,
     pub value: String,
-    pub include_students: Option<bool>,
-    pub include_teachers: Option<bool>,
-    pub include_parents: Option<bool>,
 }
 
 #[async_trait]

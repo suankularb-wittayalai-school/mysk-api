@@ -14,6 +14,7 @@ use async_trait::async_trait;
 use sqlx::{query, PgPool};
 use std::sync::Arc;
 
+#[derive(Clone, Copy)]
 pub enum ActionType {
     Create,
     ReadIdOnly,
@@ -138,6 +139,32 @@ pub trait Authorizer: Send + Sync {
     ) -> Result<()>;
 
     fn clone_to_arc(&self) -> Arc<dyn Authorizer>;
+}
+
+pub fn authorize_read_only(action: ActionType, source: &str) -> Result<()> {
+    match action {
+        ActionType::ReadIdOnly
+        | ActionType::ReadCompact
+        | ActionType::ReadDefault
+        | ActionType::ReadDetailed => Ok(()),
+        ActionType::Create | ActionType::Update | ActionType::Delete => deny(source),
+    }
+}
+
+pub fn authorize_default_read_only(action: ActionType, source: &str) -> Result<()> {
+    match action {
+        ActionType::ReadIdOnly | ActionType::ReadCompact | ActionType::ReadDefault => Ok(()),
+        ActionType::Create | ActionType::ReadDetailed | ActionType::Update | ActionType::Delete => {
+            deny(source)
+        }
+    }
+}
+
+pub fn deny(source: &str) -> Result<()> {
+    Err(Error::InvalidPermission(
+        "Insufficient permissions to perform this action".to_string(),
+        source.to_string(),
+    ))
 }
 
 pub async fn get_authorizer(

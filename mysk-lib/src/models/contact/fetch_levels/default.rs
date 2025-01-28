@@ -12,9 +12,6 @@ pub struct DefaultContact {
     pub name: Option<FlexibleMultiLangString>,
     pub r#type: ContactType,
     pub value: String,
-    pub include_students: Option<bool>,
-    pub include_teachers: Option<bool>,
-    pub include_parents: Option<bool>,
 }
 
 impl From<DbContact> for DefaultContact {
@@ -38,9 +35,6 @@ impl From<DbContact> for DefaultContact {
             },
             r#type: contact.r#type,
             value: contact.value,
-            include_students: contact.include_students,
-            include_teachers: contact.include_teachers,
-            include_parents: contact.include_parents,
         }
     }
 }

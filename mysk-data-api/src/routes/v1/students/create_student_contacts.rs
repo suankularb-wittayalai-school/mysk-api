@@ -19,7 +19,7 @@ use mysk_lib::{
         student::db::DbStudent,
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions::{self, ActionType},
+    permissions,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -59,12 +59,7 @@ pub async fn create_student_contacts(
         permissions::get_authorizer(pool, &user, format!("/students/{student_id}/contacts"))
             .await?;
 
-    // Fetch and authorize db_student instance
     let student = DbStudent::get_by_id(pool, student_id).await?;
-    authorizer
-        // TODO: Fix later
-        .authorize_student(&student, pool, ActionType::Create)
-        .await?;
 
     // Check for duplicate contacts
     let existing_contacts = DbStudent::get_student_contacts(pool, student_id).await?;
@@ -78,25 +73,28 @@ pub async fn create_student_contacts(
         }
     }
 
-    // Insert the new contact
+    let mut transaction = pool.begin().await?;
+
     let new_contact_id = query!(
-        "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id",
+        "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) RETURNING id",
         student_contact.r#type as ContactType,
         student_contact.value,
         student_contact.name.th,
         student_contact.name.en,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .id;
 
     query!(
-        "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2)",
         student.person_id,
         new_contact_id,
     )
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     let new_contact = Contact::get_by_id(
         pool,

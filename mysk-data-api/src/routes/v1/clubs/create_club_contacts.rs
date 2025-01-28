@@ -62,7 +62,7 @@ pub async fn create_club_contacts(
     let club_staffs = DbClub::get_club_staffs(pool, club_id).await?;
     if !club_staffs.iter().any(|staff_id| *staff_id == student_id) {
         return Err(Error::InvalidPermission(
-            "Student must be a staff of the club to create contacts".to_string(),
+            "Insufficient permissions to perform this action".to_string(),
             format!("/clubs/{club_id}/contacts"),
         ));
     }
@@ -89,7 +89,7 @@ pub async fn create_club_contacts(
     let mut transaction = pool.begin().await?;
 
     let new_contact_id = query!(
-        "INSERT INTO contacts (type, value) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+        "INSERT INTO contacts (type, value) VALUES ($1, $2) RETURNING id",
         club_contact.r#type as ContactType,
         club_contact.value,
     )
@@ -98,7 +98,7 @@ pub async fn create_club_contacts(
     .id;
 
     query!(
-        "INSERT INTO club_contacts (club_id, contact_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "INSERT INTO club_contacts (club_id, contact_id) VALUES ($1, $2)",
         club.id,
         new_contact_id,
     )

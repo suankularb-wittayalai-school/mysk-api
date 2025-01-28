@@ -66,6 +66,7 @@ pub async fn modify_contacts(
     authorizer
         .authorize_contact(&db_contact, pool, ActionType::Update)
         .await?;
+
     query!(
         "
         UPDATE contacts SET
