@@ -14,7 +14,7 @@ impl Queryable for QueryableTeacher {
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {
-            f.push_sql("ids = ANY(")
+            f.push_sql("id = ANY(")
                 .push_param(QueryParam::ArrayUuid(ids))
                 .push_sql(")");
 

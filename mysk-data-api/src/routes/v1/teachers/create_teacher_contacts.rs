@@ -39,7 +39,6 @@ pub async fn create_teacher_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
     user: LoggedIn,
-    // TODO: LoggedInTeacher extractor from 0.5.1
     teacher_id: Path<Uuid>,
     request_body: Json<
         RequestType<TeacherContactRequest, QueryablePlaceholder, SortablePlaceholder>,
@@ -60,6 +59,7 @@ pub async fn create_teacher_contacts(
         permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}/contacts"))
             .await?;
 
+    // TODO: Check if client is teacher
     let teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
 
     // Check for duplicate contacts

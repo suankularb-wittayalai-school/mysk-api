@@ -9,17 +9,17 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
         online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
-        traits::TopLevelGetById as _,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION, CONTENT_TYPE},
     Client,
@@ -115,19 +115,9 @@ pub async fn upload_report_image(
             HeaderValue::from_str(&format!("image/{}", update_data.file_extension)).unwrap(),
         )
         .send()
-        .await;
+        .await?;
 
-    let is_upload_successful = match upload_response {
-        Ok(response) => response.status().is_success(),
-        // TODO: 0.6.0 has a refactor for this
-        Err(_) => {
-            return Err(Error::InternalSeverError(
-                "Internal server error".to_string(),
-                format!("/subjects/attendance/image/{report_id}"),
-            ));
-        }
-    };
-    if !is_upload_successful {
+    if !upload_response.status().is_success() {
         return Err(Error::InternalSeverError(
             "Internal server error".to_string(),
             format!("/subjects/attendance/image/{report_id}"),

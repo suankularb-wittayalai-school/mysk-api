@@ -14,14 +14,14 @@ impl Queryable for QueryableStudent {
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {
-            f.push_sql("ids = ANY(")
+            f.push_sql("id = ANY(")
                 .push_param(QueryParam::ArrayUuid(ids))
                 .push_sql(")");
 
             f
         })
         .push_if_some(self.student_ids, |mut f, student_ids| {
-            f.push_sql("student_ids = ANY(")
+            f.push_sql("student_id = ANY(")
                 .push_param(QueryParam::ArrayString(student_ids))
                 .push_sql(")");
 

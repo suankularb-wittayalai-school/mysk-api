@@ -10,18 +10,17 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{QueryParam, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
         online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
-        traits::TopLevelGetById as _,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
-    query::set_clause::SqlSetClause,
+    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::Error as SqlxError;
 use uuid::Uuid;
@@ -78,9 +77,8 @@ pub async fn modify_report(
         })?
         .id;
 
-    // TODO: 0.6.0 rebase :skull_crossbones:
-    let mut qb = SqlSetClause::new()
-        .push_update_field("subject_id", update_data.subject_id, QueryParam::Uuid)
+    let mut qb = SqlSetClause::new();
+    qb.push_update_field("subject_id", update_data.subject_id, QueryParam::Uuid)
         .push_update_field("classroom_id", update_data.classroom_id, QueryParam::Uuid)
         .push_update_field("date", update_data.date, QueryParam::NaiveDate)
         .push_update_field(
@@ -100,9 +98,9 @@ pub async fn modify_report(
             "absent_student_no",
             update_data.absent_student_no,
             QueryParam::String,
-        )
-        .into_query_builder("UPDATE online_teaching_reports");
+        );
 
+    let mut qb = qb.into_query_builder("UPDATE online_teaching_reports");
     qb.push(" WHERE id = ")
         .push_bind(report_id)
         .push(" AND teacher_id = ")

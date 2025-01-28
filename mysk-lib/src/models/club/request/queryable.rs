@@ -19,7 +19,7 @@ impl Queryable for QueryableClub {
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new_empty();
         wc.push_if_some(self.ids, |mut f, ids| {
-            f.push_sql("ids = ANY(")
+            f.push_sql("id = ANY(")
                 .push_param(QueryParam::ArrayUuid(ids))
                 .push_sql(")");
 

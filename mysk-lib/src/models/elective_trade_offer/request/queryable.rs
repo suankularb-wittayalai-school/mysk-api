@@ -17,21 +17,21 @@ impl Queryable for QueryableElectiveTradeOffer {
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {
-            f.push_sql("ids = ANY(")
+            f.push_sql("id = ANY(")
                 .push_param(QueryParam::ArrayUuid(ids))
                 .push_sql(")");
 
             f
         })
         .push_if_some(self.sender_ids, |mut f, sender_ids| {
-            f.push_sql("sender_ids = ANY(")
+            f.push_sql("sender_id = ANY(")
                 .push_param(QueryParam::ArrayUuid(sender_ids))
                 .push_sql(")");
 
             f
         })
         .push_if_some(self.receiver_ids, |mut f, receiver_ids| {
-            f.push_sql("receiver_ids = ANY(")
+            f.push_sql("receiver_id = ANY(")
                 .push_param(QueryParam::ArrayUuid(receiver_ids))
                 .push_sql(")");
 

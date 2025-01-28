@@ -10,18 +10,20 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     helpers::date::get_current_date,
     models::{
-        classroom::db::DbClassroom, online_teaching_reports::OnlineTeachingReports,
-        subject::db::DbSubject, traits::TopLevelGetById as _,
+        classroom::db::DbClassroom,
+        online_teaching_reports::OnlineTeachingReports,
+        subject::db::DbSubject,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::{query, Error as SqlxError};
 use uuid::Uuid;
@@ -102,8 +104,9 @@ pub async fn create_report(
 
     let new_class_report_id = query!(
         "
-        INSERT INTO online_teaching_reports \
-        (subject_id, teacher_id, classroom_id, date, teaching_methods, teaching_topic, suggestions, start_time, duration, absent_student_no) \
+        INSERT INTO online_teaching_reports\
+        (subject_id, teacher_id, classroom_id, date, teaching_methods, teaching_topic, suggestions,\
+        start_time, duration, absent_student_no)\
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id\
         ",
         subject_id,

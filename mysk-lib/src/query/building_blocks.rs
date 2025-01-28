@@ -20,6 +20,7 @@ impl QueryParamType for Vec<f64> {}
 impl QueryParamType for Vec<String> {}
 impl QueryParamType for Vec<bool> {}
 impl QueryParamType for Vec<Uuid> {}
+impl QueryParamType for Vec<NaiveDate> {}
 impl QueryParamType for ContactType {}
 impl QueryParamType for ShirtSize {}
 impl QueryParamType for SubmissionStatus {}
@@ -37,6 +38,7 @@ pub enum QueryParam {
     ArrayString(Vec<String>),
     ArrayBool(Vec<bool>),
     ArrayUuid(Vec<Uuid>),
+    ArrayNaiveDate(Vec<NaiveDate>),
     ContactType(ContactType),
     ShirtSize(ShirtSize),
     SubmissionStatus(SubmissionStatus),
@@ -56,6 +58,7 @@ impl QueryParam {
             QueryParam::ArrayString(v) => qb.push_bind(v),
             QueryParam::ArrayBool(v) => qb.push_bind(v),
             QueryParam::ArrayUuid(v) => qb.push_bind(v),
+            QueryParam::ArrayNaiveDate(v) => qb.push_bind(v),
             QueryParam::ContactType(v) => qb.push_bind(v),
             QueryParam::ShirtSize(v) => qb.push_bind(v),
             QueryParam::SubmissionStatus(v) => qb.push_bind(v),

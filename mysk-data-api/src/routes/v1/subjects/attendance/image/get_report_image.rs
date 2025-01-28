@@ -8,10 +8,11 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use mysk_lib::{
-    models::{enums::UserRole, online_teaching_reports::db::DbOnlineTeachingReports},
+    models::{
+        enums::UserRole, online_teaching_reports::db::DbOnlineTeachingReports, traits::GetById as _,
+    },
     prelude::*,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
     Client,
@@ -90,31 +91,17 @@ pub async fn get_report_image(
             HeaderValue::from_str(&supabase_authorization).unwrap(),
         )
         .send()
-        .await;
+        .await?;
 
-    let signed_url = match image_request {
-        Ok(response) => {
-            if !response.status().is_success() {
-                return Err(Error::InternalSeverError(
-                    "Internal server error".to_string(),
-                    format!("/subjects/attendance/image/{report_id}"),
-                ));
-            }
-            response.json::<SignedUrl>().await.unwrap()
-        }
-        // TODO: 0.6.0 has a refactor for this
-        Err(_) => {
-            return Err(Error::InternalSeverError(
-                "Internal server error".to_string(),
-                format!("/subjects/attendance/image/{report_id}"),
-            ));
-        }
-    };
+    if !image_request.status().is_success() {
+        return Err(Error::InternalSeverError(
+            "Internal server error".to_string(),
+            format!("/subjects/attendance/image/{report_id}"),
+        ));
+    }
+    let signed_url = image_request.json::<SignedUrl>().await.unwrap().signed_url;
 
     Ok(HttpResponse::Ok().json(ReportImageResponse {
-        image_url: format!(
-            "{}/storage/v1{}",
-            data.env.supabase_uri, signed_url.signed_url
-        ),
+        image_url: format!("{}/storage/v1{}", data.env.supabase_uri, signed_url),
     }))
 }

@@ -59,6 +59,7 @@ pub async fn create_student_contacts(
         permissions::get_authorizer(pool, &user, format!("/students/{student_id}/contacts"))
             .await?;
 
+    // TODO: Check if client is studen
     let student = DbStudent::get_by_id(pool, student_id).await?;
 
     // Check for duplicate contacts

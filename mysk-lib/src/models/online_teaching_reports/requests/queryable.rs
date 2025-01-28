@@ -1,7 +1,4 @@
-use crate::{
-    common::requests::{QueryParam, SqlSection},
-    models::traits::Queryable,
-};
+use crate::query::{QueryParam, Queryable, SqlWhereClause};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -14,33 +11,30 @@ pub struct QueryableOnlineTeachingReports {
 }
 
 impl Queryable for QueryableOnlineTeachingReports {
-    fn to_query_string(&self) -> Vec<SqlSection> {
-        let mut where_sections = Vec::<SqlSection>::new();
+    fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
+        let mut wc = SqlWhereClause::new();
+        wc.push_if_some(self.ids, |mut f, ids| {
+            f.push_sql("id = ANY(")
+                .push_param(QueryParam::ArrayUuid(ids))
+                .push_sql(")");
 
-        // WHERE id = ANY($1)
-        if let Some(ids) = &self.ids {
-            where_sections.push(SqlSection {
-                sql: vec!["id = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayUuid(ids.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.dates, |mut f, dates| {
+            f.push_sql("date = ANY(")
+                .push_param(QueryParam::ArrayNaiveDate(dates))
+                .push_sql(")");
 
-        // WHERE date = ANY($1)
-        if let Some(dates) = &self.dates {
-            where_sections.push(SqlSection {
-                sql: vec!["date = ANY(".to_string(), ")".to_string()],
-                params: vec![QueryParam::ArrayNaiveDate(dates.clone())],
-            });
-        }
+            f
+        })
+        .push_if_some(self.as_teacher_id, |mut f, as_teacher_id| {
+            f.push_sql("teacher_id = ")
+                .push_param(QueryParam::Uuid(as_teacher_id))
+                .push_sql(")");
 
-        // WHERE teacher_id = $1
-        if let Some(as_teacher_id) = &self.as_teacher_id {
-            where_sections.push(SqlSection {
-                sql: vec!["teacher_id = ".to_string()],
-                params: vec![QueryParam::Uuid(*as_teacher_id)],
-            });
-        }
+            f
+        });
 
-        where_sections
+        wc
     }
 }

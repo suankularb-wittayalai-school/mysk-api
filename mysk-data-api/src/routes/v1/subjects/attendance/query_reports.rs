@@ -33,9 +33,9 @@ pub async fn query_reports(
     let user = user.0;
     let fetch_level = request_query.fetch_level.as_ref();
     let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-    let filter = request_query.filter.as_ref();
-    let sort = request_query.sort.as_ref();
-    let pagination = request_query.pagination.as_ref();
+    let filter = request_query.filter;
+    let sort = request_query.sort;
+    let pagination = request_query.pagination;
     let authorizer =
         permissions::get_authorizer(pool, &user, "/subjects/attendance".to_string()).await?;
 
