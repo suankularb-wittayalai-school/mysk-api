@@ -50,7 +50,7 @@ pub async fn upload_report_image(
     let Some(update_data) = request_query.data else {
         return Err(Error::InvalidRequest(
             "Query deserialize error: field `data` can not be empty".to_string(),
-            format!("/subjects/attendance/{report_id}"),
+            format!("/subjects/attendance/image/{report_id}"),
         ));
     };
     let fetch_level = request_query.fetch_level.as_ref();
@@ -67,7 +67,7 @@ pub async fn upload_report_image(
         .map_err(|e| match e {
             SqlxError::RowNotFound => Error::EntityNotFound(
                 "Class report not found".to_string(),
-                format!("/subjects/attendance/{report_id}"),
+                format!("/subjects/attendance/image/{report_id}"),
             ),
             _ => e.into(),
         })?;
