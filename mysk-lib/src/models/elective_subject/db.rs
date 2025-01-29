@@ -17,7 +17,7 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{query, Acquire, FromRow, PgPool, Postgres, QueryBuilder};
+use sqlx::{query, Acquire, FromRow, Postgres, QueryBuilder};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -72,11 +72,11 @@ impl DbElectiveSubject {
             };
 
         let is_eligible = query!(
-            "
-            SELECT EXISTS (
-                SELECT FROM elective_subject_session_classrooms
-                WHERE elective_subject_session_id = $1 AND classroom_id = $2
-            )
+            "\
+            SELECT EXISTS (\
+                SELECT FROM elective_subject_session_classrooms \
+                WHERE elective_subject_session_id = $1 AND classroom_id = $2\
+            )\
             ",
             session_id,
             student_classroom_id,
@@ -93,10 +93,10 @@ impl DbElectiveSubject {
         A: Acquire<'a, Database = Postgres>,
     {
         let res = query!(
-            "
-            SELECT EXISTS (
-                SELECT FROM elective_subject_session_blacklisted_students WHERE student_id = $1
-            )
+            "\
+            SELECT EXISTS (\
+                SELECT FROM elective_subject_session_blacklisted_students WHERE student_id = $1\
+            )\
             ",
             student_id,
         )
@@ -113,12 +113,11 @@ impl DbElectiveSubject {
         A: Acquire<'a, Database = Postgres>,
     {
         let res = query!(
-            "
-            SELECT elective_subject_session_id
-            FROM
-                elective_subject_session_enrolled_students AS esses
-                JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id
-            WHERE student_id = $1 and year = $2 AND semester = $3
+            "\
+            SELECT elective_subject_session_id \
+            FROM elective_subject_session_enrolled_students AS esses \
+            JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id \
+            WHERE student_id = $1 and year = $2 AND semester = $3\
             ",
             student_id,
             get_current_academic_year(None),
@@ -138,20 +137,17 @@ impl DbElectiveSubject {
         A: Acquire<'a, Database = Postgres>,
     {
         let res = query!(
-            "
-            SELECT ess.id FROM elective_subject_sessions AS ess
-            JOIN subjects AS su ON su.id = ess.subject_id
-            WHERE su.id IN (
-                    SELECT i_su.id FROM subjects AS i_su
-                    JOIN elective_subject_sessions AS i_ess ON i_ess.subject_id = i_su.id
-                    JOIN
-                        elective_subject_session_enrolled_students AS i_esses
-                        ON i_esses.elective_subject_session_id = i_ess.id
-                        AND (i_ess.year != $2 OR i_ess.semester != $3)
-                    WHERE i_esses.student_id = $1
-                )
-            AND ess.year = $2
-            AND ess.semester = $3
+            "\
+            SELECT ess.id FROM elective_subject_sessions AS ess \
+            JOIN subjects AS su ON su.id = ess.subject_id \
+            WHERE su.id IN (\
+                SELECT i_su.id FROM subjects AS i_su \
+                JOIN elective_subject_sessions AS i_ess ON i_ess.subject_id = i_su.id \
+                JOIN elective_subject_session_enrolled_students AS i_esses \
+                    ON i_esses.elective_subject_session_id = i_ess.id \
+                    AND (i_ess.year != $2 OR i_ess.semester != $3)\
+                WHERE i_esses.student_id = $1\
+            ) AND ess.year = $2 AND ess.semester = $3\
             ",
             student_id,
             get_current_academic_year(None),
@@ -163,43 +159,52 @@ impl DbElectiveSubject {
         Ok(res.iter().map(|r| r.id).collect())
     }
 
-    pub async fn get_subject_applicable_classrooms(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
+    pub async fn get_subject_applicable_classrooms<'a, A>(&self, conn: A) -> Result<Vec<Uuid>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
         let res = query!(
-            "
-            SELECT classroom_id FROM elective_subject_session_classrooms
-            WHERE elective_subject_session_id = $1
+            "\
+            SELECT classroom_id FROM elective_subject_session_classrooms \
+            WHERE elective_subject_session_id = $1\
             ",
             self.id,
         )
-        .fetch_all(pool)
+        .fetch_all(&mut *(conn.acquire().await?))
         .await?;
 
-        Ok(res.iter().map(|r| r.classroom_id).collect())
+        Ok(res.into_iter().map(|r| r.classroom_id).collect())
     }
 
-    pub async fn get_enrolled_students(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
+    pub async fn get_enrolled_students<'a, A>(&self, conn: A) -> Result<Vec<Uuid>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
         let res = query!(
-            "
-            SELECT student_id FROM elective_subject_session_enrolled_students
-            WHERE elective_subject_session_id = $1
+            "\
+            SELECT student_id FROM elective_subject_session_enrolled_students \
+            WHERE elective_subject_session_id = $1\
             ",
             self.id,
         )
-        .fetch_all(pool)
+        .fetch_all(&mut *(conn.acquire().await?))
         .await?;
 
-        Ok(res.iter().map(|r| r.student_id).collect())
+        Ok(res.into_iter().map(|r| r.student_id).collect())
     }
 
-    pub async fn get_randomized_students(&self, pool: &PgPool) -> Result<Vec<Uuid>> {
+    pub async fn get_randomized_students<'a, A>(&self, conn: A) -> Result<Vec<Uuid>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
         let res = query!(
-            "
-            SELECT student_id FROM elective_subject_session_enrolled_students
-            WHERE elective_subject_session_id = $1 AND is_randomized
+            "\
+            SELECT student_id FROM elective_subject_session_enrolled_students \
+            WHERE elective_subject_session_id = $1 AND is_randomized\
             ",
             self.id,
         )
-        .fetch_all(pool)
+        .fetch_all(&mut *(conn.acquire().await?))
         .await?;
 
         Ok(res.iter().map(|r| r.student_id).collect())
@@ -210,22 +215,17 @@ impl DbElectiveSubject {
         A: Acquire<'a, Database = Postgres>,
     {
         let res = query!(
-            "
-            SELECT EXISTS (
-                SELECT FROM elective_subject_enrollment_periods
-                WHERE 
-                    now() BETWEEN start_time AND end_time
-                    AND (
-                        grade IS NULL OR grade = floor(
-                            (
-                                SELECT number
-                                FROM classrooms AS c
-                                JOIN classroom_students AS cs ON cs.classroom_id = c.id
-                                WHERE cs.student_id = $1 AND year = $2
-                            ) / 100
-                        )
-                    )
-            )
+            "\
+            SELECT EXISTS (\
+                SELECT FROM elective_subject_enrollment_periods \
+                WHERE now() BETWEEN start_time AND end_time AND (\
+                    grade IS NULL OR grade = floor((\
+                        SELECT number FROM classrooms AS c \
+                        JOIN classroom_students AS cs ON cs.classroom_id = c.id \
+                        WHERE cs.student_id = $1 AND year = $2\
+                    ) / 100)\
+                )\
+            )\
             ",
             student_id,
             get_current_academic_year(None),

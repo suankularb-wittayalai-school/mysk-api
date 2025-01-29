@@ -23,15 +23,16 @@ use uuid::Uuid;
 pub async fn query_elective_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     elective_subject_session_id: Path<Uuid>,
-    request_query: RequestType<ElectiveSubject, QueryablePlaceholder, SortablePlaceholder>,
+    RequestType {
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
-    let fetch_level = request_query.fetch_level;
-    let descendant_fetch_level = request_query.descendant_fetch_level;
     let authorizer = permissions::get_authorizer(
         pool,
         &user,

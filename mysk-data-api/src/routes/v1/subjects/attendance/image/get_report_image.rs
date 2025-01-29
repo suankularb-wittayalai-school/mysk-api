@@ -42,13 +42,11 @@ struct ReportImageResponse {
 pub async fn get_report_image(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    teacher_id: LoggedInTeacher,
+    LoggedIn(user): LoggedIn,
+    LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let teacher_id = teacher_id.0;
     let report_id = report_id.into_inner();
 
     let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id)

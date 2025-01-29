@@ -13,8 +13,9 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct ManagementRole {
-    pub user_id: Uuid,
-    pub source: String,
+    #[allow(dead_code)]
+    user_id: Uuid,
+    source: String,
 }
 
 #[async_trait]
@@ -46,5 +47,11 @@ impl Authorizer for ManagementRole {
 
     fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
         Arc::new(self.clone())
+    }
+}
+
+impl ManagementRole {
+    pub fn new(user_id: Uuid, source: String) -> Self {
+        Self { user_id, source }
     }
 }

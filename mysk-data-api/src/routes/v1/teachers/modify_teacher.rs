@@ -57,23 +57,23 @@ struct UpdateTeacherInfo {
 pub async fn modify_teacher(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     teacher_id: Path<Uuid>,
-    Json(request_body): Json<
-        RequestType<UpdateTeacherRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<UpdateTeacherRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let teacher_id = teacher_id.into_inner();
-    let Some(update_data) = request_body.data else {
+    let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/teachers/{teacher_id}"),
         ));
     };
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("teachers/{teacher_id}")).await?;
 
@@ -132,9 +132,9 @@ pub async fn modify_teacher(
                     Some(existing_classroom) => {
                         // Change advisory classroom to new classroom
                         query!(
-                            "
-                            UPDATE classroom_advisors SET classroom_id = $1
-                            WHERE teacher_id = $2 AND classroom_id = $3
+                            "\
+                            UPDATE classroom_advisors SET classroom_id = $1\
+                            WHERE teacher_id = $2 AND classroom_id = $3\
                             ",
                             new_classroom.id,
                             teacher_id,
@@ -146,9 +146,9 @@ pub async fn modify_teacher(
                     None => {
                         // If the teacher isn't an advisor, add them to a classroom
                         query!(
-                            "
-                            INSERT INTO classroom_advisors (classroom_id, teacher_id)
-                            VALUES ($1, $2)
+                            "\
+                            INSERT INTO classroom_advisors (classroom_id, teacher_id)\
+                            VALUES ($1, $2)\
                             ",
                             new_classroom.id,
                             teacher_id,
@@ -177,9 +177,9 @@ pub async fn modify_teacher(
 
             // See also: https://github.com/launchbadge/sqlx/blob/main/FAQ.md#how-can-i-bind-an-array-to-a-values-clause-how-can-i-do-bulk-inserts
             query!(
-                "
-                INSERT INTO person_allergies (person_id, allergy_name)
-                SELECT $1, * FROM UNNEST($2::text[])
+                "\
+                INSERT INTO person_allergies (person_id, allergy_name)\
+                SELECT $1, * FROM UNNEST($2::text[])\
                 ",
                 person_id,
                 &allergies[..],

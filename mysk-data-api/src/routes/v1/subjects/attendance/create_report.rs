@@ -45,23 +45,22 @@ struct CreateReportRequest {
 pub async fn create_report(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    teacher_id: LoggedInTeacher,
-    Json(request_body): Json<
-        RequestType<CreateReportRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    LoggedIn(user): LoggedIn,
+    LoggedInTeacher(teacher_id): LoggedInTeacher,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<CreateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let teacher_id = teacher_id.0;
-    let Some(class_report) = request_body.data else {
+    let Some(class_report) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             "/subjects/attendance".to_string(),
         ));
     };
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, "/subjects/attendance".to_string()).await?;
 

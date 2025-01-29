@@ -14,9 +14,9 @@ use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct TeacherRole {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub source: String,
+    id: Uuid,
+    user_id: Uuid,
+    source: String,
 }
 
 #[async_trait]
@@ -158,6 +158,14 @@ impl Authorizer for TeacherRole {
 }
 
 impl TeacherRole {
+    pub fn new(id: Uuid, user_id: Uuid, source: String) -> Self {
+        Self {
+            id,
+            user_id,
+            source,
+        }
+    }
+
     async fn authorize_classroom_contact(
         &self,
         contact: &DbContact,

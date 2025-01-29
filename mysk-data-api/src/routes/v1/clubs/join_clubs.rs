@@ -9,22 +9,17 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType},
+        requests::{FetchLevel, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
     models::{
-        club::Club,
-        club_request::{
-            request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
-            ClubRequest,
-        },
-        enums::SubmissionStatus,
-        student::Student,
+        club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
         traits::TopLevelGetById as _,
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -33,17 +28,17 @@ use uuid::Uuid;
 pub async fn join_clubs(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_id: Path<Uuid>,
-    request_body: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
+    RequestType {
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_id = club_id.into_inner();
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let current_year = get_current_academic_year(None);
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
@@ -56,14 +51,7 @@ pub async fn join_clubs(
         Some(FetchLevel::IdOnly),
         &*authorizer,
     )
-    .await
-    .map_err(|e| match e {
-        Error::EntityNotFound(_, _) => Error::EntityNotFound(
-            "Club not found".to_string(),
-            format!("/clubs/{club_id}/join"),
-        ),
-        _ => e,
-    })?
+    .await?
     else {
         unreachable!("Club::get_by_id should always return a Detailed variant")
     };
@@ -92,10 +80,10 @@ pub async fn join_clubs(
 
     // Check if student has already requested to join the club
     if let Some(has_requested) = query!(
-        r#"
-        SELECT membership_status AS "membership_status: SubmissionStatus" FROM club_members
-        WHERE club_id = $1 AND year = $2 and membership_status = $3 AND student_id = $4
-        "#,
+        "\
+        SELECT membership_status AS \"membership_status: SubmissionStatus\" FROM club_members \
+        WHERE club_id = $1 AND year = $2 and membership_status = $3 AND student_id = $4\
+        ",
         club_id,
         current_year,
         SubmissionStatus::Pending as SubmissionStatus,
@@ -116,9 +104,9 @@ pub async fn join_clubs(
     }
 
     let club_member_id = query!(
-        "
-        INSERT INTO club_members (club_id, year, membership_status, student_id)
-        VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id
+        "\
+        INSERT INTO club_members (club_id, year, membership_status, student_id)\
+        VALUES ($1, $2, $3, $4) RETURNING id\
         ",
         club_id,
         current_year,

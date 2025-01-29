@@ -27,11 +27,10 @@ impl DbUser {
 
     pub async fn get_user_permissions(pool: &PgPool, user_id: Uuid) -> Result<Vec<String>> {
         let res = query!(
-            "
-            SELECT permissions.name
-            FROM user_permissions
-            JOIN permissions ON user_permissions.permission_id = permissions.id
-            WHERE user_permissions.user_id = $1
+            "\
+            SELECT permissions.name FROM user_permissions \
+            JOIN permissions ON user_permissions.permission_id = permissions.id \
+            WHERE user_permissions.user_id = $1\
             ",
             user_id,
         )

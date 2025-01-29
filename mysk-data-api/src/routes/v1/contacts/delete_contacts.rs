@@ -25,12 +25,13 @@ use uuid::Uuid;
 pub async fn delete_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    request_body: Json<RequestType<Vec<Uuid>, QueryablePlaceholder, SortablePlaceholder>>,
+    LoggedIn(user): LoggedIn,
+    Json(RequestType {
+        data: request_data, ..
+    }): Json<RequestType<Vec<Uuid>, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let Some(contact_ids) = &request_body.data else {
+    let Some(contact_ids) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             "/contacts".to_string(),
@@ -59,7 +60,7 @@ pub async fn delete_contacts(
         future.await??;
     }
 
-    query!("DELETE FROM contacts WHERE id = ANY($1)", contact_ids)
+    query!("DELETE FROM contacts WHERE id = ANY($1)", &contact_ids[..])
         .execute(pool)
         .await?;
 

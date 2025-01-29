@@ -44,11 +44,11 @@ struct GoogleOAuthCodeRequest {
 #[get("/oauth/google")]
 pub async fn google_oauth_handler(
     data: Data<AppState>,
-    request_query: Query<GoogleOAuthCodeRequest>,
+    Query(GoogleOAuthCodeRequest {
+        ref code,
+        ref state,
+    }): Query<GoogleOAuthCodeRequest>,
 ) -> Result<impl Responder> {
-    let code = &request_query.code;
-    let state = &request_query.state;
-
     {
         let mut guard = data.oauth_states.lock();
         let oauth_states = &mut *guard;

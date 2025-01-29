@@ -50,10 +50,10 @@ impl FromRequest for ApiKeyHeader {
 
             let api_key = query_as!(
                 ApiKey,
-                "
-                SELECT * FROM user_api_keys
-                WHERE long_token_hash = $1 AND short_token = $2
-                AND (expire_at > NOW() OR expire_at IS NULL)
+                "\
+                SELECT * FROM user_api_keys \
+                WHERE long_token_hash = $1 AND short_token = $2 \
+                AND (expire_at > NOW() OR expire_at IS NULL)\
                 ",
                 hash,
                 token.get_short_token(),

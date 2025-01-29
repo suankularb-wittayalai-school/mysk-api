@@ -38,28 +38,28 @@ struct StudentContactRequest {
 pub async fn create_student_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     student_id: Path<Uuid>,
-    request_body: Json<
-        RequestType<StudentContactRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<StudentContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let student_id = student_id.into_inner();
-    let Some(student_contact) = &request_body.data else {
+    let Some(student_contact) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/students/{student_id}/contacts"),
         ));
     };
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/students/{student_id}/contacts"))
             .await?;
 
-    // TODO: Check if client is studen
+    // Check if client is student
     let student = DbStudent::get_by_id(pool, student_id).await?;
 
     // Check for duplicate contacts

@@ -11,10 +11,9 @@ use mysk_lib::{
 async fn get_previously_enrolled(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    student_id: LoggedInStudent,
+    LoggedInStudent(student_id): LoggedInStudent,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let student_id = student_id.0;
 
     let electives = DbElectiveSubject::get_previously_enrolled_electives(pool, student_id).await?;
     let response = ResponseType::new(electives, None);

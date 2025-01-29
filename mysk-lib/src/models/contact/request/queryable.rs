@@ -15,9 +15,6 @@ pub struct QueryableContact {
     pub club_ids: Option<Vec<Uuid>>,
     pub student_ids: Option<Vec<Uuid>>,
     pub teacher_ids: Option<Vec<Uuid>>,
-    pub include_students: Option<bool>,
-    pub include_teachers: Option<bool>,
-    pub include_parents: Option<bool>,
 }
 
 impl Queryable for QueryableContact {
@@ -89,24 +86,6 @@ impl Queryable for QueryableContact {
             )
             .push_param(QueryParam::ArrayUuid(teacher_ids))
             .push_sql(")))");
-
-            f
-        })
-        .push_if_some(self.include_students, |mut f, include_students| {
-            f.push_sql("include_students = ")
-                .push_param(QueryParam::Bool(include_students));
-
-            f
-        })
-        .push_if_some(self.include_teachers, |mut f, include_teachers| {
-            f.push_sql("include_teachers = ")
-                .push_param(QueryParam::Bool(include_teachers));
-
-            f
-        })
-        .push_if_some(self.include_parents, |mut f, include_parents| {
-            f.push_sql("include_parents = ")
-                .push_param(QueryParam::Bool(include_parents));
 
             f
         });

@@ -37,24 +37,25 @@ struct ModifyReportImageRequest {
 pub async fn modify_report_image(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    teacher_id: LoggedInTeacher,
+    LoggedIn(user): LoggedIn,
+    LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
-    request_query: RequestType<ModifyReportImageRequest, QueryablePlaceholder, SortablePlaceholder>,
+    RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<ModifyReportImageRequest, QueryablePlaceholder, SortablePlaceholder>,
     request_body: Bytes,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let teacher_id = teacher_id.0;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_query.data else {
+    let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
             "Query deserialize error: field `data` can not be empty".to_string(),
             format!("/subjects/attendance/image/{report_id}"),
         ));
     };
-    let fetch_level = request_query.fetch_level;
-    let descendant_fetch_level = request_query.descendant_fetch_level;
     let authorizer = permissions::get_authorizer(
         pool,
         &user,

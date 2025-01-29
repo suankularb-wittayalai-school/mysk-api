@@ -41,12 +41,12 @@ impl DbStudent {
 
     pub async fn get_student_contacts(pool: &PgPool, student_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            "
-            SELECT contacts.id FROM contacts
-            INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id
-            INNER JOIN people ON person_contacts.person_id = people.id
-            INNER JOIN students ON people.id = students.person_id
-            WHERE students.id = $1
+            "\
+            SELECT contacts.id FROM contacts \
+            INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id \
+            INNER JOIN people ON person_contacts.person_id = people.id \
+            INNER JOIN students ON people.id = students.person_id \
+            WHERE students.id = $1\
             ",
             student_id,
         )
@@ -66,10 +66,10 @@ impl DbStudent {
     {
         let mut conn = conn.acquire().await?;
         let res = query!(
-            "
-            SELECT classroom_id, class_no FROM classroom_students
-            JOIN classrooms ON classrooms.id = classroom_id
-            WHERE student_id = $1 AND year = $2
+            "\
+            SELECT classroom_id, class_no FROM classroom_students \
+            JOIN classrooms ON classrooms.id = classroom_id \
+            WHERE student_id = $1 AND year = $2\
             ",
             student_id,
             match academic_year {

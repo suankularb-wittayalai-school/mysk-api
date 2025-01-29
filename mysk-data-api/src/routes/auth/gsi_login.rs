@@ -31,9 +31,11 @@ pub struct GoogleTokenResponse {
 
 #[allow(clippy::cast_possible_wrap)]
 #[post("/oauth/gsi")]
-async fn gsi_handler(data: Data<AppState>, query: Json<OAuthRequest>) -> Result<impl Responder> {
+async fn gsi_handler(
+    data: Data<AppState>,
+    Json(query): Json<OAuthRequest>,
+) -> Result<impl Responder> {
     let id_token: String = query.credential.clone();
-
     if id_token.is_empty() {
         return Err(Error::InvalidToken(
             "Invalid token".to_string(),

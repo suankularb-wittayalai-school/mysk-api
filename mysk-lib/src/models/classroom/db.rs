@@ -22,10 +22,9 @@ impl DbClassroom {
         year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            "
-            SELECT teacher_id
-            FROM classroom_advisors JOIN classrooms ON classrooms.id = classroom_id
-            WHERE classroom_id = $1 AND year = $2
+            "\
+            SELECT teacher_id FROM classroom_advisors JOIN classrooms AS c ON c.id = classroom_id \
+            WHERE classroom_id = $1 AND year = $2\
             ",
             classroom_id,
             year.unwrap_or_else(|| get_current_academic_year(None)),

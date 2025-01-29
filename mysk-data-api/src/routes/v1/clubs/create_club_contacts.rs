@@ -36,23 +36,24 @@ struct ClubContactRequest {
 pub async fn create_club_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_id: Path<Uuid>,
-    request_body: Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_id = club_id.into_inner();
-    let Some(club_contact) = &request_body.data else {
+    let Some(club_contact) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/clubs/{club_id}/contacts"),
         ));
     };
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
 

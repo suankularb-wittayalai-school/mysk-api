@@ -35,34 +35,33 @@ struct UpdateClubRequest {
 pub async fn update_club_requests(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_request_id: Path<Uuid>,
-    request_body: Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
-    let club_request_status = match &request_body.data {
-        Some(request_data) => match request_data.status {
-            SubmissionStatus::Approved | SubmissionStatus::Declined => request_data.status,
-            SubmissionStatus::Pending => {
-                return Err(Error::InvalidRequest(
-                    "Status must be either 'approved' or 'declined'".to_string(),
-                    format!("/clubs/requests/{club_request_id}"),
-                ));
-            }
-        },
-        None => {
+    let club_request_status = if let Some(request_data) = request_data {
+        if matches!(request_data.status, SubmissionStatus::Pending) {
             return Err(Error::InvalidRequest(
-                "Json deserialize error: field `data` can not be empty".to_string(),
+                "Status must be either `approved` or `declined`".to_string(),
                 format!("/clubs/requests/{club_request_id}"),
             ));
         }
+
+        request_data.status
+    } else {
+        return Err(Error::InvalidRequest(
+            "Json deserialize error: field `data` can not be empty".to_string(),
+            format!("/clubs/requests/{club_request_id}"),
+        ));
     };
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;

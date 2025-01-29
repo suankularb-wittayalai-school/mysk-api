@@ -26,13 +26,11 @@ use uuid::Uuid;
 pub async fn delete_club_requests(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_request_id: Path<Uuid>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
@@ -46,14 +44,7 @@ pub async fn delete_club_requests(
         Some(FetchLevel::IdOnly),
         &*authorizer,
     )
-    .await
-    .map_err(|e| match e {
-        Error::EntityNotFound(_, _) => Error::EntityNotFound(
-            "Club request not found".to_string(),
-            format!("/clubs/requests/{club_request_id}"),
-        ),
-        _ => e,
-    })?
+    .await?
     else {
         unreachable!("ClubRequest::get_by_id should always return a Default variant")
     };

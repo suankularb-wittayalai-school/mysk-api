@@ -9,14 +9,14 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
-        elective_subject::{db::DbElectiveSubject, ElectiveSubject},
+        elective_subject::db::DbElectiveSubject,
         elective_trade_offer::ElectiveTradeOffer,
         enums::SubmissionStatus,
-        traits::TopLevelGetById as _,
+        traits::{GetById, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
@@ -36,40 +36,31 @@ struct ElectiveTradeOfferRequest {
 async fn create_trade_offer(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
-    request_body: Json<
-        RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(client_student_id): LoggedInStudent,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let receiver_student_id = match &request_body.data {
-        Some(request_data) => request_data.receiver_id,
-        None => {
-            return Err(Error::InvalidRequest(
-                "Json deserialize error: field `data` can not be empty".to_string(),
-                "/subjects/electives/trade-offers".to_string(),
-            ));
-        }
+    let mut transaction = pool.begin().await?;
+    let other_student_id = if let Some(request_data) = request_data {
+        request_data.receiver_id
+    } else {
+        return Err(Error::InvalidRequest(
+            "Json deserialize error: field `data` can not be empty".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
     };
-    let sender_student_id = student_id.0;
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
             .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    if DbElectiveSubject::is_student_blacklisted(pool, sender_student_id).await? {
-        return Err(Error::InvalidPermission(
-            "Student is blacklisted from enrolling in electives".to_string(),
-            "/subjects/electives/trade-offers".to_string(),
-        ));
-    }
-
-    // Checks if the student is "blacklisted" from enrolling in an elective
-    if DbElectiveSubject::is_student_blacklisted(pool, sender_student_id).await? {
+    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             "/subjects/electives/trade-offers".to_string(),
@@ -77,16 +68,16 @@ async fn create_trade_offer(
     }
 
     // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(pool, sender_student_id).await? {
+    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
-            "The elective's enrollment period has ended".to_string(),
+            "The elective enrollment period has ended".to_string(),
             "/subjects/electives/trade-offers".to_string(),
         ));
     }
 
     // Check if the sending student has already enrolled in an elective in the current semester
-    let Some(sender_elective_subject_id) =
-        DbElectiveSubject::is_currently_enrolled(pool, sender_student_id).await?
+    let Some(client_elective_subject_id) =
+        DbElectiveSubject::is_currently_enrolled(&mut *transaction, client_student_id).await?
     else {
         return Err(Error::InvalidPermission(
             "Student has not enrolled in an elective this semester".to_string(),
@@ -95,8 +86,8 @@ async fn create_trade_offer(
     };
 
     // Check if the receiving student has already enrolled in an elective in the current semester
-    let Some(receiver_elective_subject_id) =
-        DbElectiveSubject::is_currently_enrolled(pool, receiver_student_id).await?
+    let Some(other_elective_subject_id) =
+        DbElectiveSubject::is_currently_enrolled(&mut *transaction, other_student_id).await?
     else {
         return Err(Error::InvalidPermission(
             "Receiving student has not enrolled in an elective this semester".to_string(),
@@ -105,95 +96,45 @@ async fn create_trade_offer(
     };
 
     // Gets the elective subject of the receiver, and also checks whether they're in a classroom
-    let ElectiveSubject::Compact(receiver_elective_subject, _) = ElectiveSubject::get_by_id(
-        pool,
-        receiver_elective_subject_id,
-        Some(FetchLevel::Compact),
-        None,
-        &*authorizer,
-    )
-    .await
-    .map_err(|e| match e {
-        Error::InvalidPermission(err, _) => {
-            Error::InvalidPermission(err, "/subjects/electives/trade-offers".to_string())
-        }
-        Error::EntityNotFound(err, _) => {
-            Error::EntityNotFound(err, "/subjects/electives/trade-offers".to_string())
-        }
-        _ => e,
-    })?
-    else {
-        unreachable!()
-    };
+    let other_elective_subject =
+        DbElectiveSubject::get_by_id(&mut *transaction, other_elective_subject_id).await?;
 
     // Checks if the sender is eligible to enroll in the receiver's elective session, also checks
     // whether they're in a classroom
-    match DbElectiveSubject::is_student_eligible(
-        pool,
-        receiver_elective_subject.id,
-        sender_student_id,
+    if !DbElectiveSubject::is_student_eligible(
+        &mut *transaction,
+        other_elective_subject.id,
+        client_student_id,
     )
-    .await
+    .await?
     {
-        Ok(true) => (),
-        Ok(false) => {
-            return Err(Error::InvalidPermission(
-                "Student is not eligible to enroll in this elective".to_string(),
-                "/subjects/electives/trade-offers".to_string(),
-            ));
-        }
-        Err(Error::InvalidPermission(err, _)) => {
-            return Err(Error::InvalidPermission(
-                err,
-                "/subjects/electives/trade-offers".to_string(),
-            ));
-        }
-        _ => unreachable!(),
-    };
+        return Err(Error::InvalidPermission(
+            "Student is not eligible to enroll in this elective".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
 
     // Gets the elective subject of the sender
-    let ElectiveSubject::Compact(sender_elective_subject, _) = ElectiveSubject::get_by_id(
-        pool,
-        sender_elective_subject_id,
-        Some(FetchLevel::Compact),
-        None,
-        &*authorizer,
-    )
-    .await
-    .map_err(|e| match e {
-        Error::InvalidPermission(err, _) => {
-            Error::InvalidPermission(err, "/subjects/electives/trade-offers".to_string())
-        }
-        Error::EntityNotFound(err, _) => {
-            Error::EntityNotFound(err, "/subjects/electives/trade-offers".to_string())
-        }
-        _ => e,
-    })?
-    else {
-        unreachable!()
-    };
+    let client_elective_subject =
+        DbElectiveSubject::get_by_id(&mut *transaction, client_elective_subject_id).await?;
 
     // Checks if the receiver is eligible to enroll in the sender's elective session
-    match DbElectiveSubject::is_student_eligible(
-        pool,
-        sender_elective_subject.id,
-        receiver_student_id,
+    if !DbElectiveSubject::is_student_eligible(
+        &mut *transaction,
+        client_elective_subject.id,
+        other_student_id,
     )
-    .await
+    .await?
     {
-        Ok(true) => (),
-        Ok(false) => {
-            return Err(Error::InvalidPermission(
-                "Receiving student is not eligible to enroll in this elective".to_string(),
-                "/subjects/electives/trade-offers".to_string(),
-            ));
-        }
-        _ => unreachable!(),
-    };
+        return Err(Error::InvalidPermission(
+            "Receiving student is not eligible to enroll in this elective".to_string(),
+            "/subjects/electives/trade-offers".to_string(),
+        ));
+    }
 
     // Check if the elective subjects are the same
-    if (sender_elective_subject.id == receiver_elective_subject.id)
-        && (sender_elective_subject.session_code == receiver_elective_subject.session_code)
+    if (client_elective_subject.id == other_elective_subject.id)
+        && (client_elective_subject.session_code == other_elective_subject.session_code)
     {
         return Err(Error::InvalidRequest(
             "Both the sender and receiver has the same elective subjects".to_string(),
@@ -203,21 +144,21 @@ async fn create_trade_offer(
 
     // Check if a trade offer with same receiving student and same elective subject already exists
     let trade_offer_already_exists = query!(
-        "
-        SELECT EXISTS (
-            SELECT FROM elective_subject_trade_offers
-            WHERE sender_id = $1 AND receiver_id = $2 AND status = $3
-            AND sender_elective_subject_session_id = $4
-            AND receiver_elective_subject_session_id = $5
-        )
+        "\
+        SELECT EXISTS (\
+            SELECT FROM elective_subject_trade_offers \
+            WHERE sender_id = $1 AND receiver_id = $2 AND status = $3 \
+            AND sender_elective_subject_session_id = $4 \
+            AND receiver_elective_subject_session_id = $5\
+        )\
         ",
-        sender_student_id,
-        receiver_student_id,
+        client_student_id,
+        other_student_id,
         SubmissionStatus::Pending as SubmissionStatus,
-        sender_elective_subject.id,
-        receiver_elective_subject.id,
+        client_elective_subject.id,
+        other_elective_subject.id,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .exists
     .unwrap_or(false);
@@ -230,18 +171,17 @@ async fn create_trade_offer(
 
     // check if sender have more than 3 pending trade offers
     let pending_trade_offers_count = query!(
-        "
-        SELECT COUNT(*) FROM elective_subject_trade_offers
-        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
+        "\
+        SELECT COUNT(*) FROM elective_subject_trade_offers \
+        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2\
         ",
-        sender_student_id,
+        client_student_id,
         SubmissionStatus::Pending as SubmissionStatus,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .count
     .unwrap_or(0);
-
     if pending_trade_offers_count >= 3 {
         return Err(Error::InvalidPermission(
             "Student has reached the maximum number of pending trade offers".to_string(),
@@ -251,18 +191,17 @@ async fn create_trade_offer(
 
     // check if receiver have more than 3 pending trade offers
     let pending_trade_offers_count = query!(
-        "
-        SELECT COUNT(*) FROM elective_subject_trade_offers
-        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2
+        "\
+        SELECT COUNT(*) FROM elective_subject_trade_offers \
+        WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2\
         ",
-        receiver_student_id,
+        other_student_id,
         SubmissionStatus::Pending as SubmissionStatus,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .count
     .unwrap_or(0);
-
     if pending_trade_offers_count >= 3 {
         return Err(Error::InvalidPermission(
             "Receiving student has reached the maximum number of pending trade offers".to_string(),
@@ -271,25 +210,23 @@ async fn create_trade_offer(
     }
 
     let trade_offer_id = query!(
-        "
-        INSERT INTO elective_subject_trade_offers (
-            sender_id,
-            receiver_id,
-            status,
-            sender_elective_subject_session_id,
-            receiver_elective_subject_session_id
-        ) VALUES ($1, $2, $3, $4, $5)
-        RETURNING id
+        "\
+        INSERT INTO elective_subject_trade_offers (\
+            sender_id, receiver_id, status, sender_elective_subject_session_id,\
+            receiver_elective_subject_session_id\
+        ) VALUES ($1, $2, $3, $4, $5) RETURNING id\
         ",
-        sender_student_id,
-        receiver_student_id,
+        client_student_id,
+        other_student_id,
         SubmissionStatus::Pending as SubmissionStatus,
-        sender_elective_subject.id,
-        receiver_elective_subject.id,
+        client_elective_subject.id,
+        other_elective_subject.id,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .id;
+
+    transaction.commit().await?;
 
     let elective_trade_offer = ElectiveTradeOffer::get_by_id(
         pool,

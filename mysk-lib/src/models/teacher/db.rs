@@ -42,12 +42,12 @@ impl DbTeacher {
 
     pub async fn get_teacher_contacts(pool: &PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            "
-            SELECT contacts.id FROM contacts
-            INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id
-            INNER JOIN people ON person_contacts.person_id = people.id
-            INNER JOIN teachers ON people.id = teachers.person_id
-            WHERE teachers.id = $1
+            "\
+            SELECT contacts.id FROM contacts \
+            INNER JOIN person_contacts ON contacts.id = person_contacts.contact_id \
+            INNER JOIN people ON person_contacts.person_id = people.id \
+            INNER JOIN teachers ON people.id = teachers.person_id \
+            WHERE teachers.id = $1\
             ",
             teacher_id,
         )
@@ -63,10 +63,10 @@ impl DbTeacher {
         academic_year: Option<i64>,
     ) -> Result<Option<Uuid>> {
         let res = query!(
-            "
-            SELECT classroom_id FROM classroom_advisors
-            INNER JOIN classrooms ON classrooms.id = classroom_id
-            WHERE teacher_id = $1 AND classrooms.year = $2
+            "\
+            SELECT classroom_id FROM classroom_advisors \
+            INNER JOIN classrooms ON classrooms.id = classroom_id \
+            WHERE teacher_id = $1 AND classrooms.year = $2\
             ",
             teacher_id,
             match academic_year {

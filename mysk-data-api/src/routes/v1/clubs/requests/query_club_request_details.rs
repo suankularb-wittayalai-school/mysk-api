@@ -23,15 +23,16 @@ use uuid::Uuid;
 pub async fn query_club_request_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     club_request_id: Path<Uuid>,
-    request_query: RequestType<ClubRequest, QueryablePlaceholder, SortablePlaceholder>,
+    RequestType {
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let club_request_id = club_request_id.into_inner();
-    let fetch_level = request_query.fetch_level;
-    let descendant_fetch_level = request_query.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;

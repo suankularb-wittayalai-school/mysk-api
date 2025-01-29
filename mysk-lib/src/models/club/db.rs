@@ -50,9 +50,9 @@ impl DbClub {
 
     pub async fn get_club_members(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            "
-            SELECT student_id FROM club_members
-            WHERE club_id = $1 AND year = $2 AND membership_status = $3
+            "\
+            SELECT student_id FROM club_members \
+            WHERE club_id = $1 AND year = $2 AND membership_status = $3\
             ",
             club_id,
             get_current_academic_year(None),

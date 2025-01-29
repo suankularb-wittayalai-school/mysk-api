@@ -42,25 +42,24 @@ struct UpdateReportRequest {
 pub async fn modify_report(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    teacher_id: LoggedInTeacher,
+    LoggedIn(user): LoggedIn,
+    LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
-    Json(request_body): Json<
-        RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let teacher_id = teacher_id.0;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_body.data else {
+    let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/subjects/attendance/{report_id}"),
         ));
     };
-    let fetch_level = request_body.fetch_level;
-    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/subjects/attendance/{report_id}"))
             .await?;
