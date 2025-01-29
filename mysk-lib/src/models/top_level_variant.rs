@@ -37,8 +37,8 @@ where
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         match fetch_level {
@@ -122,8 +122,8 @@ where
     async fn get_by_id<T>(
         pool: &PgPool,
         id: T,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self>
     where
@@ -144,16 +144,14 @@ where
     async fn get_by_ids<T>(
         pool: &PgPool,
         ids: Vec<T>,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>>
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send,
     {
         let variants = DbVariant::get_by_ids(pool, ids).await?;
-        let fetch_level = fetch_level.copied();
-        let descendant_fetch_level = descendant_fetch_level.copied();
         let futures: Vec<_> = variants
             .into_iter()
             .map(|variant| {
@@ -164,8 +162,8 @@ where
                     Self::from_table(
                         &pool,
                         variant,
-                        fetch_level.as_ref(),
-                        descendant_fetch_level.as_ref(),
+                        fetch_level,
+                        descendant_fetch_level,
                         &*shared_authorizer,
                     )
                     .await

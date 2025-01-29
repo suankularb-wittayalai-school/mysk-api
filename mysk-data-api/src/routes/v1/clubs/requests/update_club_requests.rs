@@ -61,8 +61,8 @@ pub async fn update_club_requests(
             ));
         }
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;
@@ -71,8 +71,8 @@ pub async fn update_club_requests(
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await

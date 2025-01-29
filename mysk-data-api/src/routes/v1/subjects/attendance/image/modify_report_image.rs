@@ -53,8 +53,8 @@ pub async fn modify_report_image(
             format!("/subjects/attendance/image/{report_id}"),
         ));
     };
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
+    let fetch_level = request_query.fetch_level;
+    let descendant_fetch_level = request_query.descendant_fetch_level;
     let authorizer = permissions::get_authorizer(
         pool,
         &user,

@@ -42,8 +42,8 @@ pub async fn join_clubs(
     let user = user.0;
     let student_id = student_id.0;
     let club_id = club_id.into_inner();
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let current_year = get_current_academic_year(None);
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
@@ -52,8 +52,8 @@ pub async fn join_clubs(
     let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(&FetchLevel::Detailed),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Detailed),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await

@@ -55,8 +55,8 @@ pub async fn add_club_members(
             ));
         }
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
@@ -65,8 +65,8 @@ pub async fn add_club_members(
     match Student::get_by_id(
         pool,
         invitee_student_id,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await
@@ -92,8 +92,8 @@ pub async fn add_club_members(
     let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(&FetchLevel::Detailed),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Detailed),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await

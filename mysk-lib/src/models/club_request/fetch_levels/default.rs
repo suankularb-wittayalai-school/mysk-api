@@ -31,7 +31,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
     async fn from_table(
         pool: &PgPool,
         table: DbClubRequest,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         Ok(Self {
@@ -41,7 +41,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
                 pool,
                 table.club_id,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -49,7 +49,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
                 pool,
                 table.student_id,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

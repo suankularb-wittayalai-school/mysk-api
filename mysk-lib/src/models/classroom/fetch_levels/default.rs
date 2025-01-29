@@ -31,7 +31,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
     async fn from_table(
         pool: &PgPool,
         table: DbClassroom,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         authorizer
@@ -50,7 +50,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
                 pool,
                 student_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -58,7 +58,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
                 pool,
                 contact_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -67,7 +67,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
                 pool,
                 class_advisor_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

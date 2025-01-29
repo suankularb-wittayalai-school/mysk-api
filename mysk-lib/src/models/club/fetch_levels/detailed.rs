@@ -37,7 +37,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
     async fn from_table(
         pool: &PgPool,
         table: DbClub,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let staff_ids = DbClub::get_club_staffs(pool, table.id).await?;
@@ -67,7 +67,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
                 pool,
                 contact_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -75,7 +75,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
                 pool,
                 staff_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -83,7 +83,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
                 pool,
                 member_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

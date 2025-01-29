@@ -51,7 +51,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
     async fn from_table(
         pool: &PgPool,
         table: DbElectiveSubject,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let subject_group =
@@ -99,7 +99,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 pool,
                 teacher_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -107,7 +107,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 pool,
                 co_teacher_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -118,7 +118,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 pool,
                 applicable_classroom_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -126,7 +126,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 pool,
                 student_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -136,7 +136,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
                 pool,
                 randomized_students_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

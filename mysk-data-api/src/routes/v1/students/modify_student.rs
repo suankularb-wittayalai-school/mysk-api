@@ -65,8 +65,8 @@ pub async fn modify_student(
             format!("/students/{student_id}"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("students/{student_id}")).await?;
 

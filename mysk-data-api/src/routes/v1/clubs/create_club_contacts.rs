@@ -51,8 +51,8 @@ pub async fn create_club_contacts(
             format!("/clubs/{club_id}/contacts"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
 
@@ -71,8 +71,8 @@ pub async fn create_club_contacts(
     let club_contacts = Contact::get_by_ids(
         pool,
         DbClub::get_club_contacts(pool, club_id).await?,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await?;

@@ -30,8 +30,8 @@ pub async fn query_teacher_details(
     let pool = &data.db;
     let user = user.0;
     let teacher_id = id.into_inner();
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
+    let fetch_level = request_query.fetch_level;
+    let descendant_fetch_level = request_query.descendant_fetch_level;
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}")).await?;
 

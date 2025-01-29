@@ -34,8 +34,8 @@ pub async fn query_trade_offers(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let user = user.0;
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let filter = request_body.filter;
     let sort = request_body.sort;
     let pagination = request_body.pagination;

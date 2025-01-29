@@ -45,7 +45,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
     async fn from_table(
         pool: &PgPool,
         table: DbElectiveSubject,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let subject_group =
@@ -89,7 +89,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
                 pool,
                 teacher_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -97,7 +97,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
                 pool,
                 co_teacher_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

@@ -43,7 +43,7 @@ pub trait FetchLevelVariant<DbVariant>: Sized {
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
@@ -54,8 +54,8 @@ pub trait TopLevelFromTable<DbVariant>: Sized {
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
@@ -65,8 +65,8 @@ pub trait TopLevelGetById: Sized {
     async fn get_by_id<T>(
         pool: &PgPool,
         id: T,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self>
     where
@@ -75,8 +75,8 @@ pub trait TopLevelGetById: Sized {
     async fn get_by_ids<T>(
         pool: &PgPool,
         ids: Vec<T>,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Vec<Self>>
     where
@@ -93,8 +93,8 @@ where
 {
     async fn query(
         pool: &PgPool,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         filter: Option<FilterConfig<Q>>,
         sort: Option<SortingConfig<S>>,
         pagination: Option<PaginationConfig>,
@@ -105,8 +105,6 @@ where
         S: 'async_trait,
     {
         let (models, pagination) = DbVariant::query(pool, filter, sort, pagination).await?;
-        let fetch_level = fetch_level.copied();
-        let descendant_fetch_level = descendant_fetch_level.copied();
         let futures: Vec<_> = models
             .into_iter()
             .map(|model| {
@@ -117,8 +115,8 @@ where
                     Self::from_table(
                         &pool,
                         model,
-                        fetch_level.as_ref(),
-                        descendant_fetch_level.as_ref(),
+                        fetch_level,
+                        descendant_fetch_level,
                         &*shared_authorizer,
                     )
                     .await

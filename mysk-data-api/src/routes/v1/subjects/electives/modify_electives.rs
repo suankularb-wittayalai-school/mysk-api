@@ -39,8 +39,8 @@ async fn modify_elective_subject(
     let user = user.0;
     let student_id = student_id.0;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
+    let fetch_level = request_body.fetch_level;
+    let descendant_fetch_level = request_body.descendant_fetch_level;
     let authorizer = permissions::get_authorizer(
         pool,
         &user,
@@ -100,7 +100,7 @@ async fn modify_elective_subject(
     let elective = match ElectiveSubject::get_by_id(
         pool,
         elective_subject_session_id,
-        Some(&FetchLevel::Detailed),
+        Some(FetchLevel::Detailed),
         None,
         &*authorizer,
     )
