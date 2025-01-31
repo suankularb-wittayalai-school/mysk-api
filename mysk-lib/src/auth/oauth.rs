@@ -173,13 +173,17 @@ pub async fn exchange_oauth_code(
 
 pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayload> {
     let public_keys_url = "https://www.googleapis.com/oauth2/v3/certs";
-    let public_keys_response = Client::new().get(public_keys_url).send().await?;
-    if !public_keys_response.status().is_success() {
-        return Err(Error::InternalServerError(
-            "Failed to fetch public keys from googleapis".to_string(),
-            "verify_id_token".to_string(),
-        ));
-    }
+    let public_keys_response = Client::new()
+        .get(public_keys_url)
+        .send()
+        .await?
+        .error_for_status()?;
+    // if !public_keys_response.status().is_success() {
+    //     return Err(Error::InternalServerError(
+    //         "Failed to fetch public keys from googleapis".to_string(),
+    //         "verify_id_token".to_string(),
+    //     ));
+    // }
 
     // public key response is array of keys convert to hashmap with kid as key
     let public_keys = public_keys_response.json::<GooglePublicKeys>().await?;

@@ -1,6 +1,6 @@
 use crate::{extractors::ExtractorFuture, AppState};
 use actix_web::{dev::Payload, http::header, web::Data, FromRequest, HttpRequest};
-use futures::future;
+use futures::{future, FutureExt as _};
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use mysk_lib::{auth::oauth::TokenClaims, models::user::User, prelude::*};
 use serde::Serialize;
@@ -21,64 +21,63 @@ impl FromRequest for LoggedIn {
         let pool = app_state.db.clone();
         let jwt_secret = app_state.env.token_secret.clone();
         let Some(authorization_header) = req.headers().get(header::AUTHORIZATION) else {
-            return Box::pin(future::err(Error::MissingToken(
+            return future::err(Error::MissingToken(
                 "Missing authorization token".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         };
         let Ok(token_parts) = authorization_header.to_str() else {
-            return Box::pin(future::err(Error::InternalServerError(
-                "Internal server error".to_string(),
+            return future::err(Error::InvalidAuthorizationScheme(
+                "Internal authorization scheme".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         };
         let token_parts: Vec<&str> = token_parts.split(' ').collect();
 
         let Some(scheme) = token_parts.first() else {
-            return Box::pin(future::err(Error::InvalidAuthorizationScheme(
+            return future::err(Error::InvalidAuthorizationScheme(
                 "Invalid authorization scheme".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         };
         if *scheme != "Bearer" {
-            return Box::pin(future::err(Error::InvalidAuthorizationScheme(
+            return future::err(Error::InvalidAuthorizationScheme(
                 "Invalid authorization scheme".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         }
 
         let Some(token) = token_parts.get(1) else {
-            return Box::pin(future::err(Error::MissingToken(
+            return future::err(Error::MissingToken(
                 "Missing authorization token".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         };
         let Ok(decoded_token) = decode::<TokenClaims>(
             token,
             &DecodingKey::from_secret(jwt_secret.as_bytes()),
             &Validation::default(),
         ) else {
-            return Box::pin(future::err(Error::InvalidToken(
+            return future::err(Error::InvalidToken(
                 "Invalid authorization token".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         };
 
         let Ok(user_id) = Uuid::parse_str(&decoded_token.claims.sub) else {
-            return Box::pin(future::err(Error::EntityNotFound(
+            return future::err(Error::EntityNotFound(
                 "User not found".to_string(),
                 "extractors::LoggedIn".to_string(),
-            )));
+            ))
+            .boxed();
         };
 
-        Box::pin(async move {
-            match User::get_by_id(&pool, user_id).await {
-                Ok(user) => Ok(LoggedIn(user)),
-                Err(_) => Err(Error::EntityNotFound(
-                    "User not found".to_string(),
-                    "extractors::LoggedIn".to_string(),
-                )),
-            }
-        })
+        async move { Ok(LoggedIn(User::get_by_id(&pool, user_id).await?)) }.boxed()
     }
 }

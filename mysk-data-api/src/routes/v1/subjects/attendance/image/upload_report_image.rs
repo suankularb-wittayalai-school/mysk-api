@@ -25,7 +25,7 @@ use reqwest::{
     Client,
 };
 use serde::Deserialize;
-use sqlx::{query, Error as SqlxError};
+use sqlx::query;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -63,15 +63,7 @@ pub async fn upload_report_image(
     )
     .await?;
 
-    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id)
-        .await
-        .map_err(|e| match e {
-            SqlxError::RowNotFound => Error::EntityNotFound(
-                "Class report not found".to_string(),
-                format!("/subjects/attendance/image/{report_id}"),
-            ),
-            _ => e.into(),
-        })?;
+    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id).await?;
 
     // Check if the report is owned by the teacher
     if class_report.teacher_id != teacher_id {
@@ -101,7 +93,7 @@ pub async fn upload_report_image(
     }
 
     let supabase_authorization = format!("Bearer {}", data.env.supabase_secret_key);
-    let upload_response = Client::new()
+    Client::new()
         .post(format!(
             "{}/storage/v1/object/online_teaching_reports/{}.{}",
             data.env.supabase_uri, report_id, update_data.file_extension,
@@ -116,14 +108,8 @@ pub async fn upload_report_image(
             HeaderValue::from_str(&format!("image/{}", update_data.file_extension)).unwrap(),
         )
         .send()
-        .await?;
-
-    if !upload_response.status().is_success() {
-        return Err(Error::InternalServerError(
-            "Internal server error".to_string(),
-            format!("/subjects/attendance/image/{report_id}"),
-        ));
-    }
+        .await?
+        .error_for_status()?;
 
     query!(
         "UPDATE online_teaching_reports SET has_image = true, image_ext = $1 WHERE id = $2",
