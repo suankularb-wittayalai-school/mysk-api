@@ -48,7 +48,7 @@ impl DbPerson {
         )
         .fetch_all(pool)
         .await?;
-        let allergies = res;
-        Ok(allergies.iter().map(|a| a.allergy_name.clone()).collect())
+
+        Ok(res.into_iter().map(|r| r.allergy_name).collect())
     }
 }

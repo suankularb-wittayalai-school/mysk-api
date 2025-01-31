@@ -35,7 +35,7 @@ async fn gsi_handler(
     data: Data<AppState>,
     Json(query): Json<OAuthRequest>,
 ) -> Result<impl Responder> {
-    let id_token: String = query.credential.clone();
+    let id_token = query.credential;
     if id_token.is_empty() {
         return Err(Error::InvalidToken(
             "Invalid token".to_string(),
@@ -58,7 +58,6 @@ async fn gsi_handler(
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
     let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
 
-    let jwt_secret = data.env.token_secret.clone();
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())
         .expect("Irrecoverable error, i64 is out of range for usize");
@@ -73,7 +72,7 @@ async fn gsi_handler(
     let token = jsonwebtoken::encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(jwt_secret.as_ref()),
+        &EncodingKey::from_secret(data.env.token_secret.as_bytes()),
     )?;
 
     let cookie = Cookie::build("token", token.clone())

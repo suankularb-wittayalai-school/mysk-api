@@ -206,7 +206,7 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
     let public_key = jsonwebtoken::DecodingKey::from_rsa_components(&public_keys[&kid], "AQAB")?;
 
     let mut validation = jsonwebtoken::Validation::new(header.alg);
-    validation.set_audience(&[env.google_oauth_client_id.clone()]);
+    validation.set_audience(&[env.google_oauth_client_id.as_str()]);
     validation.iss = Some(HashSet::from(["https://accounts.google.com".to_owned()]));
 
     let token_payload = jsonwebtoken::decode::<TokenPayload>(id_token, &public_key, &validation)?;

@@ -8,13 +8,13 @@ use mysk_lib::{auth::key::ApiKey, common::response::ResponseType, prelude::*};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
-pub struct CreateApiKeyRequest {
-    pub expire_days: Option<i64>,
+struct CreateApiKeyRequest {
+    expire_days: Option<i64>,
 }
 
 #[derive(Debug, Serialize)]
 struct CreateApiKeyResponse {
-    pub api_key: String,
+    api_key: String,
 }
 
 #[post("/keys")]

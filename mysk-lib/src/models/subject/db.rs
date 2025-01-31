@@ -92,7 +92,7 @@ impl DbSubject {
 
         Ok(res
             .into_iter()
-            .map(|r| MultiLangString::new(r.label_th.clone(), r.label_en.clone()))
+            .map(|r| MultiLangString::new(r.label_th, r.label_en))
             .collect())
     }
 }

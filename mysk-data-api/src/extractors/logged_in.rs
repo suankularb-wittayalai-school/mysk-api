@@ -19,18 +19,18 @@ impl FromRequest for LoggedIn {
             .app_data::<Data<AppState>>()
             .expect("Irrecoverable error, AppState is None");
         let pool = app_state.db.clone();
-        let jwt_secret = app_state.env.token_secret.clone();
+        let source = req.path().to_string();
         let Some(authorization_header) = req.headers().get(header::AUTHORIZATION) else {
             return future::err(Error::MissingToken(
                 "Missing authorization token".to_string(),
-                "extractors::LoggedIn".to_string(),
+                source,
             ))
             .boxed();
         };
         let Ok(token_parts) = authorization_header.to_str() else {
             return future::err(Error::InvalidAuthorizationScheme(
                 "Internal authorization scheme".to_string(),
-                "extractors::LoggedIn".to_string(),
+                source,
             ))
             .boxed();
         };
@@ -39,14 +39,14 @@ impl FromRequest for LoggedIn {
         let Some(scheme) = token_parts.first() else {
             return future::err(Error::InvalidAuthorizationScheme(
                 "Invalid authorization scheme".to_string(),
-                "extractors::LoggedIn".to_string(),
+                source,
             ))
             .boxed();
         };
         if *scheme != "Bearer" {
             return future::err(Error::InvalidAuthorizationScheme(
                 "Invalid authorization scheme".to_string(),
-                "extractors::LoggedIn".to_string(),
+                source,
             ))
             .boxed();
         }
@@ -54,28 +54,25 @@ impl FromRequest for LoggedIn {
         let Some(token) = token_parts.get(1) else {
             return future::err(Error::MissingToken(
                 "Missing authorization token".to_string(),
-                "extractors::LoggedIn".to_string(),
+                source,
             ))
             .boxed();
         };
         let Ok(decoded_token) = decode::<TokenClaims>(
             token,
-            &DecodingKey::from_secret(jwt_secret.as_bytes()),
+            &DecodingKey::from_secret(app_state.env.token_secret.as_bytes()),
             &Validation::default(),
         ) else {
             return future::err(Error::InvalidToken(
                 "Invalid authorization token".to_string(),
-                "extractors::LoggedIn".to_string(),
+                source,
             ))
             .boxed();
         };
 
         let Ok(user_id) = Uuid::parse_str(&decoded_token.claims.sub) else {
-            return future::err(Error::EntityNotFound(
-                "User not found".to_string(),
-                "extractors::LoggedIn".to_string(),
-            ))
-            .boxed();
+            return future::err(Error::EntityNotFound("User not found".to_string(), source))
+                .boxed();
         };
 
         async move { Ok(LoggedIn(User::get_by_id(&pool, user_id).await?)) }.boxed()
