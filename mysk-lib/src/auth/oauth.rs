@@ -175,7 +175,7 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
     let public_keys_url = "https://www.googleapis.com/oauth2/v3/certs";
     let public_keys_response = Client::new().get(public_keys_url).send().await?;
     if !public_keys_response.status().is_success() {
-        return Err(Error::InternalSeverError(
+        return Err(Error::InternalServerError(
             "Failed to fetch public keys from googleapis".to_string(),
             "verify_id_token".to_string(),
         ));
@@ -193,7 +193,7 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
 
     let header = jsonwebtoken::decode_header(id_token)?;
     let Some(kid) = header.kid else {
-        return Err(Error::InternalSeverError(
+        return Err(Error::InternalServerError(
             "No `kid` field in header".to_string(),
             "verify_id_token".to_string(),
         ));

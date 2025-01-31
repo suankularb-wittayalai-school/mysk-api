@@ -119,7 +119,7 @@ pub async fn modify_report_image(
         .await?;
 
     if !delete_response.status().is_success() {
-        return Err(Error::InternalSeverError(
+        return Err(Error::InternalServerError(
             "Internal server error".to_string(),
             format!("/subjects/attendance/image/{report_id}"),
         ));
@@ -143,7 +143,7 @@ pub async fn modify_report_image(
         .await?;
 
     if !upload_response.status().is_success() {
-        return Err(Error::InternalSeverError(
+        return Err(Error::InternalServerError(
             "Internal server error".to_string(),
             format!("/subjects/attendance/image/{report_id}"),
         ));

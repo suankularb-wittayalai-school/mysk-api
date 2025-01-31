@@ -27,7 +27,7 @@ impl FromRequest for LoggedIn {
             )));
         };
         let Ok(token_parts) = authorization_header.to_str() else {
-            return Box::pin(future::err(Error::InternalSeverError(
+            return Box::pin(future::err(Error::InternalServerError(
                 "Internal server error".to_string(),
                 "extractors::LoggedIn".to_string(),
             )));

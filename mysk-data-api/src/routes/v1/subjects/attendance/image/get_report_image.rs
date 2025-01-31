@@ -92,7 +92,7 @@ pub async fn get_report_image(
         .await?;
 
     if !image_request.status().is_success() {
-        return Err(Error::InternalSeverError(
+        return Err(Error::InternalServerError(
             "Internal server error".to_string(),
             format!("/subjects/attendance/image/{report_id}"),
         ));
