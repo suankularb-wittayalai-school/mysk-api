@@ -1,7 +1,6 @@
 use crate::{helpers::date::get_current_academic_year, prelude::*};
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
 use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
@@ -23,77 +22,38 @@ impl DbClassroom {
         year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            "
-            SELECT
-                teacher_id
-            FROM classroom_advisors
-                INNER JOIN classrooms ON classrooms.id = classroom_id
-            WHERE classroom_id = $1 AND year = $2
+            "\
+            SELECT teacher_id FROM classroom_advisors JOIN classrooms AS c ON c.id = classroom_id \
+            WHERE classroom_id = $1 AND year = $2\
             ",
             classroom_id,
-            year.unwrap_or_else(|| get_current_academic_year(None))
+            year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
-        .await
-        .map(|advisors| {
-            advisors
-                .into_iter()
-                .map(|advisor| advisor.teacher_id)
-                .collect()
-        });
+        .await?;
 
-        match res {
-            Ok(advisors) => Ok(advisors),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClassroom::get_classroom_advisors".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|advisor| advisor.teacher_id).collect())
     }
 
     pub async fn get_classroom_students(pool: &PgPool, classroom_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "SELECT student_id FROM classroom_students WHERE classroom_id = $1",
-            classroom_id
+            classroom_id,
         )
         .fetch_all(pool)
-        .await
-        .map(|students| {
-            students
-                .into_iter()
-                .map(|student| student.student_id)
-                .collect()
-        });
+        .await?;
 
-        match res {
-            Ok(students) => Ok(students),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClassroom::get_classroom_students".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|student| student.student_id).collect())
     }
 
     pub async fn get_classroom_contacts(pool: &PgPool, classroom_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "SELECT contact_id FROM classroom_contacts WHERE classroom_id = $1",
-            classroom_id
+            classroom_id,
         )
         .fetch_all(pool)
-        .await
-        .map(|contacts| {
-            contacts
-                .into_iter()
-                .map(|contact| contact.contact_id)
-                .collect()
-        });
+        .await?;
 
-        match res {
-            Ok(contacts) => Ok(contacts),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbClassroom::get_classroom_contacts".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|contact| contact.contact_id).collect())
     }
 }

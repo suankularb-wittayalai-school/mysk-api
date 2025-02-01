@@ -1,6 +1,6 @@
 use crate::{extractors::ExtractorFuture, AppState};
 use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
-use futures::future;
+use futures::{future, FutureExt as _};
 use mysk_lib::{
     auth::key::{ApiKey, PrefixedApiKey},
     prelude::*,
@@ -22,27 +22,20 @@ impl FromRequest for ApiKeyHeader {
             .app_data::<Data<AppState>>()
             .expect("Irrecoverable error, AppState is None");
         let pool = app_state.db.clone();
-        let token = match req.headers().get("X-Api-Key") {
-            Some(token) => match token.to_str() {
-                Ok(token) => PrefixedApiKey::try_from(token.to_string()),
-                Err(_) => {
-                    return Box::pin(future::err(Error::InvalidApiKey(
-                        "Invalid API Key".to_string(),
-                        "extractors::ApiKeyHeader".to_string(),
-                    )));
-                }
-            },
-            None => {
-                return Box::pin(async {
-                    Err(Error::MissingApiKey(
-                        "Missing API Key".to_string(),
-                        "extractors::ApiKeyHeader".to_string(),
-                    ))
-                })
-            }
+        let source = req.path().to_string();
+        let token = if let Some(token) = req.headers().get("X-Api-Key") {
+            let Ok(token) = token.to_str() else {
+                return future::err(Error::InvalidApiKey("Invalid API Key".to_string(), source))
+                    .boxed();
+            };
+
+            PrefixedApiKey::try_from(token.to_string())
+        } else {
+            return future::err(Error::MissingApiKey("Missing API Key".to_string(), source))
+                .boxed();
         };
 
-        Box::pin(async move {
+        async move {
             let token = token?;
             let mut hasher = Sha256::new();
             hasher.update(token.get_long_token().as_bytes());
@@ -50,10 +43,10 @@ impl FromRequest for ApiKeyHeader {
 
             let api_key = query_as!(
                 ApiKey,
-                "
-                SELECT * FROM user_api_keys
-                WHERE long_token_hash = $1 AND short_token = $2
-                AND (expire_at > NOW() OR expire_at IS NULL)
+                "\
+                SELECT * FROM user_api_keys \
+                WHERE long_token_hash = $1 AND short_token = $2 \
+                AND (expire_at > NOW() OR expire_at IS NULL)\
                 ",
                 hash,
                 token.get_short_token(),
@@ -62,6 +55,7 @@ impl FromRequest for ApiKeyHeader {
             .await?;
 
             Ok(ApiKeyHeader(api_key))
-        })
+        }
+        .boxed()
     }
 }

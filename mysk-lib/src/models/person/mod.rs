@@ -1,7 +1,13 @@
-use super::enums::{Sex, ShirtSize};
-use crate::{common::string::MultiLangString, models::person::db::DbPerson, prelude::*};
+use crate::{
+    common::string::MultiLangString,
+    models::{
+        enums::{Sex, ShirtSize},
+        person::db::DbPerson,
+        traits::GetById as _,
+    },
+    prelude::*,
+};
 use chrono::NaiveDate;
-use mysk_lib_macros::traits::db::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;

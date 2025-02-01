@@ -1,90 +1,110 @@
 use crate::{
     common::{
-        requests::{FetchLevel, FilterConfig, PaginationConfig, SortingConfig, SqlSection},
-        response::PaginationType,
+        pagination::{PaginationConfig, PaginationType},
+        requests::{FetchLevel, FilterConfig, SortingConfig},
     },
     permissions::Authorizer,
     prelude::*,
+    query::Queryable,
 };
 use async_trait::async_trait;
-use mysk_lib_macros::traits::db::BaseQuery;
-use sqlx::{PgPool, Postgres, QueryBuilder};
+use sqlx::{
+    postgres::{PgHasArrayType, PgRow},
+    Acquire, Encode, Error as SqlxError, FromRow, PgPool, Postgres, QueryBuilder, Row as _,
+    Type as SqlxType,
+};
 use std::fmt::Display;
+
+pub trait BaseQuery {
+    #[must_use]
+    fn base_query() -> &'static str;
+
+    #[must_use]
+    fn count_query() -> &'static str;
+}
+
+#[async_trait]
+pub trait GetById: BaseQuery + Sized {
+    async fn get_by_id<'c, A, T>(conn: A, id: T) -> Result<Self, SqlxError>
+    where
+        A: Acquire<'c, Database = Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send;
+
+    async fn get_by_ids<'c, A, T>(conn: A, ids: Vec<T>) -> Result<Vec<Self>, SqlxError>
+    where
+        A: Acquire<'c, Database = Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
+}
 
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
 /// from DB variant.
 #[async_trait]
-pub trait FetchLevelVariant<DbVariant>
-where
-    Self: Sized,
-{
+pub trait FetchLevelVariant<DbVariant>: Sized {
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
 
 /// A trait for the actual database entity with ability to convert to be converted from DB variant.
 #[async_trait]
-pub trait TopLevelFromTable<DbVariant>
-where
-    Self: Sized,
-{
+pub trait TopLevelFromTable<DbVariant>: Sized {
     async fn from_table(
         pool: &PgPool,
         table: DbVariant,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self>;
 }
 
 #[async_trait]
-pub trait TopLevelGetById
-where
-    Self: Sized,
-{
-    type Id;
-
-    async fn get_by_id(
+pub trait TopLevelGetById: Sized {
+    async fn get_by_id<T>(
         pool: &PgPool,
-        id: Self::Id,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        id: T,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Self>;
+    ) -> Result<Self>
+    where
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send;
 
-    async fn get_by_ids(
+    async fn get_by_ids<T>(
         pool: &PgPool,
-        ids: Vec<Self::Id>,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
+        ids: Vec<T>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Vec<Self>>;
+    ) -> Result<Vec<Self>>
+    where
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
 }
 
 #[async_trait]
-pub trait TopLevelQuery<DbVariant, QueryableObject, SortableObject>
+pub trait TopLevelQuery<DbVariant, Q, S>
 where
     Self: TopLevelFromTable<DbVariant> + Sized + 'static,
-    DbVariant: BaseQuery + QueryDb<QueryableObject, SortableObject> + Sized + Send + 'static,
-    QueryableObject: Queryable + Sync,
-    SortableObject: Display + Sync,
+    DbVariant: BaseQuery + QueryDb<Q, S> + Sized + Send + 'static,
+    Q: Clone + Queryable + Send,
+    S: Display + Send,
 {
     async fn query(
         pool: &PgPool,
-        fetch_level: Option<&FetchLevel>,
-        descendant_fetch_level: Option<&FetchLevel>,
-        filter: Option<&FilterConfig<QueryableObject>>,
-        sort: Option<&SortingConfig<SortableObject>>,
-        pagination: Option<&PaginationConfig>,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
+        filter: Option<FilterConfig<Q>>,
+        sort: Option<SortingConfig<S>>,
+        pagination: Option<PaginationConfig>,
         authorizer: &dyn Authorizer,
-    ) -> Result<Vec<Self>> {
-        let models = DbVariant::query(pool, filter, sort, pagination).await?;
-        let fetch_level = fetch_level.copied();
-        let descendant_fetch_level = descendant_fetch_level.copied();
+    ) -> Result<(Vec<Self>, PaginationType)>
+    where
+        Q: 'async_trait,
+        S: 'async_trait,
+    {
+        let (models, pagination) = DbVariant::query(pool, filter, sort, pagination).await?;
         let futures: Vec<_> = models
             .into_iter()
             .map(|model| {
@@ -95,8 +115,8 @@ where
                     Self::from_table(
                         &pool,
                         model,
-                        fetch_level.as_ref(),
-                        descendant_fetch_level.as_ref(),
+                        fetch_level,
+                        descendant_fetch_level,
                         &*shared_authorizer,
                     )
                     .await
@@ -109,47 +129,64 @@ where
             result.push(future.await??);
         }
 
-        Ok(result)
+        Ok((result, pagination))
     }
-
-    async fn response_pagination(
-        pool: &PgPool,
-        filter: Option<&FilterConfig<QueryableObject>>,
-        pagination: Option<&PaginationConfig>,
-    ) -> Result<PaginationType> {
-        DbVariant::response_pagination(pool, filter, pagination).await
-    }
-}
-
-/// A trait for Queryable objects with ability to convert to query string conditions.
-pub trait Queryable {
-    // Convert to query string conditions
-    fn to_query_string(&self) -> Vec<SqlSection>;
 }
 
 /// A trait for DB variant to allow querying and creating pagination response.
 #[async_trait]
-pub trait QueryDb<QueryableObject, SortableObject>
+pub trait QueryDb<Q, S>
 where
-    Self: Sized + BaseQuery,
-    QueryableObject: Queryable,
-    SortableObject: Display,
+    Self: BaseQuery + for<'q> FromRow<'q, PgRow> + Sized + Unpin,
+    Q: Clone + Queryable + Send,
+    S: Display + Send,
 {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
-        filter: Option<&FilterConfig<QueryableObject>>,
+        filter: Option<FilterConfig<Q>>,
     );
 
+    /// Queries the database with optional filters, sorting, and pagination. If pagination is not
+    /// provided, a default configuration is used.
     async fn query(
         pool: &PgPool,
-        filter: Option<&FilterConfig<QueryableObject>>,
-        sort: Option<&SortingConfig<SortableObject>>,
-        pagination: Option<&PaginationConfig>,
-    ) -> Result<Vec<Self>>;
+        filter: Option<FilterConfig<Q>>,
+        sort: Option<SortingConfig<S>>,
+        pagination: Option<PaginationConfig>,
+    ) -> Result<(Vec<Self>, PaginationType)>
+    where
+        Q: 'async_trait,
+        S: 'async_trait,
+    {
+        let mut query = QueryBuilder::new(<Self as BaseQuery>::base_query());
+        Self::build_shared_query(&mut query, filter.clone());
 
-    async fn response_pagination(
-        pool: &sqlx::PgPool,
-        filter: Option<&FilterConfig<QueryableObject>>,
-        pagination: Option<&PaginationConfig>,
-    ) -> Result<PaginationType>;
+        if let Some(sorting) = sort {
+            sorting.append_into_query_builder(&mut query);
+        }
+
+        let pagination = pagination.unwrap_or_default();
+        pagination.append_into_query_builder(&mut query)?;
+
+        let mut count_query = QueryBuilder::new(<Self as BaseQuery>::count_query());
+        Self::build_shared_query(&mut count_query, filter);
+        let count = u32::try_from(
+            count_query
+                .build()
+                .fetch_one(pool)
+                .await?
+                .get::<i64, _>("count"),
+        )
+        .map_err(|_| {
+            Error::InvalidRequest(
+                "Page number is out of bounds".to_string(),
+                "QueryDb::query".to_string(),
+            )
+        })?;
+
+        Ok((
+            query.build_query_as::<Self>().fetch_all(pool).await?,
+            PaginationType::new(pagination.p, pagination.size.unwrap_or(50), count),
+        ))
+    }
 }

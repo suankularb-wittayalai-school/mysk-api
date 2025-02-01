@@ -7,9 +7,6 @@ pub enum SortableContact {
     Id,
     Name,
     Type,
-    IncludeStudents,
-    IncludeTeachers,
-    IncludeParents,
 }
 
 impl Default for SortableContact {
@@ -24,9 +21,6 @@ impl Display for SortableContact {
             SortableContact::Id => write!(f, "id"),
             SortableContact::Name => write!(f, "name"),
             SortableContact::Type => write!(f, "type"),
-            SortableContact::IncludeStudents => write!(f, "include_students"),
-            SortableContact::IncludeTeachers => write!(f, "include_teachers"),
-            SortableContact::IncludeParents => write!(f, "include_parents"),
         }
     }
 }

@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
 use sqlx::FromRow;
 use uuid::Uuid;

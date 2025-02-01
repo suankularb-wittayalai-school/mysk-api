@@ -6,7 +6,7 @@ use actix_web::{
     HttpResponse, Responder,
 };
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{EncodingKey, Header};
 use mysk_lib::{
     auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
     common::response::ResponseType,
@@ -31,9 +31,11 @@ pub struct GoogleTokenResponse {
 
 #[allow(clippy::cast_possible_wrap)]
 #[post("/oauth/gsi")]
-async fn gsi_handler(data: Data<AppState>, query: Json<OAuthRequest>) -> Result<impl Responder> {
-    let id_token: String = query.credential.clone();
-
+async fn gsi_handler(
+    data: Data<AppState>,
+    Json(query): Json<OAuthRequest>,
+) -> Result<impl Responder> {
+    let id_token = query.credential;
     if id_token.is_empty() {
         return Err(Error::InvalidToken(
             "Invalid token".to_string(),
@@ -56,7 +58,6 @@ async fn gsi_handler(data: Data<AppState>, query: Json<OAuthRequest>) -> Result<
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
     let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
 
-    let jwt_secret = data.env.token_secret.clone();
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())
         .expect("Irrecoverable error, i64 is out of range for usize");
@@ -68,37 +69,29 @@ async fn gsi_handler(data: Data<AppState>, query: Json<OAuthRequest>) -> Result<
         iat,
     };
 
-    let token = encode(
+    let token = jsonwebtoken::encode(
         &Header::default(),
         &claims,
-        &EncodingKey::from_secret(jwt_secret.as_ref()),
+        &EncodingKey::from_secret(data.env.token_secret.as_bytes()),
+    )?;
+
+    let cookie = Cookie::build("token", token.clone())
+        .secure(true)
+        .http_only(true)
+        .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
+        .same_site(actix_web::cookie::SameSite::Strict)
+        .finish();
+
+    let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
+        GoogleTokenResponse {
+            access_token: token,
+            expires_in: data.env.token_max_age * 60,
+            token_type: "Bearer".to_string(),
+            scope: "email profile".to_string(),
+            id_token,
+        },
+        None,
     );
 
-    match token {
-        Ok(token) => {
-            let cookie = Cookie::build("token", token.clone())
-                .secure(true)
-                .http_only(true)
-                .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
-                .same_site(actix_web::cookie::SameSite::Strict)
-                .finish();
-
-            let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
-                GoogleTokenResponse {
-                    access_token: token,
-                    expires_in: data.env.token_max_age * 60,
-                    token_type: "Bearer".to_string(),
-                    scope: "email profile".to_string(),
-                    id_token,
-                },
-                None,
-            );
-
-            Ok(HttpResponse::Ok().cookie(cookie).json(response))
-        }
-        Err(err) => Err(Error::InternalSeverError(
-            err.to_string(),
-            "/auth/oauth/gsi".to_string(),
-        )),
-    }
+    Ok(HttpResponse::Ok().cookie(cookie).json(response))
 }

@@ -1,8 +1,7 @@
-use super::{
-    fragment::{query_param_push_bind, QueryParamType},
-    QueryFragment,
+use crate::{
+    common::string::FlexibleMultiLangString,
+    query::{building_blocks::QueryParamType, QueryFragment, QueryParam},
 };
-use crate::common::{requests::QueryParam, string::FlexibleMultiLangString};
 use sqlx::{Postgres, QueryBuilder};
 
 /// A collection of multiple `QueryFragment`s.
@@ -14,33 +13,25 @@ impl<'sql> SqlSetClause<'sql> {
         SqlSetClause(vec![QueryFragment::Sql(" SET ")])
     }
 
-    pub fn new_fragment() -> Self {
-        SqlSetClause(Vec::new())
-    }
-
-    #[must_use]
-    pub fn push_sql(mut self, sql: &'sql str) -> Self {
+    pub fn push_sql(&mut self, sql: &'sql str) -> &mut Self {
         self.0.push(QueryFragment::Sql(sql));
 
         self
     }
 
-    #[must_use]
-    pub fn push_param(mut self, param: QueryParam) -> Self {
+    pub fn push_param(&mut self, param: QueryParam) -> &mut Self {
         self.0.push(QueryFragment::Param(param));
 
         self
     }
 
-    #[must_use]
-    pub fn push_prev_param(mut self) -> Self {
+    pub fn push_prev_param(&mut self) -> &mut Self {
         self.0.push(QueryFragment::PreviousParam);
 
         self
     }
 
-    #[must_use]
-    pub fn push_sep(mut self) -> Self {
+    pub fn push_sep(&mut self) -> &mut Self {
         if self.0.last().unwrap() != &QueryFragment::Sql(" SET ") {
             self.0.push(QueryFragment::Separator);
         }
@@ -48,79 +39,69 @@ impl<'sql> SqlSetClause<'sql> {
         self
     }
 
-    #[must_use]
     pub fn push_multilang_update_field(
-        self,
+        &mut self,
         column: &'sql str,
         param: Option<FlexibleMultiLangString>,
-    ) -> Self {
+    ) -> &mut Self {
         if let Some(param) = param {
-            let s = if let Some(th) = param.th {
+            if let Some(th) = param.th {
                 self.push_sep()
                     .push_sql(column)
                     .push_sql("_th = COALESCE(")
                     .push_param(QueryParam::String(th))
                     .push_sep()
                     .push_sql(column)
-                    .push_sql("_th)")
-            } else {
-                self
-            };
+                    .push_sql("_th)");
+            }
 
             if let Some(en) = param.en {
-                s.push_sep()
+                self.push_sep()
                     .push_sql(column)
                     .push_sql("_en = COALESCE(")
                     .push_param(QueryParam::String(en))
                     .push_sep()
                     .push_sql(column)
-                    .push_sql("_en)")
-            } else {
-                s
+                    .push_sql("_en)");
             }
-        } else {
-            self
         }
+
+        self
     }
 
-    #[must_use]
     pub fn push_update_field<T: QueryParamType>(
-        self,
+        &mut self,
         column: &'sql str,
         param: Option<T>,
         make_variant: impl FnOnce(T) -> QueryParam,
-    ) -> Self {
+    ) -> &mut Self {
         if let Some(param) = param {
-            let s = self
-                .push_sep()
+            self.push_sep()
                 .push_sql(column)
                 .push_sql(" = COALESCE(")
                 .push_param(make_variant(param))
                 .push_sep()
                 .push_sql(column)
                 .push_sql(")");
-
-            s
-        } else {
-            self
         }
+
+        self
     }
 
-    #[must_use]
-    pub fn push_if_some<T: QueryParamType>(
-        mut self,
-        param: Option<T>,
-        make_sections: impl FnOnce(SqlSetClause<'sql>, T) -> SqlSetClause<'sql>,
-    ) -> Self {
+    pub fn push_if_some<T, F>(&mut self, param: Option<T>, make_sections: F) -> &mut Self
+    where
+        T: QueryParamType,
+        F: FnOnce(SqlSetClause<'sql>, T) -> SqlSetClause<'sql>,
+    {
         if let Some(param) = param {
-            match &self.0.last() {
-                Some(QueryFragment::Sql(" WHERE ") | QueryFragment::Separator) => (),
+            match self.0.last() {
+                Some(QueryFragment::Sql(" SET ") | QueryFragment::Separator) => (),
                 _ => {
                     self.0.push(QueryFragment::Separator);
                 }
             }
 
-            make_sections(SqlSetClause::new_fragment(), param)
+            make_sections(SqlSetClause(Vec::new()), param)
                 .0
                 .into_iter()
                 .for_each(|section| self.0.push(section));
@@ -140,7 +121,7 @@ impl<'sql> SqlSetClause<'sql> {
             QueryFragment::Param(param) => {
                 param_count += 1;
 
-                query_param_push_bind(&mut qb, param);
+                param.push_bind(&mut qb);
             }
             QueryFragment::PreviousParam => {
                 assert!(

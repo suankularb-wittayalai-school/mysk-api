@@ -3,8 +3,7 @@ use crate::{
     models::enums::SubjectType, prelude::*,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
 use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
@@ -46,15 +45,9 @@ impl DbSubject {
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.classroom_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbSubject::get_subject_classrooms".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.classroom_id).collect())
     }
 
     pub async fn get_subject_teachers(
@@ -68,15 +61,9 @@ impl DbSubject {
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.teacher_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbSubject::get_subject_teachers".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.teacher_id).collect())
     }
 
     pub async fn get_subject_co_teachers(
@@ -90,34 +77,22 @@ impl DbSubject {
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(pool)
-        .await;
+        .await?;
 
-        match res {
-            Ok(res) => Ok(res.iter().map(|r| r.teacher_id).collect()),
-            Err(e) => Err(Error::InternalSeverError(
-                e.to_string(),
-                "DbSubject::get_subject_co_teachers".to_string(),
-            )),
-        }
+        Ok(res.into_iter().map(|r| r.teacher_id).collect())
     }
 
     pub async fn get_requirements(pool: &PgPool, subject_id: Uuid) -> Result<Vec<MultiLangString>> {
-        query!(
-            "
-            SELECT label_th, label_en FROM subject_requirements
-            WHERE subject_id = $1
-            ",
+        let res = query!(
+            "SELECT label_th, label_en FROM subject_requirements WHERE subject_id = $1",
             subject_id,
         )
         .fetch_all(pool)
-        .await
-        .map(|res| {
-            res.iter()
-                .map(|r| MultiLangString::new(r.label_th.clone(), r.label_en.clone()))
-                .collect::<Vec<MultiLangString>>()
-        })
-        .map_err(|e| {
-            Error::InternalSeverError(e.to_string(), "DbSubject::get_requirements".to_string())
-        })
+        .await?;
+
+        Ok(res
+            .into_iter()
+            .map(|r| MultiLangString::new(r.label_th, r.label_en))
+            .collect())
     }
 }

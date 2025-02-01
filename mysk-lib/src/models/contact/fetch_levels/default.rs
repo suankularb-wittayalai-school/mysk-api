@@ -1,13 +1,9 @@
 use crate::{
-    common::{requests::FetchLevel, string::FlexibleMultiLangString},
-    models::{contact::db::DbContact, enums::ContactType, traits::FetchLevelVariant},
-    permissions::{ActionType, Authorizer},
-    prelude::*,
+    common::string::FlexibleMultiLangString,
+    models::{contact::db::DbContact, enums::ContactType},
 };
-use async_trait::async_trait;
 use mysk_lib_macros::impl_fetch_level_variant_from;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -16,9 +12,6 @@ pub struct DefaultContact {
     pub name: Option<FlexibleMultiLangString>,
     pub r#type: ContactType,
     pub value: String,
-    pub include_students: Option<bool>,
-    pub include_teachers: Option<bool>,
-    pub include_parents: Option<bool>,
 }
 
 impl From<DbContact> for DefaultContact {
@@ -42,9 +35,6 @@ impl From<DbContact> for DefaultContact {
             },
             r#type: contact.r#type,
             value: contact.value,
-            include_students: contact.include_students,
-            include_teachers: contact.include_teachers,
-            include_parents: contact.include_parents,
         }
     }
 }

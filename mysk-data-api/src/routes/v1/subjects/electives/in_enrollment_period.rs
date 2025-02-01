@@ -11,10 +11,9 @@ use mysk_lib::{
 pub async fn in_enrollment_period(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    student_id: LoggedInStudent,
+    LoggedInStudent(student_id): LoggedInStudent,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let student_id = student_id.0;
 
     let is_in_enrollment_period = DbElectiveSubject::is_enrollment_period(pool, student_id).await?;
     let response = ResponseType::new(is_in_enrollment_period, None);

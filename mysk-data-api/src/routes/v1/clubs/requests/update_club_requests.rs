@@ -9,7 +9,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
@@ -20,6 +20,7 @@ use mysk_lib::{
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -34,56 +35,55 @@ struct UpdateClubRequest {
 pub async fn update_club_requests(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_request_id: Path<Uuid>,
-    request_body: Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
-    let club_request_status = match &request_body.data {
-        Some(request_data) => match request_data.status {
-            SubmissionStatus::Approved | SubmissionStatus::Declined => request_data.status,
-            SubmissionStatus::Pending => {
-                return Err(Error::InvalidRequest(
-                    "Status must be either 'approved' or 'declined'".to_string(),
-                    format!("/clubs/requests/{club_request_id}"),
-                ));
-            }
-        },
-        None => {
+    let club_request_status = if let Some(request_data) = request_data {
+        if matches!(request_data.status, SubmissionStatus::Pending) {
             return Err(Error::InvalidRequest(
-                "Json deserialize error: field `data` can not be empty".to_string(),
+                "Status must be either `approved` or `declined`".to_string(),
                 format!("/clubs/requests/{club_request_id}"),
             ));
         }
+
+        request_data.status
+    } else {
+        return Err(Error::InvalidRequest(
+            "Json deserialize error: field `data` can not be empty".to_string(),
+            format!("/clubs/requests/{club_request_id}"),
+        ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;
 
     // Check if the club request exists
-    let club_request = match ClubRequest::get_by_id(
+    let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await
-    {
-        Ok(ClubRequest::Default(club_request, _)) => club_request,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club request not found".to_string(),
-                format!("/clubs/requests/{club_request_id}"),
-            ))
-        }
-        _ => unreachable!("ClubRequest::get_by_id should always return a Default variant"),
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Club request not found".to_string(),
+            format!("/clubs/requests/{club_request_id}"),
+        ),
+        _ => e,
+    })?
+    else {
+        unreachable!("ClubRequest::get_by_id should always return a Default variant")
     };
 
     // Check if the club request is still pending

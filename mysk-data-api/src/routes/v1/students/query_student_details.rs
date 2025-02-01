@@ -9,12 +9,13 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{student::Student, traits::TopLevelGetById as _},
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 
@@ -22,15 +23,16 @@ use uuid::Uuid;
 pub async fn query_student_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     id: Path<Uuid>,
-    request_query: RequestType<Student, QueryablePlaceholder, SortablePlaceholder>,
+    RequestType {
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let student_id = id.into_inner();
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/students/{student_id}")).await?;
 

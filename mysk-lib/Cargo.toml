@@ -11,7 +11,6 @@ bs58.workspace = true
 chrono.workspace = true
 futures.workspace = true
 jsonwebtoken.workspace = true
-mysk-lib-derives = { path = "../mysk-lib-derives" }
 mysk-lib-macros = { path = "../mysk-lib-macros" }
 rand.workspace = true
 reqwest.workspace = true

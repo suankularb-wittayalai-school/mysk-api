@@ -23,20 +23,21 @@ use mysk_lib::{
 pub async fn query_elective_subject(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    request_query: RequestType<ElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>,
+    LoggedIn(user): LoggedIn,
+    RequestType {
+        pagination,
+        filter,
+        sort,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryableElectiveSubject, SortableElectiveSubject>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-    let filter = request_query.filter.as_ref();
-    let sort = request_query.sort.as_ref();
-    let pagination = request_query.pagination.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, "/subjects/electives".to_string()).await?;
 
-    let electives = ElectiveSubject::query(
+    let (electives, pagination) = ElectiveSubject::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -46,8 +47,6 @@ pub async fn query_elective_subject(
         &*authorizer,
     )
     .await?;
-
-    let pagination = ElectiveSubject::response_pagination(pool, filter, pagination).await?;
     let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))

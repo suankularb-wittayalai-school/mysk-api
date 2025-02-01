@@ -9,16 +9,19 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
-        club::db::DbClub, contact::Contact, enums::ContactType, traits::TopLevelGetById as _,
+        club::db::DbClub,
+        contact::Contact,
+        enums::ContactType,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;
@@ -33,23 +36,24 @@ struct ClubContactRequest {
 pub async fn create_club_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_id: Path<Uuid>,
-    request_body: Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_id = club_id.into_inner();
-    let Some(club_contact) = &request_body.data else {
+    let Some(club_contact) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/clubs/{club_id}/contacts"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
 
@@ -59,7 +63,7 @@ pub async fn create_club_contacts(
     let club_staffs = DbClub::get_club_staffs(pool, club_id).await?;
     if !club_staffs.iter().any(|staff_id| *staff_id == student_id) {
         return Err(Error::InvalidPermission(
-            "Student must be a staff of the club to create contacts".to_string(),
+            "Insufficient permissions to perform this action".to_string(),
             format!("/clubs/{club_id}/contacts"),
         ));
     }
@@ -68,8 +72,8 @@ pub async fn create_club_contacts(
     let club_contacts = Contact::get_by_ids(
         pool,
         DbClub::get_club_contacts(pool, club_id).await?,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await?;
@@ -86,7 +90,7 @@ pub async fn create_club_contacts(
     let mut transaction = pool.begin().await?;
 
     let new_contact_id = query!(
-        "INSERT INTO contacts (type, value) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+        "INSERT INTO contacts (type, value) VALUES ($1, $2) RETURNING id",
         club_contact.r#type as ContactType,
         club_contact.value,
     )
@@ -95,7 +99,7 @@ pub async fn create_club_contacts(
     .id;
 
     query!(
-        "INSERT INTO club_contacts (club_id, contact_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "INSERT INTO club_contacts (club_id, contact_id) VALUES ($1, $2)",
         club.id,
         new_contact_id,
     )

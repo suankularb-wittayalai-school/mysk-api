@@ -6,7 +6,7 @@ use crate::{
     models::{
         club::db::DbClub,
         contact::Contact,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
     },
     permissions::Authorizer,
     prelude::*,
@@ -34,7 +34,7 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
     async fn from_table(
         pool: &PgPool,
         table: DbClub,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let contact_ids = DbClub::get_club_contacts(pool, table.id).await?;
@@ -62,7 +62,7 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
                 pool,
                 contact_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

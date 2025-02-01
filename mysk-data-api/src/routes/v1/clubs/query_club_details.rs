@@ -9,12 +9,13 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{club::Club, traits::TopLevelGetById as _},
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 
@@ -22,15 +23,16 @@ use uuid::Uuid;
 pub async fn query_club_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     club_id: Path<Uuid>,
-    request_query: RequestType<Club, QueryablePlaceholder, SortablePlaceholder>,
+    RequestType {
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let club_id = club_id.into_inner();
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
     let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}")).await?;
 
     let club = Club::get_by_id(

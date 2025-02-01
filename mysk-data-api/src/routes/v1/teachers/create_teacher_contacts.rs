@@ -9,7 +9,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
         string::MultiLangString,
     },
@@ -17,12 +17,12 @@ use mysk_lib::{
         contact::{db::DbContact, Contact},
         enums::ContactType,
         teacher::db::DbTeacher,
-        traits::TopLevelGetById as _,
+        traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions::{self, ActionType},
+    permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;
@@ -38,32 +38,29 @@ struct TeacherContactRequest {
 pub async fn create_teacher_contacts(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     teacher_id: Path<Uuid>,
-    request_body: Json<
-        RequestType<TeacherContactRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<TeacherContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let teacher_id = teacher_id.into_inner();
-    let Some(teacher_contact) = &request_body.data else {
+    let Some(teacher_contact) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/teachers/{teacher_id}/contacts"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}/contacts"))
             .await?;
 
-    // Fetch and authorize db_teacher instance
+    // Check if client is teacher
     let teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
-    authorizer
-        .authorize_teacher(&teacher, pool, ActionType::Create)
-        .await?;
 
     // Check for duplicate contacts
     let existing_contacts = DbTeacher::get_teacher_contacts(pool, teacher_id).await?;
@@ -77,25 +74,28 @@ pub async fn create_teacher_contacts(
         }
     }
 
-    // Insert the new contact
+    let mut transaction = pool.begin().await?;
+
     let new_contact_id = query!(
-        "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id",
+        "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) RETURNING id",
         teacher_contact.r#type as ContactType,
         teacher_contact.value,
         teacher_contact.name.th,
         teacher_contact.name.en,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *transaction)
     .await?
     .id;
 
     query!(
-        "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "INSERT INTO person_contacts (person_id, contact_id) VALUES ($1, $2)",
         teacher.person_id,
         new_contact_id,
     )
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
+
+    transaction.commit().await?;
 
     let new_contact = Contact::get_by_id(
         pool,

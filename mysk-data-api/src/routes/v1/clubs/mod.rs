@@ -9,11 +9,11 @@ pub mod query_clubs;
 pub mod requests;
 
 pub fn config(cfg: &mut ServiceConfig) {
-    cfg.service(scope("/requests").configure(requests::config));
-    cfg.service(get_club_statistics::get_club_statistics);
-    cfg.service(add_club_members::add_club_members);
-    cfg.service(join_clubs::join_clubs);
-    cfg.service(create_club_contacts::create_club_contacts);
-    cfg.service(query_club_details::query_club_details);
-    cfg.service(query_clubs::query_clubs);
+    cfg.service(scope("/requests").configure(requests::config))
+        .service(get_club_statistics::get_club_statistics)
+        .service(add_club_members::add_club_members)
+        .service(join_clubs::join_clubs)
+        .service(create_club_contacts::create_club_contacts)
+        .service(query_club_details::query_club_details)
+        .service(query_clubs::query_clubs);
 }

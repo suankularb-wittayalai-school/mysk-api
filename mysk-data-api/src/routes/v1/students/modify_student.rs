@@ -10,20 +10,19 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{QueryParam, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
     models::{
         enums::ShirtSize,
         student::{db::DbStudent, Student},
-        traits::TopLevelGetById,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions::{self, ActionType},
     prelude::*,
-    query::set_clause::SqlSetClause,
+    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;
@@ -51,23 +50,23 @@ struct UpdatePersonInfo {
 pub async fn modify_student(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
+    LoggedIn(user): LoggedIn,
     student_id: Path<Uuid>,
-    Json(request_body): Json<
-        RequestType<UpdateStudentRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<UpdateStudentRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
     let student_id = student_id.into_inner();
-    let Some(update_data) = request_body.data else {
+    let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/students/{student_id}"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("students/{student_id}")).await?;
 
@@ -91,9 +90,9 @@ pub async fn modify_student(
             .await?;
 
             query!(
-                "
-                INSERT INTO person_allergies (person_id, allergy_name)
-                SELECT $1, * FROM UNNEST($2::text[])
+                "\
+                INSERT INTO person_allergies (person_id, allergy_name)\
+                SELECT $1, * FROM UNNEST($2::text[])\
                 ",
                 person_id,
                 &allergies[..],
@@ -102,18 +101,17 @@ pub async fn modify_student(
             .await?;
         };
 
-        // TODO: Refactor `SqlSetClause` API
-        let mut qb = SqlSetClause::new()
-            .push_multilang_update_field("prefix", pu.prefix)
+        let mut qb = SqlSetClause::new();
+        qb.push_multilang_update_field("prefix", pu.prefix)
             .push_multilang_update_field("first_name", pu.first_name)
             .push_multilang_update_field("last_name", pu.last_name)
             .push_multilang_update_field("middle_name", pu.middle_name)
             .push_multilang_update_field("nickname", pu.nickname)
             .push_update_field("birthdate", pu.birthdate, QueryParam::NaiveDate)
             .push_update_field("shirt_size", pu.shirt_size, QueryParam::ShirtSize)
-            .push_update_field("pants_size", pu.pants_size, QueryParam::String)
-            .into_query_builder("UPDATE people");
+            .push_update_field("pants_size", pu.pants_size, QueryParam::String);
 
+        let mut qb = qb.into_query_builder("UPDATE people");
         qb.push(" WHERE id = ")
             .push_bind(person_id)
             .build()

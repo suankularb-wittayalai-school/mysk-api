@@ -10,18 +10,17 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{QueryParam, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
         online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
-        traits::TopLevelGetById as _,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
-    query::set_clause::SqlSetClause,
+    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use serde::Deserialize;
 use sqlx::Error as SqlxError;
 use uuid::Uuid;
@@ -43,25 +42,24 @@ struct UpdateReportRequest {
 pub async fn modify_report(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    teacher_id: LoggedInTeacher,
+    LoggedIn(user): LoggedIn,
+    LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
-    Json(request_body): Json<
-        RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let teacher_id = teacher_id.0;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_body.data else {
+    let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             format!("/subjects/attendance/{report_id}"),
         ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/subjects/attendance/{report_id}"))
             .await?;
@@ -78,9 +76,8 @@ pub async fn modify_report(
         })?
         .id;
 
-    // TODO: 0.6.0 rebase :skull_crossbones:
-    let mut qb = SqlSetClause::new()
-        .push_update_field("subject_id", update_data.subject_id, QueryParam::Uuid)
+    let mut qb = SqlSetClause::new();
+    qb.push_update_field("subject_id", update_data.subject_id, QueryParam::Uuid)
         .push_update_field("classroom_id", update_data.classroom_id, QueryParam::Uuid)
         .push_update_field("date", update_data.date, QueryParam::NaiveDate)
         .push_update_field(
@@ -100,9 +97,9 @@ pub async fn modify_report(
             "absent_student_no",
             update_data.absent_student_no,
             QueryParam::String,
-        )
-        .into_query_builder("UPDATE online_teaching_reports");
+        );
 
+    let mut qb = qb.into_query_builder("UPDATE online_teaching_reports");
     qb.push(" WHERE id = ")
         .push_bind(report_id)
         .push(" AND teacher_id = ")

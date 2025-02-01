@@ -26,36 +26,27 @@ use uuid::Uuid;
 pub async fn delete_club_requests(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(student_id): LoggedInStudent,
     club_request_id: Path<Uuid>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let student_id = student_id.0;
     let club_request_id = club_request_id.into_inner();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;
 
     // Check if the club request exists
-    let club_request = match ClubRequest::get_by_id(
+    let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
-    .await
-    {
-        Ok(ClubRequest::Default(club_request, _)) => club_request,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club request not found".to_string(),
-                format!("/clubs/requests/{club_request_id}"),
-            ))
-        }
-        _ => unreachable!("ClubRequest::get_by_id should always return a Default variant"),
+    .await?
+    else {
+        unreachable!("ClubRequest::get_by_id should always return a Default variant")
     };
 
     // Check if the club request's student id matches the logged in student id

@@ -9,23 +9,23 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     models::{
         online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
-        traits::TopLevelGetById as _,
+        traits::{GetById as _, TopLevelGetById as _},
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
-use mysk_lib_macros::traits::db::GetById as _;
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION, CONTENT_TYPE},
     Client,
 };
 use serde::Deserialize;
-use sqlx::{query, Error as SqlxError};
+use sqlx::query;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -37,24 +37,25 @@ struct UploadReportImageRequest {
 pub async fn upload_report_image(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    teacher_id: LoggedInTeacher,
+    LoggedIn(user): LoggedIn,
+    LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
-    request_query: RequestType<UploadReportImageRequest, QueryablePlaceholder, SortablePlaceholder>,
+    RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<UploadReportImageRequest, QueryablePlaceholder, SortablePlaceholder>,
     request_body: Bytes,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let teacher_id = teacher_id.0;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_query.data else {
+    let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
             "Query deserialize error: field `data` can not be empty".to_string(),
-            format!("/subjects/attendance/{report_id}"),
+            format!("/subjects/attendance/image/{report_id}"),
         ));
     };
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
     let authorizer = permissions::get_authorizer(
         pool,
         &user,
@@ -62,15 +63,7 @@ pub async fn upload_report_image(
     )
     .await?;
 
-    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id)
-        .await
-        .map_err(|e| match e {
-            SqlxError::RowNotFound => Error::EntityNotFound(
-                "Class report not found".to_string(),
-                format!("/subjects/attendance/{report_id}"),
-            ),
-            _ => e.into(),
-        })?;
+    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id).await?;
 
     // Check if the report is owned by the teacher
     if class_report.teacher_id != teacher_id {
@@ -100,7 +93,7 @@ pub async fn upload_report_image(
     }
 
     let supabase_authorization = format!("Bearer {}", data.env.supabase_secret_key);
-    let upload_response = Client::new()
+    Client::new()
         .post(format!(
             "{}/storage/v1/object/online_teaching_reports/{}.{}",
             data.env.supabase_uri, report_id, update_data.file_extension,
@@ -115,24 +108,8 @@ pub async fn upload_report_image(
             HeaderValue::from_str(&format!("image/{}", update_data.file_extension)).unwrap(),
         )
         .send()
-        .await;
-
-    let is_upload_successful = match upload_response {
-        Ok(response) => response.status().is_success(),
-        // TODO: 0.6.0 has a refactor for this
-        Err(_) => {
-            return Err(Error::InternalSeverError(
-                "Internal server error".to_string(),
-                format!("/subjects/attendance/image/{report_id}"),
-            ));
-        }
-    };
-    if !is_upload_successful {
-        return Err(Error::InternalSeverError(
-            "Internal server error".to_string(),
-            format!("/subjects/attendance/image/{report_id}"),
-        ));
-    }
+        .await?
+        .error_for_status()?;
 
     query!(
         "UPDATE online_teaching_reports SET has_image = true, image_ext = $1 WHERE id = $2",

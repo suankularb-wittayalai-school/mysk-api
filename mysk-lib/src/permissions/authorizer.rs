@@ -14,6 +14,7 @@ use async_trait::async_trait;
 use sqlx::{query, PgPool};
 use std::sync::Arc;
 
+#[derive(Clone, Copy)]
 pub enum ActionType {
     Create,
     ReadIdOnly,
@@ -140,6 +141,32 @@ pub trait Authorizer: Send + Sync {
     fn clone_to_arc(&self) -> Arc<dyn Authorizer>;
 }
 
+pub fn authorize_read_only(action: ActionType, source: &str) -> Result<()> {
+    match action {
+        ActionType::ReadIdOnly
+        | ActionType::ReadCompact
+        | ActionType::ReadDefault
+        | ActionType::ReadDetailed => Ok(()),
+        ActionType::Create | ActionType::Update | ActionType::Delete => deny(source),
+    }
+}
+
+pub fn authorize_default_read_only(action: ActionType, source: &str) -> Result<()> {
+    match action {
+        ActionType::ReadIdOnly | ActionType::ReadCompact | ActionType::ReadDefault => Ok(()),
+        ActionType::Create | ActionType::ReadDetailed | ActionType::Update | ActionType::Delete => {
+            deny(source)
+        }
+    }
+}
+
+pub fn deny(source: &str) -> Result<()> {
+    Err(Error::InvalidPermission(
+        "Insufficient permissions to perform this action".to_string(),
+        source.to_string(),
+    ))
+}
+
 pub async fn get_authorizer(
     pool: &PgPool,
     user: &User,
@@ -147,41 +174,37 @@ pub async fn get_authorizer(
 ) -> Result<Box<dyn Authorizer>> {
     match user.role {
         _ if user.is_admin => Ok(Box::new(AdminRole)),
-        UserRole::Student => Ok(Box::new(StudentRole {
-            id: query!(
-                "
-                SELECT students.id FROM students
-                INNER JOIN users ON users.id = students.user_id
-                WHERE users.id = $1
-                ",
-                user.id,
-            )
-            .fetch_one(pool)
-            .await?
-            .id,
-            user_id: user.id,
-            source,
-        })),
-        UserRole::Teacher => Ok(Box::new(TeacherRole {
-            id: query!(
-                "
-                SELECT teachers.id FROM teachers
-                INNER JOIN users ON users.id = teachers.user_id
-                WHERE users.id = $1
-                ",
-                user.id,
-            )
-            .fetch_one(pool)
-            .await?
-            .id,
-            user_id: user.id,
-            source,
-        })),
 
-        UserRole::Management => Ok(Box::new(ManagementRole {
-            user_id: user.id,
+        UserRole::Student => Ok(Box::new(StudentRole::new(
+            query!(
+                "\
+                SELECT s.id FROM students AS s JOIN users AS u ON u.id = s.user_id WHERE u.id = $1\
+                ",
+                user.id,
+            )
+            .fetch_one(pool)
+            .await?
+            .id,
+            user.id,
             source,
-        })),
+        ))),
+
+        UserRole::Teacher => Ok(Box::new(TeacherRole::new(
+            query!(
+                "\
+                SELECT t.id FROM teachers AS t JOIN users AS u ON u.id = t.user_id WHERE u.id = $1\
+                ",
+                user.id,
+            )
+            .fetch_one(pool)
+            .await?
+            .id,
+            user.id,
+            source,
+        ))),
+
+        UserRole::Management => Ok(Box::new(ManagementRole::new(user.id, source))),
+
         _ => unimplemented!(),
     }
 }

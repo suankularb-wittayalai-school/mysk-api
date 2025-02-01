@@ -13,6 +13,7 @@ use dotenv::dotenv;
 use log::{debug, error, info, warn};
 use mysk_lib::{common::config::Config, prelude::*};
 use parking_lot::Mutex;
+use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::{collections::HashSet, env, io, process};
 
@@ -53,7 +54,13 @@ async fn main() -> io::Result<()> {
 
     let pool = PgPoolOptions::new()
         .max_connections(15)
-        .connect(&config.database_url)
+        .connect_with(
+            config
+                .database_url
+                .parse::<PgConnectOptions>()
+                .unwrap()
+                .ssl_mode(PgSslMode::Require),
+        )
         .await
         .map_err(|err| {
             error!("Failed to connect to the database: {err:?}");

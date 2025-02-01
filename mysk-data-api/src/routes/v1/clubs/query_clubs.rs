@@ -23,19 +23,20 @@ use mysk_lib::{
 pub async fn query_clubs(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    request_query: RequestType<Club, QueryableClub, SortableClub>,
+    LoggedIn(user): LoggedIn,
+    RequestType {
+        pagination,
+        filter,
+        sort,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }: RequestType<(), QueryableClub, SortableClub>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let fetch_level = request_query.fetch_level.as_ref();
-    let descendant_fetch_level = request_query.descendant_fetch_level.as_ref();
-    let filter = request_query.filter.as_ref();
-    let sort = request_query.sort.as_ref();
-    let pagination = request_query.pagination.as_ref();
     let authorizer = permissions::get_authorizer(pool, &user, "/clubs".to_string()).await?;
 
-    let clubs = Club::query(
+    let (clubs, pagination) = Club::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -45,8 +46,6 @@ pub async fn query_clubs(
         &*authorizer,
     )
     .await?;
-
-    let pagination = Club::response_pagination(pool, filter, pagination).await?;
     let response = ResponseType::new(clubs, Some(MetadataType::new(Some(pagination))));
 
     Ok(HttpResponse::Ok().json(response))

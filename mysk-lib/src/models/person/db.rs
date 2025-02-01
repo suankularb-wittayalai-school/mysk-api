@@ -3,17 +3,17 @@ use crate::{
     prelude::*,
 };
 use chrono::{DateTime, NaiveDate, Utc};
-use mysk_lib_derives::{BaseQuery, GetById};
-use mysk_lib_macros::traits::db::{BaseQuery, GetById};
+use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
 use sqlx::{query, FromRow, PgPool};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
 #[base_query(
-    query = "
-        SELECT
-            id, created_at, prefix_en, prefix_th, first_name_en, first_name_th, last_name_en, last_name_th, middle_name_en, middle_name_th, nickname_en, nickname_th, birthdate, citizen_id, profile, pants_size, shirt_size, blood_group, sex
+    query = "\
+        SELECT id, created_at, prefix_en, prefix_th, first_name_en, first_name_th, last_name_en,\
+            last_name_th, middle_name_en, middle_name_th, nickname_en, nickname_th, birthdate,\
+            citizen_id, profile, pants_size, shirt_size, blood_group, sex \
         FROM people",
     count_query = "SELECT COUNT(distinct id) FROM people"
 )]
@@ -43,14 +43,12 @@ pub struct DbPerson {
 impl DbPerson {
     pub async fn get_person_allergies(pool: &PgPool, person_id: Uuid) -> Result<Vec<String>> {
         let res = query!(
-            "
-            SELECT allergy_name FROM person_allergies WHERE person_id = $1
-            ",
-            person_id
+            "SELECT allergy_name FROM person_allergies WHERE person_id = $1",
+            person_id,
         )
         .fetch_all(pool)
         .await?;
-        let allergies = res;
-        Ok(allergies.iter().map(|a| a.allergy_name.clone()).collect())
+
+        Ok(res.into_iter().map(|r| r.allergy_name).collect())
     }
 }

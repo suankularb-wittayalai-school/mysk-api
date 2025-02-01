@@ -25,7 +25,7 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
     async fn from_table(
         pool: &PgPool,
         table: DbTeacher,
-        _: Option<&FetchLevel>,
+        _: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         let subject_group =

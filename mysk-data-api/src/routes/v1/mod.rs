@@ -7,9 +7,9 @@ pub mod subjects;
 pub mod teachers;
 
 pub fn config(cfg: &mut ServiceConfig) {
-    cfg.service(scope("/clubs").configure(clubs::config));
-    cfg.service(scope("/contacts").configure(contacts::config));
-    cfg.service(scope("/students").configure(students::config));
-    cfg.service(scope("/teachers").configure(teachers::config));
-    cfg.service(scope("/subjects").configure(subjects::config));
+    cfg.service(scope("/clubs").configure(clubs::config))
+        .service(scope("/contacts").configure(contacts::config))
+        .service(scope("/students").configure(students::config))
+        .service(scope("/teachers").configure(teachers::config))
+        .service(scope("/subjects").configure(subjects::config));
 }

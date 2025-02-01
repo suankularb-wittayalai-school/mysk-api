@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
 // NOTE: The "en" field is renamed to "en-US" in the JSON representation
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MultiLangString {
     #[serde(rename = "en-US")]
     pub en: Option<String>,
@@ -16,21 +15,9 @@ pub struct FlexibleMultiLangString {
     pub th: Option<String>,
 }
 
-impl Display for MultiLangString {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{{ en: {:?}, th: {} }}", self.en, self.th)
-    }
-}
-
 impl MultiLangString {
     pub fn new(th: String, en: Option<String>) -> MultiLangString {
         MultiLangString { en, th }
-    }
-}
-
-impl Display for FlexibleMultiLangString {
-    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{{ en: {:?}, th: {:?} }}", self.en, self.th)
     }
 }
 

@@ -7,7 +7,7 @@ use crate::{
         subject::Subject,
         subject_group::SubjectGroup,
         teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        traits::{FetchLevelVariant, TopLevelGetById as _},
         user::User,
     },
     permissions::{ActionType, Authorizer},
@@ -35,7 +35,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
     async fn from_table(
         pool: &PgPool,
         table: DbTeacher,
-        descendant_fetch_level: Option<&FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
         authorizer: &dyn Authorizer,
     ) -> Result<Self> {
         authorizer
@@ -50,7 +50,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
             pool,
             table.subject_group_id,
             descendant_fetch_level,
-            Some(&FetchLevel::IdOnly),
+            Some(FetchLevel::IdOnly),
             authorizer,
         )
         .await?;
@@ -72,7 +72,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
                 pool,
                 contact_ids,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,
@@ -82,7 +82,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
                         pool,
                         classroom_id,
                         descendant_fetch_level,
-                        Some(&FetchLevel::IdOnly),
+                        Some(FetchLevel::IdOnly),
                         authorizer,
                     )
                     .await?,
@@ -96,7 +96,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
                 pool,
                 subject_id,
                 descendant_fetch_level,
-                Some(&FetchLevel::IdOnly),
+                Some(FetchLevel::IdOnly),
                 authorizer,
             )
             .await?,

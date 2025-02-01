@@ -48,7 +48,7 @@ pub enum Error {
 
     // Server Errors
     /// HTTP 500 - [Internal Server Error](https://developer.mozilla.org/docs/Web/HTTP/Status/500)
-    InternalSeverError(String, String),
+    InternalServerError(String, String),
 
     /// HTTP 503 -
     /// [Service Unavailable](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503)
@@ -89,7 +89,7 @@ impl Display for Error {
                 format!("Invalid permission: {detail} (source: {source})")
             }
             // Server Errors
-            Error::InternalSeverError(detail, source) => {
+            Error::InternalServerError(detail, source) => {
                 format!("Internal server error: {detail} (source: {source})")
             }
             Error::ServiceUnavailable(detail, source) => {
@@ -107,7 +107,7 @@ impl From<JoinError> for Error {
             panic::resume_unwind(value.into_panic());
         }
 
-        Error::InternalSeverError("Internal server error".to_string(), "Tokio".to_string())
+        Error::InternalServerError("Internal server error".to_string(), "Tokio".to_string())
     }
 }
 
@@ -127,10 +127,54 @@ impl From<SqlxError> for Error {
                 Error::ServiceUnavailable("Service unavailable".to_string(), "SQLx".to_string())
             }
             #[cfg(debug_assertions)]
-            _ => Error::InternalSeverError(value.to_string(), "SQLx".to_string()),
+            _ => Error::InternalServerError(value.to_string(), "SQLx".to_string()),
             #[cfg(not(debug_assertions))]
-            _ => Error::InternalSeverError("Internal server error".to_string(), "SQLx".to_string()),
+            _ => {
+                Error::InternalServerError("Internal server error".to_string(), "SQLx".to_string())
+            }
         }
+    }
+}
+
+impl From<serde_qs::Error> for Error {
+    fn from(value: serde_qs::Error) -> Self {
+        #[cfg(debug_assertions)]
+        return Error::InternalServerError(
+            value.to_string(),
+            "/auth/oauth/google (serde_qs)".to_string(),
+        );
+
+        #[cfg(not(debug_assertions))]
+        return Error::InternalServerError(
+            "Internal server error".to_string(),
+            "/auth/oauth/google".to_string(),
+        );
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(value: reqwest::Error) -> Self {
+        #[cfg(debug_assertions)]
+        return Error::InternalServerError(value.to_string(), "reqwest".to_string());
+
+        #[cfg(not(debug_assertions))]
+        return Error::InternalServerError(
+            "Internal server error".to_string(),
+            "reqwest".to_string(),
+        );
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for Error {
+    fn from(value: jsonwebtoken::errors::Error) -> Self {
+        #[cfg(debug_assertions)]
+        return Error::InternalServerError(value.to_string(), "jsonwebtoken".to_string());
+
+        #[cfg(not(debug_assertions))]
+        return Error::InternalServerError(
+            "Internal server error".to_string(),
+            "jsonwebtoken".to_string(),
+        );
     }
 }
 
@@ -152,7 +196,7 @@ impl From<&Error> for HttpResponse {
             // Authorization Error
             Error::InvalidPermission(_, _) => HttpResponse::Forbidden().json(response),
             // Server Errors
-            Error::InternalSeverError(_, _) => HttpResponse::InternalServerError().json(response),
+            Error::InternalServerError(_, _) => HttpResponse::InternalServerError().json(response),
             Error::ServiceUnavailable(_, _) => HttpResponse::ServiceUnavailable().json(response),
         }
     }
@@ -228,7 +272,7 @@ impl From<&Error> for ErrorType {
                 source: source.to_string(),
             },
             // Server Errors
-            Error::InternalSeverError(detail, source) => ErrorType {
+            Error::InternalServerError(detail, source) => ErrorType {
                 id: Uuid::new_v4(),
                 code: 500,
                 error_type: "internal_server_error".to_string(),

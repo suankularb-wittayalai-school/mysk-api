@@ -1,5 +1,5 @@
 [workspace]
-members = ["mysk-data-api", "mysk-lib", "mysk-lib-derives", "mysk-lib-macros"]
+members = ["mysk-data-api", "mysk-lib", "mysk-lib-macros"]
 resolver = "2"
 
 [workspace.package]
@@ -8,7 +8,7 @@ authors = [
   "Phawat Suksiriwan <phawat@suksiriwan.com>",
   "owo93 <Iztyle30@gmail.com>",
 ]
-version = "0.5.3"
+version = "0.6.0"
 edition = "2021"
 
 [workspace.dependencies]
@@ -24,7 +24,6 @@ futures = "0.3.31"
 jsonwebtoken = "9.3.0"
 log = "0.4.25"
 parking_lot = "0.12.3"
-paste = "1.0.15"
 quote = "1.0.38"
 rand = "0.8.5"
 reqwest = { version = "0.12.12", features = ["json"] }
@@ -40,6 +39,6 @@ sqlx = { version = "0.8.3", features = [
   "runtime-tokio-native-tls",
   "uuid",
 ] }
-syn = { version = "2.0.96", features = ["full"] }
+syn = { version = "2.0.96", features = ["parsing"] }
 tokio = { version = "1.43.0", features = ["full"] }
 uuid = { version = "1.12.0", features = ["serde", "v4"] }

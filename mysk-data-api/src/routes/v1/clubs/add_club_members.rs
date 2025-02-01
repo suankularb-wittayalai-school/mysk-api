@@ -9,7 +9,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, QueryablePlaceholder, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType, SortablePlaceholder},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
@@ -19,6 +19,7 @@ use mysk_lib::{
     },
     permissions,
     prelude::*,
+    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -34,28 +35,26 @@ struct AddClubMemberRequest {
 pub async fn add_club_members(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    user: LoggedIn,
-    student_id: LoggedInStudent,
+    LoggedIn(user): LoggedIn,
+    LoggedInStudent(inviter_student_id): LoggedInStudent,
     club_id: Path<Uuid>,
-    request_body: Json<
-        RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>,
-    >,
+    Json(RequestType {
+        data: request_data,
+        fetch_level,
+        descendant_fetch_level,
+        ..
+    }): Json<RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let user = user.0;
-    let inviter_student_id = student_id.0;
     let club_id = club_id.into_inner();
-    let invitee_student_id = match &request_body.data {
-        Some(request_data) => request_data.id,
-        None => {
-            return Err(Error::InvalidRequest(
-                "Json deserialize error: field `data` can not be empty".to_string(),
-                format!("/clubs/{club_id}/add"),
-            ));
-        }
+    let invitee_student_id = if let Some(request_data) = request_data {
+        request_data.id
+    } else {
+        return Err(Error::InvalidRequest(
+            "Json deserialize error: field `data` can not be empty".to_string(),
+            format!("/clubs/{club_id}/add"),
+        ));
     };
-    let fetch_level = request_body.fetch_level.as_ref();
-    let descendant_fetch_level = request_body.descendant_fetch_level.as_ref();
     let authorizer =
         permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
@@ -64,13 +63,19 @@ pub async fn add_club_members(
     match Student::get_by_id(
         pool,
         invitee_student_id,
-        Some(&FetchLevel::Default),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Default),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await
-    {
-        Ok(Student::Default(student, _)) => {
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Invitee student not found".to_string(),
+            format!("/clubs/{club_id}/add"),
+        ),
+        _ => e,
+    })? {
+        Student::Default(student, _) => {
             if student.classroom.is_none() {
                 return Err(Error::EntityNotFound(
                     "Invitee student not found".to_string(),
@@ -78,33 +83,27 @@ pub async fn add_club_members(
                 ));
             }
         }
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Invitee student not found".to_string(),
-                format!("/clubs/{club_id}/add"),
-            ));
-        }
         _ => unreachable!("Student::get_by_id should always return a Default variant"),
     };
 
     // Check if the club exists
-    let club = match Club::get_by_id(
+    let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(&FetchLevel::Detailed),
-        Some(&FetchLevel::IdOnly),
+        Some(FetchLevel::Detailed),
+        Some(FetchLevel::IdOnly),
         &*authorizer,
     )
     .await
-    {
-        Ok(Club::Detailed(club, _)) => club,
-        Err(Error::InternalSeverError(_, _)) => {
-            return Err(Error::EntityNotFound(
-                "Club contact not found".to_string(),
-                format!("/clubs/{club_id}/add"),
-            ));
-        }
-        _ => unreachable!("Club::get_by_id should always return a Detailed variant"),
+    .map_err(|e| match e {
+        Error::EntityNotFound(_, _) => Error::EntityNotFound(
+            "Club contact not found".to_string(),
+            format!("/clubs/{club_id}/add"),
+        ),
+        _ => e,
+    })?
+    else {
+        unreachable!("Club::get_by_id should always return a Detailed variant")
     };
 
     // Check if the inviting student is a staff of the club
@@ -133,10 +132,10 @@ pub async fn add_club_members(
 
     // Check if the invitee student is already a club member or a club request already exists
     if let Some(club_request) = query!(
-        r#"
-        SELECT membership_status AS "membership_status: SubmissionStatus" FROM club_members
-        WHERE club_id = $1 AND year = $2 AND membership_status != $3 AND student_id = $4
-        "#,
+        "\
+        SELECT membership_status AS \"membership_status: SubmissionStatus\" FROM club_members \
+        WHERE club_id = $1 AND year = $2 AND membership_status != $3 AND student_id = $4\
+        ",
         club.id,
         current_year,
         SubmissionStatus::Declined as SubmissionStatus,
@@ -159,9 +158,9 @@ pub async fn add_club_members(
 
     let club_member_id = if insert_new_member {
         query!(
-            "
-            INSERT INTO club_members (club_id, year, membership_status, student_id)
-            VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING id
+            "\
+            INSERT INTO club_members (club_id, year, membership_status, student_id)\
+            VALUES ($1, $2, $3, $4) RETURNING id\
             ",
             club.id,
             current_year,
@@ -173,9 +172,9 @@ pub async fn add_club_members(
         .id
     } else {
         query!(
-            "
-            UPDATE club_members SET membership_status = $1
-            WHERE club_id = $2 AND year = $3 AND student_id = $4 RETURNING id
+            "\
+            UPDATE club_members SET membership_status = $1\
+            WHERE club_id = $2 AND year = $3 AND student_id = $4 RETURNING id\
             ",
             SubmissionStatus::Approved as SubmissionStatus,
             club.id,
