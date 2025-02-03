@@ -89,10 +89,17 @@ impl Queryable for QueryableElectiveSubject {
 
             f
         })
-        .push_sep()
-        .push_sql("cap_size = class_size")
-        .push_sep()
-        .push_sql("class_size < cap_size")
+        .push_if_some(self.is_full, |mut f, is_full| {
+            if !is_full {
+                return f;
+            }
+
+            f.push_sql("cap_size = class_size")
+                .push_sep()
+                .push_sql("class_size < cap_size");
+
+            f
+        })
         .push_if_some(self.year, |mut f, year| {
             f.push_sql("year = ").push_param(QueryParam::Int(year));
 
