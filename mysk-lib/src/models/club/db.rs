@@ -84,6 +84,8 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
         filter: Option<FilterConfig<QueryableClub>>,
     ) {
         if let Some(filter) = filter {
+            let query_is_none = filter.q.is_none();
+
             if let Some(query) = filter.q {
                 let mut wc = SqlWhereClause::new();
                 wc.push_sql("name_th ILIKE ('%' || ")
@@ -100,6 +102,10 @@ impl QueryDb<QueryableClub, SortableClub> for DbClub {
             }
 
             if let Some(data) = filter.data {
+                if query_is_none {
+                    query_builder.push(" WHERE ");
+                }
+
                 data.to_where_clause()
                     .append_into_query_builder(query_builder);
             }

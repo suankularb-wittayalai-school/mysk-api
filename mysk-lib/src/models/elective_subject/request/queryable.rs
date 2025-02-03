@@ -23,7 +23,7 @@ pub struct QueryableElectiveSubject {
 impl Queryable for QueryableElectiveSubject {
     #[allow(clippy::too_many_lines)]
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
-        let mut wc = SqlWhereClause::new();
+        let mut wc = SqlWhereClause::new_empty();
         wc.push_if_some(self.ids, |mut f, ids| {
             f.push_sql("id = ANY(")
                 .push_param(QueryParam::ArrayUuid(ids))
@@ -85,8 +85,7 @@ impl Queryable for QueryableElectiveSubject {
         })
         .push_if_some(self.credit, |mut f, credit| {
             f.push_sql("credit = ")
-                .push_param(QueryParam::Float(credit))
-                .push_sql(")");
+                .push_param(QueryParam::Float(credit));
 
             f
         })
@@ -95,16 +94,13 @@ impl Queryable for QueryableElectiveSubject {
         .push_sep()
         .push_sql("class_size < cap_size")
         .push_if_some(self.year, |mut f, year| {
-            f.push_sql("year = ")
-                .push_param(QueryParam::Int(year))
-                .push_sql(")");
+            f.push_sql("year = ").push_param(QueryParam::Int(year));
 
             f
         })
         .push_if_some(self.semester, |mut f, semester| {
             f.push_sql("semester = ")
-                .push_param(QueryParam::Int(semester))
-                .push_sql(")");
+                .push_param(QueryParam::Int(semester));
 
             f
         })

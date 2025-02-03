@@ -57,7 +57,7 @@ impl<'sql> SqlWhereClause<'sql> {
     {
         if let Some(param) = param {
             match self.0.last() {
-                Some(QueryFragment::Sql(" WHERE ") | QueryFragment::Separator) => (),
+                Some(QueryFragment::Sql(" WHERE ") | QueryFragment::Separator) | None => (),
                 _ => {
                     self.0.push(QueryFragment::Separator);
                 }
