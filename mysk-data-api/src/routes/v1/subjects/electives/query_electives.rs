@@ -36,7 +36,7 @@ pub async fn query_elective_subject(
     // TODO: Fix later
     // let authorizer =
     //     permissions::get_authorizer(pool, &user, "/subjects/electives".to_string()).await?;
-    let authorizer: Box<dyn permissions::Authorizer> = Box::new(permissions::roles::admin::AdminRole);
+    let authorizer: Box<dyn permissions::Authorizer> = Box::new(permissions::roles::AdminRole);
 
     let (electives, pagination) = ElectiveSubject::query(
         pool,
