@@ -23,7 +23,7 @@ use mysk_lib::{
 pub async fn query_elective_subject(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    LoggedIn(user): LoggedIn,
+    // LoggedIn(user): LoggedIn,
     RequestType {
         pagination,
         filter,
