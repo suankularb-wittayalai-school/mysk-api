@@ -1,3 +1,4 @@
+pub mod certificate;
 pub mod classroom;
 pub mod club;
 pub mod club_request;

@@ -1,4 +1,5 @@
 mod blood_group;
+mod certificate_type;
 mod contact_type;
 mod sex;
 mod shirt_size;
@@ -7,6 +8,7 @@ mod submission_status;
 mod user_role;
 
 pub use blood_group::BloodGroup;
+pub use certificate_type::CertificateType;
 pub use contact_type::ContactType;
 pub use sex::Sex;
 pub use shirt_size::ShirtSize;
