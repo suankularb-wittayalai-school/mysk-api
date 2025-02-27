@@ -1,11 +1,12 @@
 use crate::{
     models::{
-        classroom::db::DbClassroom, club::db::DbClub, club_request::db::DbClubRequest,
-        contact::db::DbContact, elective_subject::db::DbElectiveSubject,
-        elective_trade_offer::db::DbElectiveTradeOffer, enums::UserRole,
-        online_teaching_reports::db::DbOnlineTeachingReports, organization::db::DbOrganization,
-        person::db::DbPerson, student::db::DbStudent, subject::db::DbSubject,
-        subject_group::db::DbSubjectGroup, teacher::db::DbTeacher, user::User,
+        certificate::db::DbCertificate, classroom::db::DbClassroom, club::db::DbClub,
+        club_request::db::DbClubRequest, contact::db::DbContact,
+        elective_subject::db::DbElectiveSubject, elective_trade_offer::db::DbElectiveTradeOffer,
+        enums::UserRole, online_teaching_reports::db::DbOnlineTeachingReports,
+        organization::db::DbOrganization, person::db::DbPerson, student::db::DbStudent,
+        subject::db::DbSubject, subject_group::db::DbSubjectGroup, teacher::db::DbTeacher,
+        user::User,
     },
     permissions::roles::{AdminRole, ManagementRole, StudentRole, TeacherRole},
     prelude::*,
@@ -28,6 +29,16 @@ pub enum ActionType {
 #[allow(unused_variables)]
 #[async_trait]
 pub trait Authorizer: Send + Sync {
+    async fn authorize_certificate(
+        &self,
+        certificate: &DbCertificate,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> Result<()> {
+        // TODO: Unimplemented
+        Ok(())
+    }
+
     async fn authorize_classroom(
         &self,
         classroom: &DbClassroom,
