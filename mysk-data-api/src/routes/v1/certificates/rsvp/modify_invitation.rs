@@ -25,11 +25,10 @@ struct ModifyInvitationRequest {
     rsvp_status: SubmissionStatus,
 }
 
-#[put("/")]
+#[put("")]
 async fn modify_invitation(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    _: LoggedIn,
     LoggedInStudent(student_id): LoggedInStudent,
     Json(RequestType {
         data: request_data, ..

@@ -1,4 +1,5 @@
 use crate::{
+    helpers::date::get_current_academic_year,
     models::enums::{CertificateType, SubmissionStatus},
     prelude::*,
 };
@@ -42,5 +43,26 @@ impl DbCertificate {
         .await?;
 
         Ok(res.exists.unwrap_or(false))
+    }
+
+    pub async fn get_rsvp_status<'a, A>(
+        conn: A,
+        student_id: Uuid,
+    ) -> Result<Option<SubmissionStatus>>
+    where
+        A: Acquire<'a, Database = Postgres>,
+    {
+        let res = query!(
+            "\
+            SELECT rsvp_status \"rsvp_status: SubmissionStatus\" FROM student_certificates \
+            WHERE student_id = $1 AND year = $2 LIMIT 1\
+            ",
+            student_id,
+            get_current_academic_year(None),
+        )
+        .fetch_one(&mut *(conn.acquire().await?))
+        .await?;
+
+        Ok(res.rsvp_status)
     }
 }
