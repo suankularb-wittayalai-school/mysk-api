@@ -9,7 +9,7 @@ use crate::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::PgConnection;
 use uuid::Uuid;
 
 pub mod db;
@@ -30,8 +30,8 @@ pub struct Person {
 }
 
 impl Person {
-    pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self> {
-        let person = DbPerson::get_by_id(pool, id).await?;
+    pub async fn get_by_id(conn: &mut PgConnection, id: Uuid) -> Result<Self> {
+        let person = DbPerson::get_by_id(conn, id).await?;
 
         Ok(Self {
             id: person.id,
@@ -45,7 +45,7 @@ impl Person {
                 .nickname_th
                 .map(|th| MultiLangString::new(th, person.nickname_en)),
             birthdate: person.birthdate,
-            allergies: DbPerson::get_person_allergies(pool, person.id).await?,
+            allergies: DbPerson::get_person_allergies(conn, person.id).await?,
             shirt_size: person.shirt_size,
             pants_size: person.pants_size,
             sex: person.sex,

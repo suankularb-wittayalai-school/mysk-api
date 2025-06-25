@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -46,7 +45,7 @@ async fn create_trade_offer(
     }): Json<RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
     let other_student_id = if let Some(request_data) = request_data {
         request_data.receiver_id
     } else {
@@ -55,12 +54,15 @@ async fn create_trade_offer(
             "/subjects/electives/trade-offers".to_string(),
         ));
     };
-    let authorizer =
-        Authorizer::new(pool, &user, "/subjects/electives/trade-offers".to_string())
-            .await?;
+    let authorizer = Authorizer::new(
+        &mut transaction,
+        &user,
+        "/subjects/electives/trade-offers".to_string(),
+    )
+    .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, client_student_id).await? {
+    if DbElectiveSubject::is_student_blacklisted(&mut transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             "/subjects/electives/trade-offers".to_string(),
@@ -68,7 +70,7 @@ async fn create_trade_offer(
     }
 
     // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, client_student_id).await? {
+    if !DbElectiveSubject::is_enrollment_period(&mut transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective enrollment period has ended".to_string(),
             "/subjects/electives/trade-offers".to_string(),
@@ -77,7 +79,7 @@ async fn create_trade_offer(
 
     // Check if the sending student has already enrolled in an elective in the current semester
     let Some(client_elective_subject_id) =
-        DbElectiveSubject::is_currently_enrolled(&mut *transaction, client_student_id).await?
+        DbElectiveSubject::is_currently_enrolled(&mut transaction, client_student_id).await?
     else {
         return Err(Error::InvalidPermission(
             "Student has not enrolled in an elective this semester".to_string(),
@@ -87,7 +89,7 @@ async fn create_trade_offer(
 
     // Check if the receiving student has already enrolled in an elective in the current semester
     let Some(other_elective_subject_id) =
-        DbElectiveSubject::is_currently_enrolled(&mut *transaction, other_student_id).await?
+        DbElectiveSubject::is_currently_enrolled(&mut transaction, other_student_id).await?
     else {
         return Err(Error::InvalidPermission(
             "Receiving student has not enrolled in an elective this semester".to_string(),
@@ -97,12 +99,12 @@ async fn create_trade_offer(
 
     // Gets the elective subject of the receiver, and also checks whether they're in a classroom
     let other_elective_subject =
-        DbElectiveSubject::get_by_id(&mut *transaction, other_elective_subject_id).await?;
+        DbElectiveSubject::get_by_id(&mut transaction, other_elective_subject_id).await?;
 
     // Checks if the sender is eligible to enroll in the receiver's elective session, also checks
     // whether they're in a classroom
     if !DbElectiveSubject::is_student_eligible(
-        &mut *transaction,
+        &mut transaction,
         other_elective_subject.id,
         client_student_id,
     )
@@ -116,11 +118,11 @@ async fn create_trade_offer(
 
     // Gets the elective subject of the sender
     let client_elective_subject =
-        DbElectiveSubject::get_by_id(&mut *transaction, client_elective_subject_id).await?;
+        DbElectiveSubject::get_by_id(&mut transaction, client_elective_subject_id).await?;
 
     // Checks if the receiver is eligible to enroll in the sender's elective session
     if !DbElectiveSubject::is_student_eligible(
-        &mut *transaction,
+        &mut transaction,
         client_elective_subject.id,
         other_student_id,
     )

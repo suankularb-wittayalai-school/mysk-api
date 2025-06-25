@@ -1,8 +1,8 @@
 use crate::{common::config::Config, prelude::*};
-use rand::{rngs::OsRng, RngCore};
+use rand::{RngCore, rngs::OsRng};
 use reqwest::{
-    header::{HeaderValue, CONTENT_LENGTH},
     Client,
+    header::{CONTENT_LENGTH, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

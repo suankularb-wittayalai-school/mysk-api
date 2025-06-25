@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -32,9 +31,10 @@ pub async fn query_report_details(
     }: RequestType<OnlineTeachingReports, QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let online_teaching_report_id = online_teaching_report_id.into_inner();
     let authorizer = Authorizer::new(
-        pool,
+        &mut conn,
         &user,
         format!("/subjects/attendance/{online_teaching_report_id}"),
     )

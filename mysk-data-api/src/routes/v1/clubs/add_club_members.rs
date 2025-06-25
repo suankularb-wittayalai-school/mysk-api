@@ -45,6 +45,7 @@ pub async fn add_club_members(
     }): Json<RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let invitee_student_id = if let Some(request_data) = request_data {
         request_data.id
@@ -54,7 +55,7 @@ pub async fn add_club_members(
             format!("/clubs/{club_id}/add"),
         ));
     };
-    let authorizer = Authorizer::new(pool, &user, format!("/clubs/{club_id}/add")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists
@@ -82,7 +83,7 @@ pub async fn add_club_members(
             }
         }
         _ => unreachable!("Student::get_by_id should always return a Default variant"),
-    };
+    }
 
     // Check if the club exists
     let Club::Detailed(club, _) = Club::get_by_id(
@@ -139,7 +140,7 @@ pub async fn add_club_members(
         SubmissionStatus::Declined as SubmissionStatus,
         invitee_student_id,
     )
-    .fetch_optional(pool)
+    .fetch_optional(&mut *conn)
     .await?
     {
         match club_request.membership_status {
@@ -165,7 +166,7 @@ pub async fn add_club_members(
             SubmissionStatus::Approved as SubmissionStatus,
             invitee_student_id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .id
     } else {
@@ -179,7 +180,7 @@ pub async fn add_club_members(
             current_year,
             invitee_student_id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .id
     };

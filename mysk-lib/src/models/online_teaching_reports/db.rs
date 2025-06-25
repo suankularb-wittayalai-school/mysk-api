@@ -8,11 +8,10 @@ use crate::{
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, Postgres, QueryBuilder};
+use sqlx::{Postgres, QueryBuilder, prelude::FromRow};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -37,7 +36,6 @@ pub struct DbOnlineTeachingReports {
     pub image_ext: Option<String>,
 }
 
-#[async_trait]
 impl QueryDb<QueryableOnlineTeachingReports, SortableOnlineTeachingReports>
     for DbOnlineTeachingReports
 {

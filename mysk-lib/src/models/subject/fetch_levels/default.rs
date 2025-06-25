@@ -13,7 +13,6 @@ use crate::{
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -34,7 +33,6 @@ pub struct DefaultSubject {
     pub syllabus: Option<String>,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbSubject> for DefaultSubject {
     async fn from_table(
         pool: &PgPool,
@@ -42,14 +40,15 @@ impl FetchLevelVariant<DbSubject> for DefaultSubject {
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_subject(&table, pool, ActionType::ReadDefault)
+            .authorize_subject(&table, &mut conn, ActionType::ReadDefault)
             .await?;
 
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
-        let teacher_ids = DbSubject::get_subject_teachers(pool, table.id, None).await?;
-        let co_teacher_ids = DbSubject::get_subject_co_teachers(pool, table.id, None).await?;
+        let teacher_ids = DbSubject::get_subject_teachers(&mut conn, table.id, None).await?;
+        let co_teacher_ids = DbSubject::get_subject_co_teachers(&mut conn, table.id, None).await?;
 
         let description = match (table.description_th, table.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {

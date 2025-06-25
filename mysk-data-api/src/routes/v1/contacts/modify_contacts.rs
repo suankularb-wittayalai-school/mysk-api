@@ -45,6 +45,7 @@ pub async fn modify_contacts(
     }): Json<RequestType<ModifyContactsRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let contact_id = contact_id.into_inner();
     let Some(contact) = request_data else {
         return Err(Error::InvalidRequest(
@@ -52,13 +53,13 @@ pub async fn modify_contacts(
             format!("/contacts/{contact_id}"),
         ));
     };
-    let authorizer = Authorizer::new(pool, &user, format!("/contacts/{contact_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/contacts/{contact_id}")).await?;
 
     // Check if the contact exists
-    let db_contact = DbContact::get_by_id(pool, contact_id).await?;
+    let db_contact = DbContact::get_by_id(&mut conn, contact_id).await?;
 
     authorizer
-        .authorize_contact(&db_contact, pool, ActionType::Update)
+        .authorize_contact(&db_contact, &mut conn, ActionType::Update)
         .await?;
 
     let mut qb = SqlSetClause::new();
@@ -70,7 +71,7 @@ pub async fn modify_contacts(
     qb.push(" WHERE id = ")
         .push_bind(contact_id)
         .build()
-        .execute(pool)
+        .execute(&mut *conn)
         .await?;
 
     let updated_contact = Contact::get_by_id(

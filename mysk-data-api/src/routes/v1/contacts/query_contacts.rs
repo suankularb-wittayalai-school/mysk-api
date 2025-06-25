@@ -34,7 +34,8 @@ pub async fn query_contacts(
     }: RequestType<(), QueryableContact, SortableContact>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = Authorizer::new(pool, &user, "/contacts".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/contacts".to_string()).await?;
 
     let (contacts, pagination) = Contact::query(
         pool,

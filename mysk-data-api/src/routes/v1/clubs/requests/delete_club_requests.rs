@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    delete,
+    HttpResponse, Responder, delete,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -31,10 +30,14 @@ pub async fn delete_club_requests(
     club_request_id: Path<Uuid>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_request_id = club_request_id.into_inner();
-    let authorizer =
-        Authorizer::new(pool, &user, format!("/clubs/requests/{club_request_id}"))
-            .await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        format!("/clubs/requests/{club_request_id}"),
+    )
+    .await?;
 
     // Check if the club request exists
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
@@ -78,7 +81,7 @@ pub async fn delete_club_requests(
         club_request_id,
         SubmissionStatus::Pending as SubmissionStatus,
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
 
     let response = ResponseType::new(EmptyResponseData {}, None);

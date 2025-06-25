@@ -1,5 +1,5 @@
 use crate::extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn};
-use actix_web::{get, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get};
 use mysk_lib::{common::response::ResponseType, prelude::*};
 
 #[get("/user")]

@@ -11,10 +11,8 @@ anyhow.workspace = true
 bs58.workspace = true
 chrono.workspace = true
 dotenv.workspace = true
-env_logger.workspace = true
 futures.workspace = true
 jsonwebtoken.workspace = true
-log.workspace = true
 mysk-lib = { path = "../mysk-lib" }
 mysk-lib-macros = { path = "../mysk-lib-macros" }
 parking_lot.workspace = true

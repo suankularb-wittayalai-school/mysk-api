@@ -16,7 +16,6 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -46,7 +45,6 @@ pub struct DetailedElectiveSubject {
     pub requirements: Vec<MultiLangString>,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
     async fn from_table(
         pool: &PgPool,
@@ -54,15 +52,17 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         let subject_group =
             SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
 
-        let teacher_ids = DbSubject::get_subject_teachers(pool, table.subject_id, None).await?;
+        let teacher_ids =
+            DbSubject::get_subject_teachers(&mut conn, table.subject_id, None).await?;
         let co_teacher_ids =
-            DbSubject::get_subject_co_teachers(pool, table.subject_id, None).await?;
-        let applicable_classroom_ids = table.get_subject_applicable_classrooms(pool).await?;
-        let student_ids = table.get_enrolled_students(pool).await?;
-        let randomized_students_ids = table.get_randomized_students(pool).await?;
+            DbSubject::get_subject_co_teachers(&mut conn, table.subject_id, None).await?;
+        let applicable_classroom_ids = table.get_subject_applicable_classrooms(&mut conn).await?;
+        let student_ids = table.get_enrolled_students(&mut conn).await?;
+        let randomized_students_ids = table.get_randomized_students(&mut conn).await?;
 
         let description = match (table.description_th, table.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
@@ -131,7 +131,7 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
             )
             .await?,
             session_code: table.session_code,
-            requirements: DbSubject::get_requirements(pool, table.id).await?,
+            requirements: DbSubject::get_requirements(&mut conn, table.id).await?,
             randomized_students: Student::get_by_ids(
                 pool,
                 randomized_students_ids,

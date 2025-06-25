@@ -9,11 +9,10 @@ use crate::{
     prelude::*,
     query::{QueryParam, Queryable as _, SqlWhereClause},
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder};
+use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
@@ -37,18 +36,18 @@ pub struct DbClub {
 }
 
 impl DbClub {
-    pub async fn get_club_contacts(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
+    pub async fn get_club_contacts(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "SELECT contact_id FROM club_contacts WHERE club_id = $1",
             club_id,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.contact_id).collect())
     }
 
-    pub async fn get_club_members(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
+    pub async fn get_club_members(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT student_id FROM club_members \
@@ -58,26 +57,25 @@ impl DbClub {
             get_current_academic_year(None),
             SubmissionStatus::Approved as SubmissionStatus,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.student_id).collect())
     }
 
-    pub async fn get_club_staffs(pool: &PgPool, club_id: Uuid) -> Result<Vec<Uuid>> {
+    pub async fn get_club_staffs(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "SELECT student_id FROM club_staffs WHERE club_id = $1 AND year = $2",
             club_id,
             get_current_academic_year(None),
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.student_id).collect())
     }
 }
 
-#[async_trait]
 impl QueryDb<QueryableClub, SortableClub> for DbClub {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,

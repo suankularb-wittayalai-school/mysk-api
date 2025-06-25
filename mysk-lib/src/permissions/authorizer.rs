@@ -12,8 +12,7 @@ use crate::{
     prelude::*,
 };
 use futures::future;
-use sqlx::{PgPool, query};
-use std::sync::Arc;
+use sqlx::{PgConnection, query};
 
 #[derive(Clone, Copy)]
 pub enum ActionType {
@@ -27,11 +26,11 @@ pub enum ActionType {
 }
 
 #[allow(unused_variables)]
-pub trait Authorizable: Send + Sync {
+pub trait Authorizable {
     fn authorize_certificate(
         &self,
         certificate: &DbCertificate,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -41,14 +40,14 @@ pub trait Authorizable: Send + Sync {
     fn authorize_classroom(
         &self,
         classroom: &DbClassroom,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>>;
 
     fn authorize_club(
         &self,
         club: &DbClub,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -58,7 +57,7 @@ pub trait Authorizable: Send + Sync {
     fn authorize_club_request(
         &self,
         club_request: &DbClubRequest,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -68,14 +67,14 @@ pub trait Authorizable: Send + Sync {
     fn authorize_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>>;
 
     fn authorize_elective_subject(
         &self,
         elective_subject: &DbElectiveSubject,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -85,7 +84,7 @@ pub trait Authorizable: Send + Sync {
     fn authorize_elective_trade_offer(
         &self,
         elective_trade_offer: &DbElectiveTradeOffer,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -95,7 +94,7 @@ pub trait Authorizable: Send + Sync {
     fn authorize_online_teaching_reports(
         &self,
         online_teaching_reports: &DbOnlineTeachingReports,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -105,7 +104,7 @@ pub trait Authorizable: Send + Sync {
     fn authorize_organization(
         &self,
         organization: &DbOrganization,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -115,7 +114,7 @@ pub trait Authorizable: Send + Sync {
     fn authorize_person(
         &self,
         person: &DbPerson,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -125,21 +124,21 @@ pub trait Authorizable: Send + Sync {
     fn authorize_student(
         &self,
         student: &DbStudent,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>>;
 
     fn authorize_subject(
         &self,
         subject: &DbSubject,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>>;
 
     fn authorize_subject_group(
         &self,
         subject_group: &DbSubjectGroup,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
@@ -149,24 +148,24 @@ pub trait Authorizable: Send + Sync {
     fn authorize_teacher(
         &self,
         teacher: &DbTeacher,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>>;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum Authorizer {
-    Admin(Arc<AdminRole>),
-    Management(Arc<ManagementRole>),
-    Student(Arc<StudentRole>),
-    Teacher(Arc<TeacherRole>),
+    Admin(AdminRole),
+    Management(ManagementRole),
+    Student(StudentRole),
+    Teacher(TeacherRole),
 }
 
 impl Authorizer {
-    pub async fn new(pool: &PgPool, user: &User, source: String) -> Result<Self> {
+    pub async fn new(conn: &mut PgConnection, user: &User, source: String) -> Result<Self> {
         match user.role {
-            _ if user.is_admin => Ok(Self::Admin(Arc::new(AdminRole))),
-            UserRole::Student => Ok(Self::Student(Arc::new(StudentRole::new(
+            _ if user.is_admin => Ok(Self::Admin(AdminRole)),
+            UserRole::Student => Ok(Self::Student(StudentRole::new(
                 query!(
                     "\
                     SELECT s.id \
@@ -175,13 +174,13 @@ impl Authorizer {
                     ",
                     user.id,
                 )
-                .fetch_one(pool)
+                .fetch_one(conn)
                 .await?
                 .id,
                 user.id,
                 source,
-            )))),
-            UserRole::Teacher => Ok(Self::Teacher(Arc::new(TeacherRole::new(
+            ))),
+            UserRole::Teacher => Ok(Self::Teacher(TeacherRole::new(
                 query!(
                     "\
                     SELECT t.id \
@@ -190,15 +189,13 @@ impl Authorizer {
                     ",
                     user.id,
                 )
-                .fetch_one(pool)
+                .fetch_one(conn)
                 .await?
                 .id,
                 user.id,
                 source,
-            )))),
-            UserRole::Management => Ok(Self::Management(Arc::new(ManagementRole::new(
-                user.id, source,
-            )))),
+            ))),
+            UserRole::Management => Ok(Self::Management(ManagementRole::new(user.id, source))),
             _ => unimplemented!(),
         }
     }
@@ -208,70 +205,70 @@ impl Authorizable for Authorizer {
     async fn authorize_classroom(
         &self,
         classroom: &DbClassroom,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         match self {
-            Self::Admin(a) => a.authorize_classroom(classroom, pool, action).await,
-            Self::Management(a) => a.authorize_classroom(classroom, pool, action).await,
-            Self::Student(a) => a.authorize_classroom(classroom, pool, action).await,
-            Self::Teacher(a) => a.authorize_classroom(classroom, pool, action).await,
+            Self::Admin(a) => a.authorize_classroom(classroom, conn, action).await,
+            Self::Management(a) => a.authorize_classroom(classroom, conn, action).await,
+            Self::Student(a) => a.authorize_classroom(classroom, conn, action).await,
+            Self::Teacher(a) => a.authorize_classroom(classroom, conn, action).await,
         }
     }
 
     async fn authorize_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         match self {
-            Self::Admin(a) => a.authorize_contact(contact, pool, action).await,
-            Self::Management(a) => a.authorize_contact(contact, pool, action).await,
-            Self::Student(a) => a.authorize_contact(contact, pool, action).await,
-            Self::Teacher(a) => a.authorize_contact(contact, pool, action).await,
+            Self::Admin(a) => a.authorize_contact(contact, conn, action).await,
+            Self::Management(a) => a.authorize_contact(contact, conn, action).await,
+            Self::Student(a) => a.authorize_contact(contact, conn, action).await,
+            Self::Teacher(a) => a.authorize_contact(contact, conn, action).await,
         }
     }
 
     async fn authorize_student(
         &self,
         student: &DbStudent,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         match self {
-            Self::Admin(a) => a.authorize_student(student, pool, action).await,
-            Self::Management(a) => a.authorize_student(student, pool, action).await,
-            Self::Student(a) => a.authorize_student(student, pool, action).await,
-            Self::Teacher(a) => a.authorize_student(student, pool, action).await,
+            Self::Admin(a) => a.authorize_student(student, conn, action).await,
+            Self::Management(a) => a.authorize_student(student, conn, action).await,
+            Self::Student(a) => a.authorize_student(student, conn, action).await,
+            Self::Teacher(a) => a.authorize_student(student, conn, action).await,
         }
     }
 
     async fn authorize_subject(
         &self,
         subject: &DbSubject,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         match self {
-            Self::Admin(a) => a.authorize_subject(subject, pool, action).await,
-            Self::Management(a) => a.authorize_subject(subject, pool, action).await,
-            Self::Student(a) => a.authorize_subject(subject, pool, action).await,
-            Self::Teacher(a) => a.authorize_subject(subject, pool, action).await,
+            Self::Admin(a) => a.authorize_subject(subject, conn, action).await,
+            Self::Management(a) => a.authorize_subject(subject, conn, action).await,
+            Self::Student(a) => a.authorize_subject(subject, conn, action).await,
+            Self::Teacher(a) => a.authorize_subject(subject, conn, action).await,
         }
     }
 
     async fn authorize_teacher(
         &self,
         teacher: &DbTeacher,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         match self {
-            Self::Admin(a) => a.authorize_teacher(teacher, pool, action).await,
-            Self::Management(a) => a.authorize_teacher(teacher, pool, action).await,
-            Self::Student(a) => a.authorize_teacher(teacher, pool, action).await,
-            Self::Teacher(a) => a.authorize_teacher(teacher, pool, action).await,
+            Self::Admin(a) => a.authorize_teacher(teacher, conn, action).await,
+            Self::Management(a) => a.authorize_teacher(teacher, conn, action).await,
+            Self::Student(a) => a.authorize_teacher(teacher, conn, action).await,
+            Self::Teacher(a) => a.authorize_teacher(teacher, conn, action).await,
         }
     }
 }

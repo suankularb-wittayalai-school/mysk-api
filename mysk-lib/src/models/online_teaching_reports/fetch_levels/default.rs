@@ -10,7 +10,6 @@ use crate::{
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -32,7 +31,6 @@ pub struct DefaultOnlineTeachingReports {
     pub has_image: bool,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports {
     async fn from_table(
         pool: &PgPool,
@@ -41,7 +39,11 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
         authorizer: &Authorizer,
     ) -> Result<Self> {
         authorizer
-            .authorize_online_teaching_reports(&table, pool, ActionType::ReadDefault)
+            .authorize_online_teaching_reports(
+                &table,
+                &mut *(pool.acquire().await?),
+                ActionType::ReadDefault,
+            )
             .await?;
 
         let subject = if table.subject_id.is_some() {

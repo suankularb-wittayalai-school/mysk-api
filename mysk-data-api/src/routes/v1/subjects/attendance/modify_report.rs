@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use chrono::NaiveDate;
 use mysk_lib::{
@@ -14,7 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
+        online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
         traits::{GetById as _, TopLevelGetById as _},
     },
     permissions::Authorizer,
@@ -53,6 +52,7 @@ pub async fn modify_report(
     }): Json<RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
     let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
@@ -60,12 +60,15 @@ pub async fn modify_report(
             format!("/subjects/attendance/{report_id}"),
         ));
     };
-    let authorizer =
-        Authorizer::new(pool, &user, format!("/subjects/attendance/{report_id}"))
-            .await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        format!("/subjects/attendance/{report_id}"),
+    )
+    .await?;
 
     // Check if class report exists
-    let report_id = DbOnlineTeachingReports::get_by_id(pool, report_id)
+    let report_id = DbOnlineTeachingReports::get_by_id(&mut conn, report_id)
         .await
         .map_err(|e| match e {
             SqlxError::RowNotFound => Error::EntityNotFound(
@@ -105,7 +108,7 @@ pub async fn modify_report(
         .push(" AND teacher_id = ")
         .push_bind(teacher_id)
         .build()
-        .execute(pool)
+        .execute(&mut *conn)
         .await?;
 
     let class_report = OnlineTeachingReports::get_by_id(

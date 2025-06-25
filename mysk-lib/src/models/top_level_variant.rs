@@ -4,7 +4,7 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
+use futures::future;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::{Encode, PgPool, Postgres, Type as SqlxType, postgres::PgHasArrayType};
 use std::marker::PhantomData;
@@ -24,15 +24,14 @@ where
     Detailed(Box<Detailed>, PhantomData<DbVariant>),
 }
 
-#[async_trait]
 impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelFromTable<DbVariant>
     for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    DbVariant: GetById + Send,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant> + Send,
-    Compact: Serialize + FetchLevelVariant<DbVariant> + Send,
-    Default: Serialize + FetchLevelVariant<DbVariant> + Send,
-    Detailed: Serialize + FetchLevelVariant<DbVariant> + Send,
+    DbVariant: GetById,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+    Compact: Serialize + FetchLevelVariant<DbVariant>,
+    Default: Serialize + FetchLevelVariant<DbVariant>,
+    Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     async fn from_table(
         pool: &PgPool,
@@ -89,7 +88,6 @@ where
     }
 }
 
-#[async_trait]
 impl<DbVariant, IdOnly, Compact, Default, Detailed> Serialize
     for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
@@ -109,15 +107,14 @@ where
     }
 }
 
-#[async_trait]
 impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelGetById
     for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
 where
-    DbVariant: GetById + Send + 'static,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
-    Compact: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
-    Default: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
-    Detailed: Serialize + FetchLevelVariant<DbVariant> + Send + 'static,
+    DbVariant: GetById,
+    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
+    Compact: Serialize + FetchLevelVariant<DbVariant>,
+    Default: Serialize + FetchLevelVariant<DbVariant>,
+    Detailed: Serialize + FetchLevelVariant<DbVariant>,
 {
     async fn get_by_id<T>(
         pool: &PgPool,
@@ -127,9 +124,9 @@ where
         authorizer: &Authorizer,
     ) -> Result<Self>
     where
-        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres>,
     {
-        let variant = DbVariant::get_by_id(pool, id).await?;
+        let variant = DbVariant::get_by_id(&mut *(pool.acquire().await?), id).await?;
 
         Self::from_table(
             pool,
@@ -149,32 +146,23 @@ where
         authorizer: &Authorizer,
     ) -> Result<Vec<Self>>
     where
-        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send,
+        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType,
     {
-        let variants = DbVariant::get_by_ids(pool, ids).await?;
-        let futures: Vec<_> = variants
+        let mut conn = pool.acquire().await?;
+        let variants = DbVariant::get_by_ids(&mut conn, ids).await?;
+        let futures = variants
             .into_iter()
             .map(|variant| {
-                let pool = pool.clone();
-                let shared_authorizer = authorizer.clone();
-
-                tokio::spawn(async move {
-                    Self::from_table(
-                        &pool,
-                        variant,
-                        fetch_level,
-                        descendant_fetch_level,
-                        &shared_authorizer,
-                    )
-                    .await
-                })
+                Self::from_table(
+                    pool,
+                    variant,
+                    fetch_level,
+                    descendant_fetch_level,
+                    authorizer,
+                )
             })
-            .collect();
-
-        let mut result = Vec::with_capacity(futures.len());
-        for future in futures {
-            result.push(future.await??);
-        }
+            .collect::<Vec<_>>();
+        let result = future::try_join_all(futures).await?;
 
         Ok(result)
     }

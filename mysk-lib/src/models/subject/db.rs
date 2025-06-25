@@ -5,7 +5,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool};
+use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
@@ -35,7 +35,7 @@ pub struct DbSubject {
 
 impl DbSubject {
     pub async fn get_subject_classrooms(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         subject_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
@@ -44,14 +44,14 @@ impl DbSubject {
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.classroom_id).collect())
     }
 
     pub async fn get_subject_teachers(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         subject_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
@@ -60,14 +60,14 @@ impl DbSubject {
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.teacher_id).collect())
     }
 
     pub async fn get_subject_co_teachers(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         subject_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
@@ -76,18 +76,21 @@ impl DbSubject {
             subject_id,
             academic_year.unwrap_or_else(|| get_current_academic_year(None)),
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.teacher_id).collect())
     }
 
-    pub async fn get_requirements(pool: &PgPool, subject_id: Uuid) -> Result<Vec<MultiLangString>> {
+    pub async fn get_requirements(
+        conn: &mut PgConnection,
+        subject_id: Uuid,
+    ) -> Result<Vec<MultiLangString>> {
         let res = query!(
             "SELECT label_th, label_en FROM subject_requirements WHERE subject_id = $1",
             subject_id,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res

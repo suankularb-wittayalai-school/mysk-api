@@ -1,7 +1,7 @@
 use darling::FromDeriveInput;
 use proc_macro::{self, TokenStream};
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput};
+use syn::{DeriveInput, parse_macro_input};
 
 #[derive(FromDeriveInput, Default)]
 #[darling(default, attributes(base_query, count_query))]
@@ -38,20 +38,14 @@ pub(crate) fn get_by_id(input: TokenStream) -> TokenStream {
         use crate::models::traits::BaseQuery as _;
 
         #[automatically_derived]
-        #[::async_trait::async_trait]
         impl crate::models::traits::GetById for #ident {
-            async fn get_by_id<'c, A, T>(
-                conn: A,
+            async fn get_by_id<T>(
+                conn: &mut ::sqlx::PgConnection,
                 id: T,
             ) -> ::std::result::Result<Self, sqlx::Error>
             where
-                A: ::sqlx::Acquire<'c, Database = ::sqlx::Postgres> + Send,
-                T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
-                    + ::sqlx::Type<::sqlx::Postgres>
-                    + Send,
+                T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres> + ::sqlx::Type<::sqlx::Postgres>,
             {
-                let mut conn = conn.acquire().await?;
-
                 let query = format!(#query_one);
                 ::sqlx::query_as::<_, #ident>(&query)
                     .bind(id)
@@ -59,19 +53,15 @@ pub(crate) fn get_by_id(input: TokenStream) -> TokenStream {
                     .await
             }
 
-            async fn get_by_ids<'c, A, T>(
-                conn: A,
+            async fn get_by_ids<T>(
+                conn: &mut ::sqlx::PgConnection,
                 id: Vec<T>,
             ) -> ::std::result::Result<Vec<Self>, sqlx::Error>
             where
-                A: ::sqlx::Acquire<'c, Database = ::sqlx::Postgres> + Send,
                 T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
                     + ::sqlx::postgres::PgHasArrayType
-                    + ::sqlx::Type<::sqlx::Postgres>
-                    + Send,
+                    + ::sqlx::Type<::sqlx::Postgres>,
             {
-                let mut conn = conn.acquire().await?;
-
                 let query = format!(#query_many);
                 ::sqlx::query_as::<_, #ident>(&query)
                     .bind(id)

@@ -10,7 +10,6 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -26,7 +25,6 @@ pub struct DefaultClubRequest {
     pub membership_status: SubmissionStatus,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
     async fn from_table(
         pool: &PgPool,

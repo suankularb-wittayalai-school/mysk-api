@@ -57,7 +57,6 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
         use crate::permissions::Authorizable as _;
 
         #[automatically_derived]
-        #[::async_trait::async_trait]
         impl crate::models::traits::FetchLevelVariant<#db_variant> for #fetch_variant {
             async fn from_table(
                 pool: &::sqlx::PgPool,
@@ -67,7 +66,7 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
             ) -> crate::prelude::Result<Self> {
                 authorizer.#authorize_table(
                     &table,
-                    pool,
+                    &mut *(pool.acquire().await?),
                     crate::permissions::ActionType::#action_type,
                 )
                 .await?;

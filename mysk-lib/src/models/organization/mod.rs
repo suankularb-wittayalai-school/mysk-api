@@ -5,7 +5,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use sqlx::PgPool;
+use sqlx::PgConnection;
 use uuid::Uuid;
 
 pub mod db;
@@ -22,8 +22,8 @@ pub struct Organization {
 }
 
 impl Organization {
-    pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self> {
-        let organization = DbOrganization::get_by_id(pool, id).await?;
+    pub async fn get_by_id(conn: &mut PgConnection, id: Uuid) -> Result<Self> {
+        let organization = DbOrganization::get_by_id(conn, id).await?;
 
         Ok(Self {
             id: organization.id,

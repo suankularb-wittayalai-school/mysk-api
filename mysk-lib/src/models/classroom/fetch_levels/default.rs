@@ -10,7 +10,6 @@ use crate::{
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -26,7 +25,6 @@ pub struct DefaultClassroom {
     pub year: i64,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
     async fn from_table(
         pool: &PgPool,
@@ -34,13 +32,15 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_classroom(&table, pool, ActionType::ReadDefault)
+            .authorize_classroom(&table, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let student_ids = DbClassroom::get_classroom_students(pool, table.id).await?;
-        let contact_ids = DbClassroom::get_classroom_contacts(pool, table.id).await?;
-        let class_advisor_ids = DbClassroom::get_classroom_advisors(pool, table.id, None).await?;
+        let student_ids = DbClassroom::get_classroom_students(&mut conn, table.id).await?;
+        let contact_ids = DbClassroom::get_classroom_contacts(&mut conn, table.id).await?;
+        let class_advisor_ids =
+            DbClassroom::get_classroom_advisors(&mut conn, table.id, None).await?;
 
         Ok(Self {
             id: table.id,

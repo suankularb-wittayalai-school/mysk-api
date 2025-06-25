@@ -34,7 +34,8 @@ pub async fn query_clubs(
     }: RequestType<(), QueryableClub, SortableClub>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = Authorizer::new(pool, &user, "/clubs".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/clubs".to_string()).await?;
 
     let (clubs, pagination) = Club::query(
         pool,

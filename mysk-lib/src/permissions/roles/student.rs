@@ -9,7 +9,7 @@ use crate::{
     },
     prelude::*,
 };
-use sqlx::{PgPool, query};
+use sqlx::{PgConnection, query};
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -23,7 +23,7 @@ impl Authorizable for StudentRole {
     async fn authorize_classroom(
         &self,
         _: &DbClassroom,
-        _: &PgPool,
+        _: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         authorize_read_only(action, &self.source)
@@ -33,7 +33,7 @@ impl Authorizable for StudentRole {
     async fn authorize_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         // Due to certain constraints and to limit code complexity, this function will not perform
@@ -62,18 +62,18 @@ impl Authorizable for StudentRole {
             ",
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .role
         .unwrap();
 
         match contact_belongs_to.as_str() {
             "classroom" => {
-                self.authorize_classroom_contact(contact, pool, action)
+                self.authorize_classroom_contact(contact, conn, action)
                     .await
             }
-            "club" => self.authorize_club_contact(contact, pool, action).await,
-            "person" => self.authorize_person_contact(contact, pool, action).await,
+            "club" => self.authorize_club_contact(contact, conn, action).await,
+            "person" => self.authorize_person_contact(contact, conn, action).await,
             // These are "ghost" contacts in the database, a data mishandling issue so they're only
             // allowed to be read from but not written to
             "none" => authorize_read_only(action, &self.source),
@@ -84,7 +84,7 @@ impl Authorizable for StudentRole {
     async fn authorize_online_teaching_reports(
         &self,
         _: &DbOnlineTeachingReports,
-        _: &PgPool,
+        _: &mut PgConnection,
         _: ActionType,
     ) -> Result<()> {
         Err(Error::InvalidPermission(
@@ -96,7 +96,7 @@ impl Authorizable for StudentRole {
     async fn authorize_student(
         &self,
         student: &DbStudent,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         // Students can get their own private details and update themselves
@@ -112,10 +112,10 @@ impl Authorizable for StudentRole {
 
         // Students can get read default variants of their classmates
         if matches!(action, ActionType::ReadDefault) {
-            let self_classroom = DbStudent::get_student_classroom(pool, self.id, None)
+            let self_classroom = DbStudent::get_student_classroom(&mut *conn, self.id, None)
                 .await?
                 .ok_or(deny(&self.source).unwrap_err())?;
-            let student_classroom = DbStudent::get_student_classroom(pool, student.id, None)
+            let student_classroom = DbStudent::get_student_classroom(conn, student.id, None)
                 .await?
                 .ok_or(deny(&self.source).unwrap_err())?;
 
@@ -129,11 +129,21 @@ impl Authorizable for StudentRole {
         authorize_read_only(action, &self.source)
     }
 
-    async fn authorize_subject(&self, _: &DbSubject, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_subject(
+        &self,
+        _: &DbSubject,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_read_only(action, &self.source)
     }
 
-    async fn authorize_teacher(&self, _: &DbTeacher, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_teacher(
+        &self,
+        _: &DbTeacher,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_default_read_only(action, &self.source)
     }
 }
@@ -150,10 +160,10 @@ impl StudentRole {
     async fn authorize_classroom_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
-        let student_classroom = DbStudent::get_student_classroom(pool, self.id, None)
+        let student_classroom = DbStudent::get_student_classroom(&mut *conn, self.id, None)
             .await?
             // If the student doesn't belong to a classroom, deny access for classroom contacts
             .ok_or(deny(&self.source).unwrap_err())?;
@@ -162,7 +172,7 @@ impl StudentRole {
             "SELECT classroom_id FROM classroom_contacts WHERE contact_id = $1",
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(conn)
         .await?
         .classroom_id;
 
@@ -178,14 +188,14 @@ impl StudentRole {
     async fn authorize_club_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         let club_contact = query!(
             "SELECT club_id FROM club_contacts WHERE contact_id = $1",
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?;
 
         // Everyone can read club contacts
@@ -201,7 +211,7 @@ impl StudentRole {
 
         // Check if student is a club staff of the club that has the given contact, if not then
         // deny access for update and delete
-        let club_staffs = DbClub::get_club_staffs(pool, club_contact.club_id).await?;
+        let club_staffs = DbClub::get_club_staffs(conn, club_contact.club_id).await?;
         if club_staffs.contains(&self.id) {
             Ok(())
         } else {
@@ -212,7 +222,7 @@ impl StudentRole {
     async fn authorize_person_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         let owned = query!(
@@ -227,7 +237,7 @@ impl StudentRole {
             self.id,
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .exists
         .unwrap_or(false);
@@ -249,7 +259,7 @@ impl StudentRole {
             ",
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .role
         .unwrap_or("none".to_string());
@@ -257,7 +267,7 @@ impl StudentRole {
         match contact_belongs_to.as_str() {
             // Classmate contacts
             "student" => {
-                let student_classroom = DbStudent::get_student_classroom(pool, self.id, None)
+                let student_classroom = DbStudent::get_student_classroom(&mut *conn, self.id, None)
                     .await?
                     // If the student doesn't belong to a classroom, deny access for person contacts
                     .ok_or(deny(&self.source).unwrap_err())?;
@@ -270,11 +280,11 @@ impl StudentRole {
                     ",
                     contact.id,
                 )
-                .fetch_one(pool)
+                .fetch_one(&mut *conn)
                 .await?;
 
                 let contact_student_classroom =
-                    DbStudent::get_student_classroom(pool, contact_student.id, None)
+                    DbStudent::get_student_classroom(conn, contact_student.id, None)
                         .await?
                         .ok_or(deny(&self.source).unwrap_err())?;
 

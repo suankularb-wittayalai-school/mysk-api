@@ -1,6 +1,6 @@
 use crate::{
     common::string::FlexibleMultiLangString,
-    query::{building_blocks::QueryParamType, QueryFragment, QueryParam},
+    query::{QueryFragment, QueryParam, building_blocks::QueryParamType},
 };
 use sqlx::{Postgres, QueryBuilder};
 
@@ -105,7 +105,7 @@ impl<'sql> SqlSetClause<'sql> {
                 .0
                 .into_iter()
                 .for_each(|section| self.0.push(section));
-        };
+        }
 
         self
     }

@@ -8,7 +8,6 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -20,7 +19,6 @@ pub struct CompactTeacher {
     pub subject_group: SubjectGroup,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbTeacher> for CompactTeacher {
     async fn from_table(
         pool: &PgPool,

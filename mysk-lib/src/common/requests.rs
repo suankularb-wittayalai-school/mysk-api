@@ -1,7 +1,7 @@
 use crate::{common::PaginationConfig, prelude::*, query::Queryable};
-use actix_web::{dev::Payload, FromRequest, HttpRequest};
+use actix_web::{FromRequest, HttpRequest, dev::Payload};
 use futures::future;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{Deserialize, de::DeserializeOwned};
 use sqlx::{Postgres, QueryBuilder};
 use std::fmt::{Display, Formatter};
 use std::string::ToString;

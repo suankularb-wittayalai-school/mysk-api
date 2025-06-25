@@ -9,7 +9,6 @@ use crate::{
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
@@ -31,7 +30,6 @@ pub struct DbElectiveTradeOffer {
     pub receiver_elective_subject_session_id: Uuid,
 }
 
-#[async_trait]
 impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElectiveTradeOffer {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,

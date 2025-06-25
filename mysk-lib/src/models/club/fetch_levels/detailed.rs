@@ -12,7 +12,6 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -32,7 +31,6 @@ pub struct DetailedClub {
     pub staff_count: i64,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbClub> for DetailedClub {
     async fn from_table(
         pool: &PgPool,
@@ -40,9 +38,10 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> Result<Self> {
-        let staff_ids = DbClub::get_club_staffs(pool, table.id).await?;
-        let member_ids = DbClub::get_club_members(pool, table.id).await?;
-        let contact_ids = DbClub::get_club_contacts(pool, table.id).await?;
+        let mut conn = pool.acquire().await?;
+        let staff_ids = DbClub::get_club_staffs(&mut conn, table.id).await?;
+        let member_ids = DbClub::get_club_members(&mut conn, table.id).await?;
+        let contact_ids = DbClub::get_club_contacts(&mut conn, table.id).await?;
 
         Ok(Self {
             id: table.id,

@@ -1,7 +1,4 @@
-use crate::{
-    AppState,
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
-};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{
     HttpResponse, Responder, get,
     web::{Data, Path},
@@ -16,7 +13,6 @@ use mysk_lib::{
     prelude::*,
     query::QueryablePlaceholder,
 };
-use std::sync::Arc;
 use uuid::Uuid;
 
 #[get("/{id}")]
@@ -33,14 +29,15 @@ pub async fn query_elective_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
-    // TODO: fix
+    // TODO: Fix later
+    // let mut conn = data.db.acquire().await?;
     // let authorizer = Authorizer::new(
     //     pool,
     //     &user,
     //     format!("/subjects/electives/{elective_subject_session_id}"),
     // )
     // .await?;
-    let authorizer = Authorizer::Admin(Arc::new(AdminRole));
+    let authorizer = Authorizer::Admin(AdminRole);
 
     let elective_subject = ElectiveSubject::get_by_id(
         pool,

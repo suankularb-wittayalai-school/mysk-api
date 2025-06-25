@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -13,7 +12,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        club::{db::DbClub, Club},
+        club::{Club, db::DbClub},
         club_request::ClubRequest,
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
@@ -46,6 +45,7 @@ pub async fn update_club_requests(
     }): Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_request_id = club_request_id.into_inner();
     let club_request_status = if let Some(request_data) = request_data {
         if matches!(request_data.status, SubmissionStatus::Pending) {
@@ -62,9 +62,12 @@ pub async fn update_club_requests(
             format!("/clubs/requests/{club_request_id}"),
         ));
     };
-    let authorizer =
-        Authorizer::new(pool, &user, format!("/clubs/requests/{club_request_id}"))
-            .await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        format!("/clubs/requests/{club_request_id}"),
+    )
+    .await?;
 
     // Check if the club request exists
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
@@ -95,7 +98,7 @@ pub async fn update_club_requests(
                     club_request.membership_status,
                 ),
                 format!("/clubs/requests/{club_request_id}"),
-            ))
+            ));
         }
         SubmissionStatus::Pending => (),
     }
@@ -103,10 +106,9 @@ pub async fn update_club_requests(
     // Check if the student is a staff of the club
     match club_request.club {
         Club::IdOnly(club, _) => {
-            if !DbClub::get_club_staffs(pool, club.id)
+            if !DbClub::get_club_staffs(&mut conn, club.id)
                 .await?
-                .iter()
-                .any(|staff_id| *staff_id == student_id)
+                .contains(&student_id)
             {
                 return Err(Error::InvalidPermission(
                     "Student must be a staff member of the club to update club requests"
@@ -123,7 +125,7 @@ pub async fn update_club_requests(
         club_request_status as SubmissionStatus,
         club_request_id,
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
 
     let updated_club_request = ClubRequest::get_by_id(

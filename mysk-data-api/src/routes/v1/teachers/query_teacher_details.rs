@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -32,9 +31,9 @@ pub async fn query_teacher_details(
     }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let teacher_id = id.into_inner();
-    let authorizer =
-        Authorizer::new(pool, &user, format!("/teachers/{teacher_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/teachers/{teacher_id}")).await?;
 
     let teacher = Teacher::get_by_id(
         pool,

@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
         requests::RequestType,
@@ -10,10 +10,10 @@ use mysk_lib::{
     },
     models::{
         elective_trade_offer::{
+            ElectiveTradeOffer,
             request::{
                 queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
             },
-            ElectiveTradeOffer,
         },
         traits::TopLevelQuery as _,
     },
@@ -36,9 +36,13 @@ pub async fn query_trade_offers(
     }: RequestType<(), QueryableElectiveTradeOffer, SortableElectiveTradeOffer>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer =
-        Authorizer::new(pool, &user, "/subjects/electives/trade-offers".to_string())
-            .await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        "/subjects/electives/trade-offers".to_string(),
+    )
+    .await?;
 
     let (trade_offers, pagination) = ElectiveTradeOffer::query(
         pool,

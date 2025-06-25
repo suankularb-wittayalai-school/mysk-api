@@ -59,6 +59,7 @@ pub async fn modify_student(
     }): Json<RequestType<UpdateStudentRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let student_id = student_id.into_inner();
     let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
@@ -66,13 +67,13 @@ pub async fn modify_student(
             format!("/students/{student_id}"),
         ));
     };
-    let authorizer = Authorizer::new(pool, &user, format!("students/{student_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("students/{student_id}")).await?;
 
-    let db_student = DbStudent::get_by_id(pool, student_id).await?;
+    let db_student = DbStudent::get_by_id(&mut conn, student_id).await?;
     let person_id = db_student.person_id;
 
     authorizer
-        .authorize_student(&db_student, pool, ActionType::Update)
+        .authorize_student(&db_student, &mut conn, ActionType::Update)
         .await?;
 
     // NOTE: Person-related updates
@@ -97,7 +98,7 @@ pub async fn modify_student(
             )
             .execute(&mut *person_transaction)
             .await?;
-        };
+        }
 
         let mut qb = SqlSetClause::new();
         qb.push_multilang_update_field("prefix", pu.prefix)
@@ -117,7 +118,7 @@ pub async fn modify_student(
             .await?;
 
         person_transaction.commit().await?;
-    };
+    }
 
     let student = Student::get_by_id(
         pool,

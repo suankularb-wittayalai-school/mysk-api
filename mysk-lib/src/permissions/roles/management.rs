@@ -6,7 +6,7 @@ use crate::{
     permissions::{ActionType, Authorizable, authorize_default_read_only, authorize_read_only},
     prelude::*,
 };
-use sqlx::PgPool;
+use sqlx::PgConnection;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -20,25 +20,45 @@ impl Authorizable for ManagementRole {
     async fn authorize_classroom(
         &self,
         _: &DbClassroom,
-        _: &PgPool,
+        _: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         authorize_read_only(action, &self.source)
     }
 
-    async fn authorize_contact(&self, _: &DbContact, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_contact(
+        &self,
+        _: &DbContact,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_read_only(action, &self.source)
     }
 
-    async fn authorize_student(&self, _: &DbStudent, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_student(
+        &self,
+        _: &DbStudent,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_default_read_only(action, &self.source)
     }
 
-    async fn authorize_subject(&self, _: &DbSubject, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_subject(
+        &self,
+        _: &DbSubject,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_read_only(action, &self.source)
     }
 
-    async fn authorize_teacher(&self, _: &DbTeacher, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_teacher(
+        &self,
+        _: &DbTeacher,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_default_read_only(action, &self.source)
     }
 }

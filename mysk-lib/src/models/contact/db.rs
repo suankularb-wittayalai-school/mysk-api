@@ -7,7 +7,6 @@ use crate::{
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
@@ -28,7 +27,6 @@ pub struct DbContact {
     pub value: String,
 }
 
-#[async_trait]
 impl QueryDb<QueryableContact, SortableContact> for DbContact {
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,

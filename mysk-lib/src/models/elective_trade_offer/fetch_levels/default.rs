@@ -10,7 +10,6 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -25,7 +24,6 @@ pub struct DefaultElectiveTradeOffer {
     pub status: SubmissionStatus,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
     async fn from_table(
         pool: &PgPool,

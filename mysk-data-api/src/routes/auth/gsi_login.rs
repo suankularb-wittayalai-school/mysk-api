@@ -1,14 +1,14 @@
 use crate::AppState;
 use actix_web::{
-    cookie::{time::Duration as ActixWebDuration, Cookie},
+    HttpResponse, Responder,
+    cookie::{Cookie, time::Duration as ActixWebDuration},
     post,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header};
 use mysk_lib::{
-    auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
+    auth::oauth::{GoogleUserResult, TokenClaims, verify_id_token},
     common::response::ResponseType,
     error::Error,
     models::user::User,
@@ -56,7 +56,9 @@ async fn gsi_handler(
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-    let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
+    let user_id = User::get_by_email(&mut *(data.db.acquire().await?), &google_user.email)
+        .await?
+        .id;
 
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())

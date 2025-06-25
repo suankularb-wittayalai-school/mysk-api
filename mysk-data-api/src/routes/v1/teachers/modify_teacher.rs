@@ -66,6 +66,7 @@ pub async fn modify_teacher(
     }): Json<RequestType<UpdateTeacherRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let teacher_id = teacher_id.into_inner();
     let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
@@ -73,15 +74,15 @@ pub async fn modify_teacher(
             format!("/teachers/{teacher_id}"),
         ));
     };
-    let authorizer = Authorizer::new(pool, &user, format!("teachers/{teacher_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("teachers/{teacher_id}")).await?;
 
-    let db_teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
+    let db_teacher = DbTeacher::get_by_id(&mut conn, teacher_id).await?;
     let person_id = db_teacher
         .person_id
         .expect("Every teacher should have a person_id");
 
     authorizer
-        .authorize_teacher(&db_teacher, pool, ActionType::Update)
+        .authorize_teacher(&db_teacher, &mut conn, ActionType::Update)
         .await?;
 
     // NOTE: Teacher-related updates
@@ -95,7 +96,7 @@ pub async fn modify_teacher(
                 "SELECT id FROM subject_groups WHERE id = $1",
                 subject_group_id
             )
-            .fetch_one(pool)
+            .fetch_one(&mut *conn)
             .await?;
 
             let current_subject_group = db_teacher.subject_group_id;
@@ -109,7 +110,7 @@ pub async fn modify_teacher(
                 .execute(&mut *teacher_transaction)
                 .await?;
             }
-        };
+        }
 
         // Update/insert advisory classroom
         if let Some(class_advisor_at) = tu.advisor_at {
@@ -118,12 +119,15 @@ pub async fn modify_teacher(
                 class_advisor_at,
                 current_academic_year,
             )
-            .fetch_one(pool)
+            .fetch_one(&mut *conn)
             .await?;
 
-            let existing_advisor_at =
-                DbTeacher::get_teacher_advisor_at(pool, teacher_id, Some(current_academic_year))
-                    .await?;
+            let existing_advisor_at = DbTeacher::get_teacher_advisor_at(
+                &mut conn,
+                teacher_id,
+                Some(current_academic_year),
+            )
+            .await?;
 
             if existing_advisor_at != Some(new_classroom.id) {
                 match existing_advisor_at {
@@ -184,7 +188,7 @@ pub async fn modify_teacher(
             )
             .execute(&mut *person_transaction)
             .await?;
-        };
+        }
 
         let mut qb = SqlSetClause::new();
         qb.push_multilang_update_field("prefix", pu.prefix)
@@ -204,7 +208,7 @@ pub async fn modify_teacher(
             .await?;
 
         person_transaction.commit().await?;
-    };
+    }
 
     let teacher = Teacher::get_by_id(
         pool,

@@ -11,7 +11,6 @@ use crate::{
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -27,7 +26,6 @@ pub struct DefaultStudent {
     pub person: Person,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbStudent> for DefaultStudent {
     async fn from_table(
         pool: &PgPool,
@@ -35,15 +33,16 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_student(&table, pool, ActionType::ReadDefault)
+            .authorize_student(&table, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
+        let contact_ids = DbStudent::get_student_contacts(&mut conn, table.id).await?;
 
-        let classroom = DbStudent::get_student_classroom(pool, table.id, None).await?;
+        let classroom = DbStudent::get_student_classroom(&mut conn, table.id, None).await?;
         let user = match table.user_id {
-            Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
+            Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
             None => None,
         };
 
@@ -73,7 +72,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
             },
             class_no: classroom.map(|classroom| classroom.class_no),
             user,
-            person: Person::get_by_id(pool, table.person_id).await?,
+            person: Person::get_by_id(&mut conn, table.person_id).await?,
         })
     }
 }

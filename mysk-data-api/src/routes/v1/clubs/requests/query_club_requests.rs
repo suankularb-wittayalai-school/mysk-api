@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
         requests::RequestType,
@@ -10,8 +10,8 @@ use mysk_lib::{
     },
     models::{
         club_request::{
-            request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
             ClubRequest,
+            request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
         },
         traits::TopLevelQuery as _,
     },
@@ -34,8 +34,8 @@ pub async fn query_club_requests(
     }: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer =
-        Authorizer::new(pool, &user, "/clubs/requests".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/clubs/requests".to_string()).await?;
 
     let (club_requests, pagination) = ClubRequest::query(
         pool,

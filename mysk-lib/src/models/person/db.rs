@@ -5,7 +5,7 @@ use crate::{
 use chrono::{DateTime, NaiveDate, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool};
+use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
 #[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
@@ -41,12 +41,15 @@ pub struct DbPerson {
 }
 
 impl DbPerson {
-    pub async fn get_person_allergies(pool: &PgPool, person_id: Uuid) -> Result<Vec<String>> {
+    pub async fn get_person_allergies(
+        conn: &mut PgConnection,
+        person_id: Uuid,
+    ) -> Result<Vec<String>> {
         let res = query!(
             "SELECT allergy_name FROM person_allergies WHERE person_id = $1",
             person_id,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.allergy_name).collect())

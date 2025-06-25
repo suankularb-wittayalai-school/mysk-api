@@ -6,7 +6,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::{BaseQuery, GetById};
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, query, Acquire, Postgres};
+use sqlx::{PgConnection, prelude::FromRow, query};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
@@ -27,10 +27,7 @@ pub struct DbCertificate {
 }
 
 impl DbCertificate {
-    pub async fn is_rsvp_period<'a, A>(conn: A) -> Result<bool>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn is_rsvp_period(conn: &mut PgConnection) -> Result<bool> {
         let res = query!(
             "\
             SELECT EXISTS (\
@@ -39,19 +36,16 @@ impl DbCertificate {
             )\
             ",
         )
-        .fetch_one(&mut *(conn.acquire().await?))
+        .fetch_one(conn)
         .await?;
 
         Ok(res.exists.unwrap_or(false))
     }
 
-    pub async fn get_rsvp_status<'a, A>(
-        conn: A,
+    pub async fn get_rsvp_status(
+        conn: &mut PgConnection,
         student_id: Uuid,
-    ) -> Result<Option<SubmissionStatus>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    ) -> Result<Option<SubmissionStatus>> {
         let res = query!(
             "\
             SELECT rsvp_status \"rsvp_status: SubmissionStatus\" FROM student_certificates \
@@ -60,7 +54,7 @@ impl DbCertificate {
             student_id,
             get_current_academic_year(None),
         )
-        .fetch_one(&mut *(conn.acquire().await?))
+        .fetch_one(conn)
         .await?;
 
         Ok(res.rsvp_status)

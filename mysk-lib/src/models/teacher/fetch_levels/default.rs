@@ -13,7 +13,6 @@ use crate::{
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -30,7 +29,6 @@ pub struct DefaultTeacher {
     pub subjects_in_charge: Vec<Subject>,
 }
 
-#[async_trait]
 impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
     async fn from_table(
         pool: &PgPool,
@@ -38,13 +36,14 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_teacher(&table, pool, ActionType::ReadDefault)
+            .authorize_teacher(&table, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let contact_ids = DbTeacher::get_teacher_contacts(pool, table.id).await?;
-        let classroom_id = DbTeacher::get_teacher_advisor_at(pool, table.id, None).await?;
-        let subject_id = DbTeacher::get_subject_in_charge(pool, table.id, None).await?;
+        let contact_ids = DbTeacher::get_teacher_contacts(&mut conn, table.id).await?;
+        let classroom_id = DbTeacher::get_teacher_advisor_at(&mut conn, table.id, None).await?;
+        let subject_id = DbTeacher::get_subject_in_charge(&mut conn, table.id, None).await?;
 
         let subject_group = SubjectGroup::get_by_id(
             pool,
@@ -56,12 +55,12 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
         .await?;
 
         let user = match table.user_id {
-            Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
+            Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
             None => None,
         };
 
         let person = match table.person_id {
-            Some(person_id) => Some(Person::get_by_id(pool, person_id).await?),
+            Some(person_id) => Some(Person::get_by_id(&mut conn, person_id).await?),
             None => None,
         };
 

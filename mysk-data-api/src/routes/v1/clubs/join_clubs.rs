@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -38,10 +37,10 @@ pub async fn join_clubs(
     }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let current_year = get_current_academic_year(None);
-    let authorizer =
-        Authorizer::new(pool, &user, format!("/clubs/{club_id}/join")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
     let Club::Detailed(club, _) = Club::get_by_id(
@@ -89,7 +88,7 @@ pub async fn join_clubs(
         SubmissionStatus::Pending as SubmissionStatus,
         student_id,
     )
-    .fetch_optional(pool)
+    .fetch_optional(&mut *conn)
     .await?
     {
         match has_requested.membership_status {
@@ -113,7 +112,7 @@ pub async fn join_clubs(
         SubmissionStatus::Pending as SubmissionStatus,
         student_id,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .id;
 

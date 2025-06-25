@@ -1,6 +1,6 @@
-use crate::{extractors::ExtractorFuture, AppState};
-use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
-use futures::{future, FutureExt as _};
+use crate::{AppState, extractors::ExtractorFuture};
+use actix_web::{FromRequest, HttpRequest, dev::Payload, web::Data};
+use futures::{FutureExt as _, future};
 use mysk_lib::{
     auth::key::{ApiKey, PrefixedApiKey},
     prelude::*,

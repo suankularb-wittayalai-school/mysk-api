@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -34,8 +33,7 @@ async fn modify_invitation(
         data: request_data, ..
     }): Json<RequestType<ModifyInvitationRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
     let rsvp_status = if let Some(request_data) = request_data {
         if matches!(request_data.rsvp_status, SubmissionStatus::Pending) {
             return Err(Error::InvalidRequest(
@@ -53,7 +51,7 @@ async fn modify_invitation(
     };
 
     // Checks if the current time is within the rsvp period
-    if !DbCertificate::is_rsvp_period(&mut *transaction).await? {
+    if !DbCertificate::is_rsvp_period(&mut transaction).await? {
         return Err(Error::InvalidPermission(
             "The certificate ceremony RSVP period has ended".to_string(),
             format!("/certificates/rsvp/{student_id}"),

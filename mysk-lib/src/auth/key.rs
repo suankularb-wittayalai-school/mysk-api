@@ -1,9 +1,9 @@
 use crate::prelude::*;
 use chrono::{DateTime, Utc};
-use rand::{rngs::OsRng, RngCore};
+use rand::{RngCore, rngs::OsRng};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::{prelude::FromRow, query, PgPool};
+use sqlx::{PgConnection, prelude::FromRow, query};
 use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
@@ -35,7 +35,11 @@ fn generate_api_key(length: usize) -> String {
 
 impl ApiKey {
     #[allow(clippy::cast_precision_loss)]
-    pub async fn create(pool: &PgPool, user_id: Uuid, expire_days: Option<i64>) -> Result<String> {
+    pub async fn create(
+        conn: &mut PgConnection,
+        user_id: Uuid,
+        expire_days: Option<i64>,
+    ) -> Result<String> {
         // Generate a new API key
         let short_token = generate_api_key(8);
         let long_token = generate_api_key(24);
@@ -58,7 +62,7 @@ impl ApiKey {
                 None => None,
             },
         )
-        .execute(pool)
+        .execute(conn)
         .await?;
 
         Ok(format!("mysk_{short_token}_{long_token}"))

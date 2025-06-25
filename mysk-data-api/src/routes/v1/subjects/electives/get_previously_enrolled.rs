@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::response::ResponseType, models::elective_subject::db::DbElectiveSubject, prelude::*,
 };
@@ -13,9 +13,10 @@ async fn get_previously_enrolled(
     _: ApiKeyHeader,
     LoggedInStudent(student_id): LoggedInStudent,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
 
-    let electives = DbElectiveSubject::get_previously_enrolled_electives(pool, student_id).await?;
+    let electives =
+        DbElectiveSubject::get_previously_enrolled_electives(&mut conn, student_id).await?;
     let response = ResponseType::new(electives, None);
 
     Ok(HttpResponse::Ok().json(response))

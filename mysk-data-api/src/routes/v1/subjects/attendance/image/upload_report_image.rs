@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Bytes, Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -13,7 +12,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{
-        online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
+        online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
         traits::{GetById as _, TopLevelGetById as _},
     },
     permissions::Authorizer,
@@ -21,8 +20,8 @@ use mysk_lib::{
     query::QueryablePlaceholder,
 };
 use reqwest::{
-    header::{HeaderValue, AUTHORIZATION, CONTENT_TYPE},
     Client,
+    header::{AUTHORIZATION, CONTENT_TYPE, HeaderValue},
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -49,6 +48,7 @@ pub async fn upload_report_image(
     request_body: Bytes,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
     let Some(update_data) = request_data else {
         return Err(Error::InvalidRequest(
@@ -57,13 +57,13 @@ pub async fn upload_report_image(
         ));
     };
     let authorizer = Authorizer::new(
-        pool,
+        &mut conn,
         &user,
         format!("/subjects/attendance/image/{report_id}"),
     )
     .await?;
 
-    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id).await?;
+    let class_report = DbOnlineTeachingReports::get_by_id(&mut conn, report_id).await?;
 
     // Check if the report is owned by the teacher
     if class_report.teacher_id != teacher_id {
@@ -116,7 +116,7 @@ pub async fn upload_report_image(
         update_data.file_extension,
         report_id,
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
 
     let class_report = OnlineTeachingReports::get_by_id(

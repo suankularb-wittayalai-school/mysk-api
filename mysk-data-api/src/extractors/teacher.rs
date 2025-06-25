@@ -1,5 +1,5 @@
-use crate::{extractors::logged_in::LoggedIn, extractors::ExtractorFuture, AppState};
-use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
+use crate::{AppState, extractors::ExtractorFuture, extractors::logged_in::LoggedIn};
+use actix_web::{FromRequest, HttpRequest, dev::Payload, web::Data};
 use futures::FutureExt as _;
 use mysk_lib::{
     models::{enums::UserRole, teacher::db::DbTeacher},
@@ -20,7 +20,7 @@ impl FromRequest for LoggedInTeacher {
         let app_state = req
             .app_data::<Data<AppState>>()
             .expect("Irrecoverable error, AppState is None");
-        let pool = app_state.db.clone();
+        let conn = app_state.db.acquire();
         let source = req.path().to_string();
         let user = LoggedIn::from_request(req, payload);
 
@@ -36,7 +36,7 @@ impl FromRequest for LoggedInTeacher {
                 }
             }
 
-            let teacher_id = DbTeacher::get_teacher_from_user_id(&pool, user.id)
+            let teacher_id = DbTeacher::get_teacher_from_user_id(&mut *(conn.await?), user.id)
                 .await?
                 .ok_or(Error::InvalidPermission(
                     "User is not a teacher".to_string(),

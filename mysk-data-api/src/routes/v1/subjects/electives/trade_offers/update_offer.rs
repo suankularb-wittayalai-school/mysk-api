@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -15,7 +14,7 @@ use mysk_lib::{
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::db::DbElectiveSubject,
-        elective_trade_offer::{db::DbElectiveTradeOffer, ElectiveTradeOffer},
+        elective_trade_offer::{ElectiveTradeOffer, db::DbElectiveTradeOffer},
         enums::SubmissionStatus,
         traits::{GetById, TopLevelGetById as _},
     },
@@ -48,7 +47,7 @@ async fn update_trade_offer(
     }): Json<RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
     let trade_offer_id = trade_offer_id.into_inner();
     let trade_offer_status = if let Some(request_data) = request_data {
         if matches!(request_data.status, SubmissionStatus::Pending) {
@@ -67,14 +66,14 @@ async fn update_trade_offer(
     };
 
     let authorizer = Authorizer::new(
-        pool,
+        &mut transaction,
         &user,
         format!("/subjects/electives/trade-offers/{trade_offer_id}"),
     )
     .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, client_student_id).await? {
+    if DbElectiveSubject::is_student_blacklisted(&mut transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             format!("/subjects/electives/trade-offers/{trade_offer_id}"),
@@ -82,14 +81,14 @@ async fn update_trade_offer(
     }
 
     // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, client_student_id).await? {
+    if !DbElectiveSubject::is_enrollment_period(&mut transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective enrollment period has ended".to_string(),
             format!("/subjects/electives/trade-offers/{trade_offer_id}"),
         ));
     }
 
-    let trade_offer = DbElectiveTradeOffer::get_by_id(&mut *transaction, trade_offer_id).await?;
+    let trade_offer = DbElectiveTradeOffer::get_by_id(&mut transaction, trade_offer_id).await?;
 
     // Check if trade offer is already approved or declined
     if matches!(

@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -47,6 +46,7 @@ pub async fn create_club_contacts(
     }): Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let Some(club_contact) = request_data else {
         return Err(Error::InvalidRequest(
@@ -55,13 +55,13 @@ pub async fn create_club_contacts(
         ));
     };
     let authorizer =
-        Authorizer::new(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
+        Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/contacts")).await?;
 
-    let club = DbClub::get_by_id(pool, club_id).await?;
+    let club = DbClub::get_by_id(&mut conn, club_id).await?;
 
     // Check if the student is a staff of the club
-    let club_staffs = DbClub::get_club_staffs(pool, club_id).await?;
-    if !club_staffs.iter().any(|staff_id| *staff_id == student_id) {
+    let club_staffs = DbClub::get_club_staffs(&mut conn, club_id).await?;
+    if !club_staffs.contains(&student_id) {
         return Err(Error::InvalidPermission(
             "Insufficient permissions to perform this action".to_string(),
             format!("/clubs/{club_id}/contacts"),
@@ -71,7 +71,7 @@ pub async fn create_club_contacts(
     // Check if the contact is a duplicate
     let club_contacts = Contact::get_by_ids(
         pool,
-        DbClub::get_club_contacts(pool, club_id).await?,
+        DbClub::get_club_contacts(&mut conn, club_id).await?,
         Some(FetchLevel::Default),
         Some(FetchLevel::IdOnly),
         &authorizer,
@@ -87,7 +87,7 @@ pub async fn create_club_contacts(
         ));
     }
 
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
 
     let new_contact_id = query!(
         "INSERT INTO contacts (type, value) VALUES ($1, $2) RETURNING id",

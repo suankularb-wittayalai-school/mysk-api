@@ -1,5 +1,5 @@
 use crate::AppState;
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use chrono::{SecondsFormat, Utc};
 use mysk_lib::{common::response::ResponseType, prelude::*};
 use serde::Serialize;
@@ -15,10 +15,10 @@ struct HealthCheckResponse {
 
 #[get("/health-check")]
 pub async fn health_check(data: Data<AppState>) -> Result<impl Responder> {
-    let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
 
     let start = time::Instant::now();
-    let database_connection = query("SELECT 1").execute(pool).await.is_ok();
+    let database_connection = query("SELECT 1").execute(&mut *conn).await.is_ok();
     let database_response_time = start.elapsed().as_millis();
 
     let response = ResponseType::new(

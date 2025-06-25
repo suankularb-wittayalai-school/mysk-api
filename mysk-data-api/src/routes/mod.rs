@@ -1,4 +1,4 @@
-use actix_web::web::{scope, to, ServiceConfig};
+use actix_web::web::{ServiceConfig, scope, to};
 
 pub mod auth;
 pub mod health;

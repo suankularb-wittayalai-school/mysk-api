@@ -1,7 +1,7 @@
 use crate::common::PaginationType;
 use chrono::{DateTime, Utc};
 use serde::Serialize;
-use sqlx::{query, PgPool};
+use sqlx::{PgConnection, query};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
@@ -63,7 +63,7 @@ pub struct ErrorType {
 
 impl ErrorType {
     // TODO: tracing and error logging
-    pub async fn log(&self, pool: &PgPool, api_key: Option<Uuid>) {
+    pub async fn log(&self, conn: &mut PgConnection, api_key: Option<Uuid>) {
         query!(
             "
             INSERT INTO api_logging.error_logs (id, code, error_type, detail, source, api_key_id)
@@ -76,7 +76,7 @@ impl ErrorType {
             self.source,
             api_key,
         )
-        .execute(pool)
+        .execute(conn)
         .await
         .unwrap();
     }

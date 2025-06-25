@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
         requests::RequestType,
@@ -10,8 +10,8 @@ use mysk_lib::{
     },
     models::{
         teacher::{
-            request::{queryable::QueryableTeacher, sortable::SortableTeacher},
             Teacher,
+            request::{queryable::QueryableTeacher, sortable::SortableTeacher},
         },
         traits::TopLevelQuery as _,
     },
@@ -34,7 +34,8 @@ pub async fn query_teachers(
     }: RequestType<(), QueryableTeacher, SortableTeacher>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = Authorizer::new(pool, &user, "/teachers".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/teachers".to_string()).await?;
 
     let (teacher, pagination) = Teacher::query(
         pool,

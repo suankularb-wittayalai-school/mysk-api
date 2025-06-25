@@ -31,8 +31,9 @@ pub async fn query_contact_details(
     }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let contact_id = contact_id.into_inner();
-    let authorizer = Authorizer::new(pool, &user, format!("/contacts/{contact_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/contacts/{contact_id}")).await?;
 
     let contact = Contact::get_by_id(
         pool,

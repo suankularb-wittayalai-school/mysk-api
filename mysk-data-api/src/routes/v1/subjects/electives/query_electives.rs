@@ -1,7 +1,4 @@
-use crate::{
-    AppState,
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
-};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
@@ -18,7 +15,6 @@ use mysk_lib::{
     permissions::{Authorizer, roles::AdminRole},
     prelude::*,
 };
-use std::sync::Arc;
 
 #[get("")]
 pub async fn query_elective_subject(
@@ -36,9 +32,10 @@ pub async fn query_elective_subject(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     // TODO: Fix later
+    // let mut conn = data.db.acquire().await?;
     // let authorizer =
     //     Authorizer::new(pool, &user, "/subjects/electives".to_string()).await?;
-    let authorizer = Authorizer::Admin(Arc::new(AdminRole));
+    let authorizer = Authorizer::Admin(AdminRole);
 
     let (electives, pagination) = ElectiveSubject::query(
         pool,

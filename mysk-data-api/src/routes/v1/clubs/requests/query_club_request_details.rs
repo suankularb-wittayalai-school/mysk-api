@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -32,10 +31,14 @@ pub async fn query_club_request_details(
     }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_request_id = club_request_id.into_inner();
-    let authorizer =
-        Authorizer::new(pool, &user, format!("/clubs/requests/{club_request_id}"))
-            .await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        format!("/clubs/requests/{club_request_id}"),
+    )
+    .await?;
 
     let club_request = ClubRequest::get_by_id(
         pool,

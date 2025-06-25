@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use chrono::NaiveDate;
 use mysk_lib::{
@@ -25,7 +24,7 @@ use mysk_lib::{
     query::QueryablePlaceholder,
 };
 use serde::Deserialize;
-use sqlx::{query, Error as SqlxError};
+use sqlx::{Error as SqlxError, query};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -55,17 +54,17 @@ pub async fn create_report(
     }): Json<RequestType<CreateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let Some(class_report) = request_data else {
         return Err(Error::InvalidRequest(
             "Json deserialize error: field `data` can not be empty".to_string(),
             "/subjects/attendance".to_string(),
         ));
     };
-    let authorizer =
-        Authorizer::new(pool, &user, "/subjects/attendance".to_string()).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/subjects/attendance".to_string()).await?;
 
     // Check if subject exists
-    let subject_id = DbSubject::get_by_id(pool, class_report.subject_id)
+    let subject_id = DbSubject::get_by_id(&mut conn, class_report.subject_id)
         .await
         .map_err(|e| match e {
             SqlxError::RowNotFound => Error::EntityNotFound(
@@ -79,7 +78,7 @@ pub async fn create_report(
     // Check if classroom exists
     let classroom_id = if let Some(classroom_id) = class_report.classroom_id {
         Some(
-            DbClassroom::get_by_id(pool, classroom_id)
+            DbClassroom::get_by_id(&mut conn, classroom_id)
                 .await
                 .map_err(|e| match e {
                     SqlxError::RowNotFound => Error::EntityNotFound(
@@ -119,7 +118,7 @@ pub async fn create_report(
         class_report.duration,
         class_report.absent_student_no,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .id;
 

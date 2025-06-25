@@ -1,16 +1,16 @@
-use crate::{routes::auth::gsi_login::GoogleTokenResponse, AppState};
+use crate::{AppState, routes::auth::gsi_login::GoogleTokenResponse};
 use actix_web::{
-    cookie::{time::Duration as ActixWebDuration, Cookie},
+    HttpResponse, Responder,
+    cookie::{Cookie, time::Duration as ActixWebDuration},
     get,
     web::{Data, Query, Redirect},
-    HttpResponse, Responder,
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header};
 use mysk_lib::{
     auth::oauth::{
-        exchange_oauth_code, generate_oauth_init_url, verify_id_token, GoogleUserResult,
-        TokenClaims,
+        GoogleUserResult, TokenClaims, exchange_oauth_code, generate_oauth_init_url,
+        verify_id_token,
     },
     common::response::ResponseType,
     models::user::User,
@@ -82,7 +82,9 @@ pub async fn google_oauth_handler(
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-    let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
+    let user_id = User::get_by_email(&mut *(data.db.acquire().await?), &google_user.email)
+        .await?
+        .id;
 
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())

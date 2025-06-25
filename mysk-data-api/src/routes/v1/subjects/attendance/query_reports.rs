@@ -1,16 +1,16 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
     models::{
         online_teaching_reports::{
+            OnlineTeachingReports,
             requests::{
                 queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
             },
-            OnlineTeachingReports,
         },
         traits::TopLevelQuery,
     },
@@ -33,8 +33,8 @@ pub async fn query_reports(
     }: RequestType<(), QueryableOnlineTeachingReports, SortableOnlineTeachingReports>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer =
-        Authorizer::new(pool, &user, "/subjects/attendance".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/subjects/attendance".to_string()).await?;
 
     let reports = OnlineTeachingReports::query(
         pool,
