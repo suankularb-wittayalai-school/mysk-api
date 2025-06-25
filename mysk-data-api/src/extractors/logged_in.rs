@@ -1,6 +1,9 @@
-use crate::{AppState, extractors::ExtractorFuture};
+use crate::AppState;
 use actix_web::{FromRequest, HttpRequest, dev::Payload, http::header, web::Data};
-use futures::{FutureExt as _, future};
+use futures::{
+    FutureExt as _,
+    future::{self, LocalBoxFuture},
+};
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use mysk_lib::{auth::oauth::TokenClaims, models::user::User, prelude::*};
 use serde::Serialize;
@@ -12,7 +15,7 @@ pub struct LoggedIn(pub User);
 
 impl FromRequest for LoggedIn {
     type Error = Error;
-    type Future = ExtractorFuture<Self>;
+    type Future = LocalBoxFuture<'static, Result<Self>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let app_state = req

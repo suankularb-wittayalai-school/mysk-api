@@ -1,6 +1,6 @@
-use crate::{AppState, extractors::ExtractorFuture, extractors::logged_in::LoggedIn};
+use crate::{AppState, extractors::logged_in::LoggedIn};
 use actix_web::{FromRequest, HttpRequest, dev::Payload, web::Data};
-use futures::FutureExt as _;
+use futures::{FutureExt as _, future::LocalBoxFuture};
 use mysk_lib::{
     models::{enums::UserRole, student::db::DbStudent},
     prelude::*,
@@ -14,7 +14,7 @@ pub struct LoggedInStudent(pub Uuid);
 
 impl FromRequest for LoggedInStudent {
     type Error = Error;
-    type Future = ExtractorFuture<Self>;
+    type Future = LocalBoxFuture<'static, Result<Self>>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
         let app_state = req

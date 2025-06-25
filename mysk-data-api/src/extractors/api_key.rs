@@ -1,6 +1,9 @@
-use crate::{AppState, extractors::ExtractorFuture};
+use crate::AppState;
 use actix_web::{FromRequest, HttpRequest, dev::Payload, web::Data};
-use futures::{FutureExt as _, future};
+use futures::{
+    FutureExt as _,
+    future::{self, LocalBoxFuture},
+};
 use mysk_lib::{
     auth::key::{ApiKey, PrefixedApiKey},
     prelude::*,
@@ -15,7 +18,7 @@ pub struct ApiKeyHeader(ApiKey);
 
 impl FromRequest for ApiKeyHeader {
     type Error = Error;
-    type Future = ExtractorFuture<Self>;
+    type Future = LocalBoxFuture<'static, Result<Self>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let app_state = req
