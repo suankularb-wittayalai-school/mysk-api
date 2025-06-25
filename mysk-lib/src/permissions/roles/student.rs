@@ -207,7 +207,7 @@ impl StudentRole {
         // Check if student is a club staff of the club that has the given contact, if not then
         // deny access for update and delete
         let club_staffs = DbClub::get_club_staffs(pool, club_contact.club_id).await?;
-        if club_staffs.iter().any(|staff_id| *staff_id == self.id) {
+        if club_staffs.contains(&self.id) {
             Ok(())
         } else {
             deny(&self.source)

@@ -134,7 +134,7 @@ async fn modify_elective_subject(
     query!(
         "\
         UPDATE elective_subject_session_enrolled_students \
-        SET updated_at = now(), elective_subject_session_id = $1\
+        SET updated_at = now(), elective_subject_session_id = $1 \
         WHERE student_id = $2 AND elective_subject_session_id = $3\
         ",
         elective.id,

@@ -133,7 +133,7 @@ pub async fn modify_teacher(
                         // Change advisory classroom to new classroom
                         query!(
                             "\
-                            UPDATE classroom_advisors SET classroom_id = $1\
+                            UPDATE classroom_advisors SET classroom_id = $1 \
                             WHERE teacher_id = $2 AND classroom_id = $3\
                             ",
                             new_classroom.id,

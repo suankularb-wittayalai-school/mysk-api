@@ -33,6 +33,7 @@ pub async fn query_elective_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
+    // TODO: fix
     // let authorizer = permissions::get_authorizer(
     //     pool,
     //     &user,

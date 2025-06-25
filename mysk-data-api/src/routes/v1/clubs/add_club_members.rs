@@ -173,7 +173,7 @@ pub async fn add_club_members(
     } else {
         query!(
             "\
-            UPDATE club_members SET membership_status = $1\
+            UPDATE club_members SET membership_status = $1 \
             WHERE club_id = $2 AND year = $3 AND student_id = $4 RETURNING id\
             ",
             SubmissionStatus::Approved as SubmissionStatus,

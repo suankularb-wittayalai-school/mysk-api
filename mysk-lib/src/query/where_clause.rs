@@ -67,7 +67,7 @@ impl<'sql> SqlWhereClause<'sql> {
                 .0
                 .into_iter()
                 .for_each(|section| self.0.push(section));
-        };
+        }
 
         self
     }

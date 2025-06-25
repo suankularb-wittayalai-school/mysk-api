@@ -1,5 +1,5 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
 };
 use actix_web::{
@@ -51,9 +51,6 @@ async fn modify_invitation(
             format!("/certificates/rsvp/{student_id}"),
         ));
     };
-    // let authorizer =
-    //     permissions::get_authorizer(pool, &user, format!("/certificates/rsvp/{student_id}"))
-    //         .await?;
 
     // Checks if the current time is within the rsvp period
     if !DbCertificate::is_rsvp_period(&mut *transaction).await? {
