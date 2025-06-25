@@ -1,41 +1,46 @@
 use crate::{
-    common::requests::FetchLevel,
-    models::traits::{FetchLevelVariant, GetById, TopLevelFromTable, TopLevelGetById},
+    common::{
+        PaginationConfig, PaginationType,
+        requests::{FetchLevel, FilterConfig, SortablePlaceholder, SortingConfig},
+    },
+    models::traits::{FetchLevelVariant, GetById, QueryDb},
     permissions::Authorizer,
     prelude::*,
+    query::{Queryable, QueryablePlaceholder},
 };
 use futures::future;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::{Encode, PgPool, Postgres, Type as SqlxType, postgres::PgHasArrayType};
-use std::marker::PhantomData;
+use std::{fmt::Display, marker::PhantomData};
 
 #[derive(Clone, Debug, Deserialize)]
-pub enum TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    IdOnly(Box<IdOnly>, PhantomData<DbVariant>),
-    Compact(Box<Compact>, PhantomData<DbVariant>),
-    Default(Box<Default>, PhantomData<DbVariant>),
-    Detailed(Box<Detailed>, PhantomData<DbVariant>),
+pub enum TopLevelVariant<
+    Table,
+    IdOnly,
+    Compact,
+    Default,
+    Detailed,
+    Q = QueryablePlaceholder,
+    S = SortablePlaceholder,
+> {
+    IdOnly(Box<IdOnly>, PhantomData<(Table, Q, S)>),
+    Compact(Box<Compact>, PhantomData<(Table, Q, S)>),
+    Default(Box<Default>, PhantomData<(Table, Q, S)>),
+    Detailed(Box<Detailed>, PhantomData<(Table, Q, S)>),
 }
 
-impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelFromTable<DbVariant>
-    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
+impl<Table, IdOnly, Compact, Default, Detailed, Q, S>
+    TopLevelVariant<Table, IdOnly, Compact, Default, Detailed, Q, S>
 where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
+    Table: GetById,
+    IdOnly: FetchLevelVariant<Table>,
+    Compact: FetchLevelVariant<Table>,
+    Default: FetchLevelVariant<Table>,
+    Detailed: FetchLevelVariant<Table>,
 {
-    async fn from_table(
+    pub async fn from_table(
         pool: &PgPool,
-        table: DbVariant,
+        table: Table,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
@@ -86,37 +91,8 @@ where
             )),
         }
     }
-}
 
-impl<DbVariant, IdOnly, Compact, Default, Detailed> Serialize
-    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    fn serialize<S: Serializer>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error> {
-        match self {
-            TopLevelVariant::IdOnly(variant, _) => variant.serialize(serializer),
-            TopLevelVariant::Compact(variant, _) => variant.serialize(serializer),
-            TopLevelVariant::Default(variant, _) => variant.serialize(serializer),
-            TopLevelVariant::Detailed(variant, _) => variant.serialize(serializer),
-        }
-    }
-}
-
-impl<DbVariant, IdOnly, Compact, Default, Detailed> TopLevelGetById
-    for TopLevelVariant<DbVariant, IdOnly, Compact, Default, Detailed>
-where
-    DbVariant: GetById,
-    IdOnly: Serialize + FetchLevelVariant<DbVariant>,
-    Compact: Serialize + FetchLevelVariant<DbVariant>,
-    Default: Serialize + FetchLevelVariant<DbVariant>,
-    Detailed: Serialize + FetchLevelVariant<DbVariant>,
-{
-    async fn get_by_id<T>(
+    pub async fn get_by_id<T>(
         pool: &PgPool,
         id: T,
         fetch_level: Option<FetchLevel>,
@@ -126,7 +102,7 @@ where
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres>,
     {
-        let variant = DbVariant::get_by_id(&mut *(pool.acquire().await?), id).await?;
+        let variant = Table::get_by_id(&mut *(pool.acquire().await?), id).await?;
 
         Self::from_table(
             pool,
@@ -138,7 +114,7 @@ where
         .await
     }
 
-    async fn get_by_ids<T>(
+    pub async fn get_by_ids<T>(
         pool: &PgPool,
         ids: Vec<T>,
         fetch_level: Option<FetchLevel>,
@@ -149,7 +125,7 @@ where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType,
     {
         let mut conn = pool.acquire().await?;
-        let variants = DbVariant::get_by_ids(&mut conn, ids).await?;
+        let variants = Table::get_by_ids(&mut conn, ids).await?;
         let futures = variants
             .into_iter()
             .map(|variant| {
@@ -165,5 +141,60 @@ where
         let result = future::try_join_all(futures).await?;
 
         Ok(result)
+    }
+}
+
+impl<Table, IdOnly, Compact, Default, Detailed, Q, S>
+    TopLevelVariant<Table, IdOnly, Compact, Default, Detailed, Q, S>
+where
+    Table: GetById + QueryDb<Q, S>,
+    IdOnly: FetchLevelVariant<Table>,
+    Compact: FetchLevelVariant<Table>,
+    Default: FetchLevelVariant<Table>,
+    Detailed: FetchLevelVariant<Table>,
+    Q: Clone + Queryable,
+    S: Display,
+{
+    pub async fn query(
+        pool: &PgPool,
+        fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: Option<FetchLevel>,
+        filter: Option<FilterConfig<Q>>,
+        sort: Option<SortingConfig<S>>,
+        pagination: Option<PaginationConfig>,
+        authorizer: &Authorizer,
+    ) -> Result<(Vec<Self>, PaginationType)> {
+        let mut conn = pool.acquire().await?;
+        let (models, pagination) = Table::query(&mut conn, filter, sort, pagination).await?;
+        let futures = models
+            .into_iter()
+            .map(|model| {
+                Self::from_table(pool, model, fetch_level, descendant_fetch_level, authorizer)
+            })
+            .collect::<Vec<_>>();
+        let result = future::try_join_all(futures).await?;
+
+        Ok((result, pagination))
+    }
+}
+
+impl<Table, IdOnly, Compact, Default, Detailed, Q, S> Serialize
+    for TopLevelVariant<Table, IdOnly, Compact, Default, Detailed, Q, S>
+where
+    IdOnly: Serialize,
+    Compact: Serialize,
+    Default: Serialize,
+    Detailed: Serialize,
+{
+    fn serialize<Ser: Serializer>(
+        &self,
+        serializer: Ser,
+    ) -> std::result::Result<Ser::Ok, Ser::Error> {
+        match self {
+            TopLevelVariant::IdOnly(variant, _) => variant.serialize(serializer),
+            TopLevelVariant::Compact(variant, _) => variant.serialize(serializer),
+            TopLevelVariant::Default(variant, _) => variant.serialize(serializer),
+            TopLevelVariant::Detailed(variant, _) => variant.serialize(serializer),
+        }
     }
 }

@@ -7,7 +7,6 @@ use crate::{
     prelude::*,
     query::Queryable,
 };
-use futures::future;
 use sqlx::{
     Encode, Error as SqlxError, FromRow, PgConnection, PgPool, Postgres, QueryBuilder, Row as _,
     Type as SqlxType,
@@ -39,45 +38,12 @@ pub trait GetById: BaseQuery + Sized {
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType;
 }
 
-pub trait TopLevelGetById: Sized {
-    fn get_by_id<T>(
-        pool: &PgPool,
-        id: T,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &Authorizer,
-    ) -> impl Future<Output = Result<Self>>
-    where
-        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres>;
-
-    fn get_by_ids<T>(
-        pool: &PgPool,
-        ids: Vec<T>,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &Authorizer,
-    ) -> impl Future<Output = Result<Vec<Self>>>
-    where
-        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType;
-}
-
 /// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
 /// from DB variant.
-pub trait FetchLevelVariant<DbVariant>: Sized {
+pub trait FetchLevelVariant<Table>: Sized {
     fn from_table(
         pool: &PgPool,
-        table: DbVariant,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &Authorizer,
-    ) -> impl Future<Output = Result<Self>>;
-}
-
-/// A trait for the actual database entity with ability to convert to be converted from DB variant.
-pub trait TopLevelFromTable<DbVariant>: Sized {
-    fn from_table(
-        pool: &PgPool,
-        table: DbVariant,
-        fetch_level: Option<FetchLevel>,
+        table: Table,
         descendant_fetch_level: Option<FetchLevel>,
         authorizer: &Authorizer,
     ) -> impl Future<Output = Result<Self>>;
@@ -138,10 +104,10 @@ where
     }
 }
 
-pub trait TopLevelQuery<DbVariant, Q, S>
+pub trait TopLevelQuery<Table, Q, S>
 where
-    Self: TopLevelFromTable<DbVariant>,
-    DbVariant: BaseQuery + QueryDb<Q, S>,
+    Self: Sized,
+    Table: QueryDb<Q, S>,
     Q: Clone + Queryable,
     S: Display,
 {
@@ -153,20 +119,5 @@ where
         sort: Option<SortingConfig<S>>,
         pagination: Option<PaginationConfig>,
         authorizer: &Authorizer,
-    ) -> impl Future<Output = Result<(Vec<Self>, PaginationType)>> {
-        async move {
-            let mut conn = pool.acquire().await?;
-            let (models, pagination) =
-                DbVariant::query(&mut conn, filter, sort, pagination).await?;
-            let futures = models
-                .into_iter()
-                .map(|model| {
-                    Self::from_table(pool, model, fetch_level, descendant_fetch_level, authorizer)
-                })
-                .collect::<Vec<_>>();
-            let result = future::try_join_all(futures).await?;
-
-            Ok((result, pagination))
-        }
-    }
+    ) -> impl Future<Output = Result<(Vec<Self>, PaginationType)>>;
 }

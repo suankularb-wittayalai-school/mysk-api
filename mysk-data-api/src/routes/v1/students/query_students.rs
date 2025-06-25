@@ -8,12 +8,9 @@ use mysk_lib::{
         requests::RequestType,
         response::{MetadataType, ResponseType},
     },
-    models::{
-        student::{
-            Student,
-            request::{queryable::QueryableStudent, sortable::SortableStudent},
-        },
-        traits::TopLevelQuery as _,
+    models::student::{
+        Student,
+        request::{queryable::QueryableStudent, sortable::SortableStudent},
     },
     permissions::Authorizer,
     prelude::*,

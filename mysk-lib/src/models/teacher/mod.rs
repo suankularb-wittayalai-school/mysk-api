@@ -8,14 +8,18 @@ use crate::models::{
         request::{queryable::QueryableTeacher, sortable::SortableTeacher},
     },
     top_level_variant::TopLevelVariant,
-    traits::TopLevelQuery,
 };
 
 pub mod db;
 pub mod fetch_levels;
 pub mod request;
 
-pub type Teacher =
-    TopLevelVariant<DbTeacher, IdOnlyTeacher, CompactTeacher, DefaultTeacher, DetailedTeacher>;
-
-impl TopLevelQuery<DbTeacher, QueryableTeacher, SortableTeacher> for Teacher {}
+pub type Teacher = TopLevelVariant<
+    DbTeacher,
+    IdOnlyTeacher,
+    CompactTeacher,
+    DefaultTeacher,
+    DetailedTeacher,
+    QueryableTeacher,
+    SortableTeacher,
+>;

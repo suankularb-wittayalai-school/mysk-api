@@ -5,12 +5,9 @@ use mysk_lib::{
         requests::RequestType,
         response::{MetadataType, ResponseType},
     },
-    models::{
-        elective_subject::{
-            ElectiveSubject,
-            request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
-        },
-        traits::TopLevelQuery as _,
+    models::elective_subject::{
+        ElectiveSubject,
+        request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
     },
     permissions::{Authorizer, roles::AdminRole},
     prelude::*,

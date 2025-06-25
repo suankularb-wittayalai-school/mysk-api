@@ -14,7 +14,6 @@ use mysk_lib::{
     helpers::date::get_current_academic_year,
     models::{
         club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-        traits::TopLevelGetById as _,
     },
     permissions::Authorizer,
     prelude::*,

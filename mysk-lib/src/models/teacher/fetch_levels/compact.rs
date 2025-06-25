@@ -3,7 +3,7 @@ use crate::{
     models::{
         subject_group::SubjectGroup,
         teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        traits::{FetchLevelVariant, },
     },
     permissions::Authorizer,
     prelude::*,

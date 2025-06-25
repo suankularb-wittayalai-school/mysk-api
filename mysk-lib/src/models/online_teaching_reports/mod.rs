@@ -9,7 +9,6 @@ use crate::models::{
         },
     },
     top_level_variant::TopLevelVariant,
-    traits::TopLevelQuery,
 };
 
 pub mod db;
@@ -22,13 +21,6 @@ pub type OnlineTeachingReports = TopLevelVariant<
     DefaultOnlineTeachingReports,
     DefaultOnlineTeachingReports,
     DefaultOnlineTeachingReports,
+    QueryableOnlineTeachingReports,
+    SortableOnlineTeachingReports,
 >;
-
-impl
-    TopLevelQuery<
-        DbOnlineTeachingReports,
-        QueryableOnlineTeachingReports,
-        SortableOnlineTeachingReports,
-    > for OnlineTeachingReports
-{
-}

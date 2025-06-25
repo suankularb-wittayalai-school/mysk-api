@@ -15,7 +15,7 @@ use mysk_lib::{
     models::{
         contact::{Contact, db::DbContact},
         enums::ContactType,
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::{GetById as _, },
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,

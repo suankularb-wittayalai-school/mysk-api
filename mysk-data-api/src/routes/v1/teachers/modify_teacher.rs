@@ -17,7 +17,7 @@ use mysk_lib::{
     models::{
         enums::ShirtSize,
         teacher::{Teacher, db::DbTeacher},
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::{GetById as _, },
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,

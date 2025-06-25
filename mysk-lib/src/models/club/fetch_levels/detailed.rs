@@ -7,7 +7,7 @@ use crate::{
         club::db::DbClub,
         contact::Contact,
         student::Student,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        traits::{FetchLevelVariant, },
     },
     permissions::Authorizer,
     prelude::*,

@@ -5,7 +5,7 @@ use crate::{
         club_request::db::DbClubRequest,
         enums::SubmissionStatus,
         student::Student,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        traits::{FetchLevelVariant, },
     },
     permissions::Authorizer,
     prelude::*,

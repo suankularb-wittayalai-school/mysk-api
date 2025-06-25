@@ -11,7 +11,7 @@ use mysk_lib::{
         requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{student::Student, traits::TopLevelGetById as _},
+    models::{student::Student},
     permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,

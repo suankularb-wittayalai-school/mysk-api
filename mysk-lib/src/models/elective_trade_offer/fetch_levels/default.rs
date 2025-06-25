@@ -5,7 +5,7 @@ use crate::{
         elective_trade_offer::db::DbElectiveTradeOffer,
         enums::SubmissionStatus,
         student::Student,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        traits::{FetchLevelVariant, },
     },
     permissions::Authorizer,
     prelude::*,

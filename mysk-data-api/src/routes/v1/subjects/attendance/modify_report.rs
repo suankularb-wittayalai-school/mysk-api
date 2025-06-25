@@ -14,7 +14,7 @@ use mysk_lib::{
     },
     models::{
         online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::{GetById as _, },
     },
     permissions::Authorizer,
     prelude::*,

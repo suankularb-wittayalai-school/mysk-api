@@ -1,11 +1,8 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::Classroom,
-        online_teaching_reports::db::DbOnlineTeachingReports,
-        subject::Subject,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        classroom::Classroom, online_teaching_reports::db::DbOnlineTeachingReports,
+        subject::Subject, teacher::Teacher, traits::FetchLevelVariant,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,

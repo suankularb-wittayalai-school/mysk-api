@@ -19,7 +19,7 @@ struct ImplFetchLevelInput {
     table: Ident,
     fetch_level: Ident,
     fetch_variant: Type,
-    db_variant: Type,
+    row: Type,
 }
 
 impl Parse for ImplFetchLevelInput {
@@ -30,14 +30,14 @@ impl Parse for ImplFetchLevelInput {
         _ = input.parse::<Token![,]>()?;
         let fetch_variant = input.call(Type::parse)?;
         _ = input.parse::<Token![,]>()?;
-        let db_variant = input.call(Type::parse)?;
+        let row = input.call(Type::parse)?;
         parse_trailing_comma(input)?;
 
         Ok(Self {
             table,
             fetch_level,
             fetch_variant,
-            db_variant,
+            row,
         })
     }
 }
@@ -48,7 +48,7 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
         table,
         fetch_level,
         fetch_variant,
-        db_variant,
+        row,
     } = input;
     let authorize_table = format_ident!("authorize_{}", table);
     let action_type = format_ident!("Read{}", fetch_level);
@@ -57,10 +57,10 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
         use crate::permissions::Authorizable as _;
 
         #[automatically_derived]
-        impl crate::models::traits::FetchLevelVariant<#db_variant> for #fetch_variant {
+        impl crate::models::traits::FetchLevelVariant<#row> for #fetch_variant {
             async fn from_table(
                 pool: &::sqlx::PgPool,
-                table: #db_variant,
+                table: #row,
                 _: Option<crate::common::requests::FetchLevel>,
                 authorizer: &crate::permissions::Authorizer,
             ) -> crate::prelude::Result<Self> {
@@ -82,7 +82,7 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
 struct ImplIdOnlyInput {
     table: Ident,
     fetch_variant: Type,
-    db_variant: Type,
+    row: Type,
 }
 
 impl Parse for ImplIdOnlyInput {
@@ -91,13 +91,13 @@ impl Parse for ImplIdOnlyInput {
         _ = input.parse::<Token![,]>()?;
         let fetch_variant = input.call(Type::parse)?;
         _ = input.parse::<Token![,]>()?;
-        let db_variant = input.call(Type::parse)?;
+        let row = input.call(Type::parse)?;
         parse_trailing_comma(input)?;
 
         Ok(Self {
             table,
             fetch_variant,
-            db_variant,
+            row,
         })
     }
 }
@@ -106,13 +106,13 @@ pub(crate) fn make_from_id_only(input: TokenStream) -> TokenStream {
     let ImplIdOnlyInput {
         table,
         fetch_variant,
-        db_variant,
+        row,
     } = parse_macro_input!(input as ImplIdOnlyInput);
 
     let expanded = quote! {
-        impl From<#db_variant> for #fetch_variant {
-            fn from(db_variant: #db_variant) -> Self {
-                Self { id: db_variant.id }
+        impl From<#row> for #fetch_variant {
+            fn from(row: #row) -> Self {
+                Self { id: row.id }
             }
         }
 
@@ -120,7 +120,7 @@ pub(crate) fn make_from_id_only(input: TokenStream) -> TokenStream {
             #table,
             IdOnly,
             #fetch_variant,
-            #db_variant,
+            #row,
         );
     };
 

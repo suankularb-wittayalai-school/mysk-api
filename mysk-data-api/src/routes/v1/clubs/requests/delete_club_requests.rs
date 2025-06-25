@@ -11,10 +11,7 @@ use mysk_lib::{
         requests::FetchLevel,
         response::{EmptyResponseData, ResponseType},
     },
-    models::{
-        club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-        traits::TopLevelGetById as _,
-    },
+    models::{club_request::ClubRequest, enums::SubmissionStatus, student::Student},
     permissions::Authorizer,
     prelude::*,
 };

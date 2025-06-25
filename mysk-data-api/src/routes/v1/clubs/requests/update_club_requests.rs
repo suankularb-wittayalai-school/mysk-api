@@ -15,7 +15,6 @@ use mysk_lib::{
         club::{Club, db::DbClub},
         club_request::ClubRequest,
         enums::SubmissionStatus,
-        traits::TopLevelGetById as _,
     },
     permissions::Authorizer,
     prelude::*,

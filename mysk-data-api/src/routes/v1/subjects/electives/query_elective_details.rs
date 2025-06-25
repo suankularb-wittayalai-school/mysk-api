@@ -8,7 +8,7 @@ use mysk_lib::{
         requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{elective_subject::ElectiveSubject, traits::TopLevelGetById as _},
+    models::{elective_subject::ElectiveSubject},
     permissions::{Authorizer, roles::AdminRole},
     prelude::*,
     query::QueryablePlaceholder,

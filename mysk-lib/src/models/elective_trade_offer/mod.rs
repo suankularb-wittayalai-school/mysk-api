@@ -5,7 +5,6 @@ use crate::models::{
         request::{queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer},
     },
     top_level_variant::TopLevelVariant,
-    traits::TopLevelQuery,
 };
 
 pub mod db;
@@ -18,9 +17,6 @@ pub type ElectiveTradeOffer = TopLevelVariant<
     IdOnlyElectiveTradeOffer,
     DefaultElectiveTradeOffer,
     DefaultElectiveTradeOffer,
+    QueryableElectiveTradeOffer,
+    SortableElectiveTradeOffer,
 >;
-
-impl TopLevelQuery<DbElectiveTradeOffer, QueryableElectiveTradeOffer, SortableElectiveTradeOffer>
-    for ElectiveTradeOffer
-{
-}

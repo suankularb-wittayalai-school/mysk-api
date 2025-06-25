@@ -8,7 +8,6 @@ use crate::models::{
         request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
     },
     top_level_variant::TopLevelVariant,
-    traits::TopLevelQuery,
 };
 
 pub mod db;
@@ -21,9 +20,6 @@ pub type ElectiveSubject = TopLevelVariant<
     CompactElectiveSubject,
     DefaultElectiveSubject,
     DetailedElectiveSubject,
+    QueryableElectiveSubject,
+    SortableElectiveSubject,
 >;
-
-impl TopLevelQuery<DbElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>
-    for ElectiveSubject
-{
-}

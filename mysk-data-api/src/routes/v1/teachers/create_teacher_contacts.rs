@@ -16,7 +16,7 @@ use mysk_lib::{
         contact::{Contact, db::DbContact},
         enums::ContactType,
         teacher::db::DbTeacher,
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::{GetById as _, },
     },
     permissions::Authorizer,
     prelude::*,

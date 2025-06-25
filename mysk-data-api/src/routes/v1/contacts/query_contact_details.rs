@@ -11,7 +11,7 @@ use mysk_lib::{
         requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{contact::Contact, traits::TopLevelGetById as _},
+    models::contact::Contact,
     permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,

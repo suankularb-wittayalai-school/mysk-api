@@ -17,7 +17,7 @@ use mysk_lib::{
         classroom::db::DbClassroom,
         online_teaching_reports::OnlineTeachingReports,
         subject::db::DbSubject,
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::{GetById as _, },
     },
     permissions::Authorizer,
     prelude::*,

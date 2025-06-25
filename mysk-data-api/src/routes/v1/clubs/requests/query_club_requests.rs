@@ -8,12 +8,9 @@ use mysk_lib::{
         requests::RequestType,
         response::{MetadataType, ResponseType},
     },
-    models::{
-        club_request::{
-            ClubRequest,
-            request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
-        },
-        traits::TopLevelQuery as _,
+    models::club_request::{
+        ClubRequest,
+        request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
     },
     permissions::Authorizer,
     prelude::*,

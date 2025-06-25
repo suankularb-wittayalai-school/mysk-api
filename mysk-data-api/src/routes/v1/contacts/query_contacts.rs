@@ -8,12 +8,9 @@ use mysk_lib::{
         requests::RequestType,
         response::{MetadataType, ResponseType},
     },
-    models::{
-        contact::{
-            Contact,
-            request::{queryable::QueryableContact, sortable::SortableContact},
-        },
-        traits::TopLevelQuery as _,
+    models::contact::{
+        Contact,
+        request::{queryable::QueryableContact, sortable::SortableContact},
     },
     permissions::Authorizer,
     prelude::*,

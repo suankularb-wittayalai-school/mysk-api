@@ -12,10 +12,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
-    models::{
-        club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-        traits::TopLevelGetById as _,
-    },
+    models::{club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student},
     permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,

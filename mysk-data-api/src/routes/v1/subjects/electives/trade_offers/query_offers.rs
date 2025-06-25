@@ -8,14 +8,9 @@ use mysk_lib::{
         requests::RequestType,
         response::{MetadataType, ResponseType},
     },
-    models::{
-        elective_trade_offer::{
-            ElectiveTradeOffer,
-            request::{
-                queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
-            },
-        },
-        traits::TopLevelQuery as _,
+    models::elective_trade_offer::{
+        ElectiveTradeOffer,
+        request::{queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer},
     },
     permissions::Authorizer,
     prelude::*,

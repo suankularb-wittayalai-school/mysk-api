@@ -5,14 +5,11 @@ use crate::{
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
-    models::{
-        online_teaching_reports::{
-            OnlineTeachingReports,
-            requests::{
-                queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
-            },
+    models::online_teaching_reports::{
+        OnlineTeachingReports,
+        requests::{
+            queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
         },
-        traits::TopLevelQuery,
     },
     permissions::Authorizer,
     prelude::*,

@@ -11,7 +11,7 @@ use mysk_lib::{
         requests::{RequestType, SortablePlaceholder},
         response::ResponseType,
     },
-    models::{online_teaching_reports::OnlineTeachingReports, traits::TopLevelGetById},
+    models::online_teaching_reports::OnlineTeachingReports,
     permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,

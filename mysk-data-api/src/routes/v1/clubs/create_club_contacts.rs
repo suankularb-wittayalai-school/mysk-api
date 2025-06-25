@@ -15,7 +15,7 @@ use mysk_lib::{
         club::db::DbClub,
         contact::Contact,
         enums::ContactType,
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::{GetById as _, },
     },
     permissions::Authorizer,
     prelude::*,

@@ -49,7 +49,7 @@ impl<S: Display> SortingConfig<S> {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SortablePlaceholder;
 
 impl Display for SortablePlaceholder {

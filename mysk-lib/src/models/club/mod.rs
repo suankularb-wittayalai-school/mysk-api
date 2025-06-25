@@ -7,13 +7,18 @@ use crate::models::{
         request::{queryable::QueryableClub, sortable::SortableClub},
     },
     top_level_variant::TopLevelVariant,
-    traits::TopLevelQuery,
 };
 
 pub mod db;
 pub mod fetch_levels;
 pub mod request;
 
-pub type Club = TopLevelVariant<DbClub, IdOnlyClub, CompactClub, DefaultClub, DetailedClub>;
-
-impl TopLevelQuery<DbClub, QueryableClub, SortableClub> for Club {}
+pub type Club = TopLevelVariant<
+    DbClub,
+    IdOnlyClub,
+    CompactClub,
+    DefaultClub,
+    DetailedClub,
+    QueryableClub,
+    SortableClub,
+>;

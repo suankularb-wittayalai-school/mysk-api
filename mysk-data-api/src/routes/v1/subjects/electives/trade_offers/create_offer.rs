@@ -15,7 +15,7 @@ use mysk_lib::{
         elective_subject::db::DbElectiveSubject,
         elective_trade_offer::ElectiveTradeOffer,
         enums::SubmissionStatus,
-        traits::{GetById, TopLevelGetById as _},
+        traits::{GetById, },
     },
     permissions::Authorizer,
     prelude::*,

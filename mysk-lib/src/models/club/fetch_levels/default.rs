@@ -3,11 +3,7 @@ use crate::{
         requests::FetchLevel,
         string::{FlexibleMultiLangString, MultiLangString},
     },
-    models::{
-        club::db::DbClub,
-        contact::Contact,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
-    },
+    models::{club::db::DbClub, contact::Contact, traits::FetchLevelVariant},
     permissions::Authorizer,
     prelude::*,
 };

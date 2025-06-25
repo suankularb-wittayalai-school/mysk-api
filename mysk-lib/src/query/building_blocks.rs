@@ -79,7 +79,7 @@ pub trait Queryable {
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql>;
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct QueryablePlaceholder;
 
 impl Queryable for QueryablePlaceholder {
