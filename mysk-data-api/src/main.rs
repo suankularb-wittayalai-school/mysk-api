@@ -1,4 +1,3 @@
-#![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
@@ -30,12 +29,12 @@ pub struct AppState {
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     dotenv().ok();
-    // TODO: Change to tracing instead
+    // TODO: Change to tracing instead, the `unsafe` blocks are temporary due to changes in Rust 2024 edition's API
     if env::var_os("RUST_LOG").is_none() {
         #[cfg(debug_assertions)]
-        env::set_var("RUST_LOG", "mysk_data_api=debug,actix_web=debug,sqlx=debug");
+        unsafe { env::set_var("RUST_LOG", "mysk_data_api=debug,actix_web=debug,sqlx=debug"); }
         #[cfg(not(debug_assertions))]
-        env::set_var("RUST_LOG", "mysk_data_api=info,actix_web=info");
+        unsafe { env::set_var("RUST_LOG", "mysk_data_api=info,actix_web=info"); }
     }
     env_logger::init();
     let config = Config::init();
