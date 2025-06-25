@@ -9,7 +9,7 @@ authors = [
   "owo93 <Iztyle30@gmail.com>",
 ]
 version = "0.6.1-1"
-edition = "2021"
+edition = "2024"
 
 [workspace.dependencies]
 actix-cors = "0.7.0"
