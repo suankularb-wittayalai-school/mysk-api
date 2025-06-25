@@ -14,7 +14,7 @@ use mysk_lib::{
         },
         traits::TopLevelQuery,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -34,7 +34,7 @@ pub async fn query_reports(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/attendance".to_string()).await?;
+        Authorizer::new(pool, &user, "/subjects/attendance".to_string()).await?;
 
     let reports = OnlineTeachingReports::query(
         pool,
@@ -43,7 +43,7 @@ pub async fn query_reports(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
 

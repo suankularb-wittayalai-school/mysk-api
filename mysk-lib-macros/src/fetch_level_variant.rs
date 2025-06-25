@@ -1,9 +1,10 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
+    Ident, Result as SynResult, Token, Type,
     ext::IdentExt,
     parse::{Parse, ParseStream},
-    parse_macro_input, Ident, Result as SynResult, Token, Type,
+    parse_macro_input,
 };
 
 fn parse_trailing_comma(input: ParseStream) -> SynResult<()> {
@@ -53,6 +54,8 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
     let action_type = format_ident!("Read{}", fetch_level);
 
     let expanded = quote! {
+        use crate::permissions::Authorizable as _;
+
         #[automatically_derived]
         #[::async_trait::async_trait]
         impl crate::models::traits::FetchLevelVariant<#db_variant> for #fetch_variant {
@@ -60,7 +63,7 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
                 pool: &::sqlx::PgPool,
                 table: #db_variant,
                 _: Option<crate::common::requests::FetchLevel>,
-                authorizer: &dyn crate::permissions::Authorizer,
+                authorizer: &crate::permissions::Authorizer,
             ) -> crate::prelude::Result<Self> {
                 authorizer.#authorize_table(
                     &table,

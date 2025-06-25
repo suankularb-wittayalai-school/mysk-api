@@ -17,7 +17,7 @@ use mysk_lib::{
         club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
         traits::TopLevelGetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -41,7 +41,7 @@ pub async fn join_clubs(
     let club_id = club_id.into_inner();
     let current_year = get_current_academic_year(None);
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
+        Authorizer::new(pool, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
     let Club::Detailed(club, _) = Club::get_by_id(
@@ -49,7 +49,7 @@ pub async fn join_clubs(
         club_id,
         Some(FetchLevel::Detailed),
         Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &authorizer,
     )
     .await?
     else {
@@ -122,7 +122,7 @@ pub async fn join_clubs(
         club_member_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club_request_id, None);

@@ -16,7 +16,7 @@ use mysk_lib::{
         online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -56,7 +56,7 @@ pub async fn upload_report_image(
             format!("/subjects/attendance/image/{report_id}"),
         ));
     };
-    let authorizer = permissions::get_authorizer(
+    let authorizer = Authorizer::new(
         pool,
         &user,
         format!("/subjects/attendance/image/{report_id}"),
@@ -124,7 +124,7 @@ pub async fn upload_report_image(
         report_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(class_report, None);

@@ -18,7 +18,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::TopLevelGetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -63,7 +63,7 @@ pub async fn update_club_requests(
         ));
     };
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
+        Authorizer::new(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;
 
     // Check if the club request exists
@@ -72,7 +72,7 @@ pub async fn update_club_requests(
         club_request_id,
         Some(FetchLevel::Default),
         Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &authorizer,
     )
     .await
     .map_err(|e| match e {
@@ -131,7 +131,7 @@ pub async fn update_club_requests(
         club_request_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(updated_club_request, None);

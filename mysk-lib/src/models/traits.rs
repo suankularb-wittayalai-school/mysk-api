@@ -9,9 +9,9 @@ use crate::{
 };
 use async_trait::async_trait;
 use sqlx::{
-    postgres::{PgHasArrayType, PgRow},
     Acquire, Encode, Error as SqlxError, FromRow, PgPool, Postgres, QueryBuilder, Row as _,
     Type as SqlxType,
+    postgres::{PgHasArrayType, PgRow},
 };
 use std::fmt::Display;
 
@@ -44,7 +44,7 @@ pub trait FetchLevelVariant<DbVariant>: Sized {
         pool: &PgPool,
         table: DbVariant,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self>;
 }
 
@@ -56,7 +56,7 @@ pub trait TopLevelFromTable<DbVariant>: Sized {
         table: DbVariant,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self>;
 }
 
@@ -67,7 +67,7 @@ pub trait TopLevelGetById: Sized {
         id: T,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self>
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send;
@@ -77,7 +77,7 @@ pub trait TopLevelGetById: Sized {
         ids: Vec<T>,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Vec<Self>>
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send;
@@ -98,7 +98,7 @@ where
         filter: Option<FilterConfig<Q>>,
         sort: Option<SortingConfig<S>>,
         pagination: Option<PaginationConfig>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<(Vec<Self>, PaginationType)>
     where
         Q: 'async_trait,
@@ -109,7 +109,7 @@ where
             .into_iter()
             .map(|model| {
                 let pool = pool.clone();
-                let shared_authorizer = authorizer.clone_to_arc();
+                let shared_authorizer = authorizer.clone();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -117,7 +117,7 @@ where
                         model,
                         fetch_level,
                         descendant_fetch_level,
-                        &*shared_authorizer,
+                        &shared_authorizer,
                     )
                     .await
                 })

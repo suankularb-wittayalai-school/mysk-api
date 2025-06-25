@@ -18,7 +18,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::{GetById, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -56,7 +56,7 @@ async fn create_trade_offer(
         ));
     };
     let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
+        Authorizer::new(pool, &user, "/subjects/electives/trade-offers".to_string())
             .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
@@ -233,7 +233,7 @@ async fn create_trade_offer(
         trade_offer_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(elective_trade_offer, None);

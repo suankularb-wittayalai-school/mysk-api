@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use chrono::NaiveDate;
 use mysk_lib::{
@@ -16,10 +15,10 @@ use mysk_lib::{
     },
     models::{
         enums::ShirtSize,
-        student::{db::DbStudent, Student},
+        student::{Student, db::DbStudent},
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions::{self, ActionType},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
     query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
@@ -67,8 +66,7 @@ pub async fn modify_student(
             format!("/students/{student_id}"),
         ));
     };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("students/{student_id}")).await?;
+    let authorizer = Authorizer::new(pool, &user, format!("students/{student_id}")).await?;
 
     let db_student = DbStudent::get_by_id(pool, student_id).await?;
     let person_id = db_student.person_id;
@@ -126,7 +124,7 @@ pub async fn modify_student(
         student_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(student, None);

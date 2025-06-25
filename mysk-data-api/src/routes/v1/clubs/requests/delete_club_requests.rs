@@ -16,7 +16,7 @@ use mysk_lib::{
         club_request::ClubRequest, enums::SubmissionStatus, student::Student,
         traits::TopLevelGetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 use sqlx::query;
@@ -33,7 +33,7 @@ pub async fn delete_club_requests(
     let pool = &data.db;
     let club_request_id = club_request_id.into_inner();
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
+        Authorizer::new(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;
 
     // Check if the club request exists
@@ -42,7 +42,7 @@ pub async fn delete_club_requests(
         club_request_id,
         Some(FetchLevel::Default),
         Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &authorizer,
     )
     .await?
     else {

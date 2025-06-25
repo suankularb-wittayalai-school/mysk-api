@@ -19,7 +19,7 @@ use mysk_lib::{
         enums::SubmissionStatus,
         traits::{GetById, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -66,7 +66,7 @@ async fn update_trade_offer(
         ));
     };
 
-    let authorizer = permissions::get_authorizer(
+    let authorizer = Authorizer::new(
         pool,
         &user,
         format!("/subjects/electives/trade-offers/{trade_offer_id}"),
@@ -187,7 +187,7 @@ async fn update_trade_offer(
         trade_offer_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(elective_trade_offer, None);

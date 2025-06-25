@@ -6,7 +6,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize, Serializer};
-use sqlx::{postgres::PgHasArrayType, Encode, PgPool, Postgres, Type as SqlxType};
+use sqlx::{Encode, PgPool, Postgres, Type as SqlxType, postgres::PgHasArrayType};
 use std::marker::PhantomData;
 
 #[derive(Clone, Debug, Deserialize)]
@@ -39,7 +39,7 @@ where
         table: DbVariant,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         match fetch_level {
             Some(FetchLevel::IdOnly) | None => Ok(Self::IdOnly(
@@ -124,7 +124,7 @@ where
         id: T,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self>
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + Send,
@@ -146,7 +146,7 @@ where
         ids: Vec<T>,
         fetch_level: Option<FetchLevel>,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Vec<Self>>
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType + Send,
@@ -156,7 +156,7 @@ where
             .into_iter()
             .map(|variant| {
                 let pool = pool.clone();
-                let shared_authorizer = authorizer.clone_to_arc();
+                let shared_authorizer = authorizer.clone();
 
                 tokio::spawn(async move {
                     Self::from_table(
@@ -164,7 +164,7 @@ where
                         variant,
                         fetch_level,
                         descendant_fetch_level,
-                        &*shared_authorizer,
+                        &shared_authorizer,
                     )
                     .await
                 })

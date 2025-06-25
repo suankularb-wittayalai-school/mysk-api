@@ -11,8 +11,8 @@ use crate::{
     permissions::roles::{AdminRole, ManagementRole, StudentRole, TeacherRole},
     prelude::*,
 };
-use async_trait::async_trait;
-use sqlx::{query, PgPool};
+use futures::future;
+use sqlx::{PgPool, query};
 use std::sync::Arc;
 
 #[derive(Clone, Copy)]
@@ -27,38 +27,196 @@ pub enum ActionType {
 }
 
 #[allow(unused_variables)]
-#[async_trait]
-pub trait Authorizer: Send + Sync {
-    async fn authorize_certificate(
+pub trait Authorizable: Send + Sync {
+    fn authorize_certificate(
         &self,
         certificate: &DbCertificate,
         pool: &PgPool,
         action: ActionType,
-    ) -> Result<()> {
+    ) -> impl Future<Output = Result<()>> {
         // TODO: Unimplemented
-        Ok(())
+        future::ok(())
     }
 
+    fn authorize_classroom(
+        &self,
+        classroom: &DbClassroom,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>>;
+
+    fn authorize_club(
+        &self,
+        club: &DbClub,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_club_request(
+        &self,
+        club_request: &DbClubRequest,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_contact(
+        &self,
+        contact: &DbContact,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>>;
+
+    fn authorize_elective_subject(
+        &self,
+        elective_subject: &DbElectiveSubject,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_elective_trade_offer(
+        &self,
+        elective_trade_offer: &DbElectiveTradeOffer,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_online_teaching_reports(
+        &self,
+        online_teaching_reports: &DbOnlineTeachingReports,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_organization(
+        &self,
+        organization: &DbOrganization,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_person(
+        &self,
+        person: &DbPerson,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_student(
+        &self,
+        student: &DbStudent,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>>;
+
+    fn authorize_subject(
+        &self,
+        subject: &DbSubject,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>>;
+
+    fn authorize_subject_group(
+        &self,
+        subject_group: &DbSubjectGroup,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_teacher(
+        &self,
+        teacher: &DbTeacher,
+        pool: &PgPool,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>>;
+}
+
+#[derive(Clone, Debug)]
+pub enum Authorizer {
+    Admin(Arc<AdminRole>),
+    Management(Arc<ManagementRole>),
+    Student(Arc<StudentRole>),
+    Teacher(Arc<TeacherRole>),
+}
+
+impl Authorizer {
+    pub async fn new(pool: &PgPool, user: &User, source: String) -> Result<Self> {
+        match user.role {
+            _ if user.is_admin => Ok(Self::Admin(Arc::new(AdminRole))),
+            UserRole::Student => Ok(Self::Student(Arc::new(StudentRole::new(
+                query!(
+                    "\
+                    SELECT s.id \
+                    FROM students AS s JOIN users AS u ON u.id = s.user_id \
+                    WHERE u.id = $1\
+                    ",
+                    user.id,
+                )
+                .fetch_one(pool)
+                .await?
+                .id,
+                user.id,
+                source,
+            )))),
+            UserRole::Teacher => Ok(Self::Teacher(Arc::new(TeacherRole::new(
+                query!(
+                    "\
+                    SELECT t.id \
+                    FROM teachers AS t JOIN users AS u ON u.id = t.user_id \
+                    WHERE u.id = $1\
+                    ",
+                    user.id,
+                )
+                .fetch_one(pool)
+                .await?
+                .id,
+                user.id,
+                source,
+            )))),
+            UserRole::Management => Ok(Self::Management(Arc::new(ManagementRole::new(
+                user.id, source,
+            )))),
+            _ => unimplemented!(),
+        }
+    }
+}
+
+impl Authorizable for Authorizer {
     async fn authorize_classroom(
         &self,
         classroom: &DbClassroom,
         pool: &PgPool,
         action: ActionType,
-    ) -> Result<()>;
-
-    async fn authorize_club(&self, club: &DbClub, pool: &PgPool, action: ActionType) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
-    }
-
-    async fn authorize_club_request(
-        &self,
-        club_request: &DbClubRequest,
-        pool: &PgPool,
-        action: ActionType,
     ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
+        match self {
+            Self::Admin(a) => a.authorize_classroom(classroom, pool, action).await,
+            Self::Management(a) => a.authorize_classroom(classroom, pool, action).await,
+            Self::Student(a) => a.authorize_classroom(classroom, pool, action).await,
+            Self::Teacher(a) => a.authorize_classroom(classroom, pool, action).await,
+        }
     }
 
     async fn authorize_contact(
@@ -66,56 +224,13 @@ pub trait Authorizer: Send + Sync {
         contact: &DbContact,
         pool: &PgPool,
         action: ActionType,
-    ) -> Result<()>;
-
-    async fn authorize_elective_subject(
-        &self,
-        elective_subject: &DbElectiveSubject,
-        pool: &PgPool,
-        action: ActionType,
     ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
-    }
-
-    async fn authorize_elective_trade_offer(
-        &self,
-        elective_trade_offer: &DbElectiveTradeOffer,
-        pool: &PgPool,
-        action: ActionType,
-    ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
-    }
-
-    async fn authorize_online_teaching_reports(
-        &self,
-        online_teaching_reports: &DbOnlineTeachingReports,
-        pool: &PgPool,
-        action: ActionType,
-    ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
-    }
-
-    async fn authorize_organization(
-        &self,
-        organization: &DbOrganization,
-        pool: &PgPool,
-        action: ActionType,
-    ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
-    }
-
-    async fn authorize_person(
-        &self,
-        person: &DbPerson,
-        pool: &PgPool,
-        action: ActionType,
-    ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
+        match self {
+            Self::Admin(a) => a.authorize_contact(contact, pool, action).await,
+            Self::Management(a) => a.authorize_contact(contact, pool, action).await,
+            Self::Student(a) => a.authorize_contact(contact, pool, action).await,
+            Self::Teacher(a) => a.authorize_contact(contact, pool, action).await,
+        }
     }
 
     async fn authorize_student(
@@ -123,23 +238,27 @@ pub trait Authorizer: Send + Sync {
         student: &DbStudent,
         pool: &PgPool,
         action: ActionType,
-    ) -> Result<()>;
+    ) -> Result<()> {
+        match self {
+            Self::Admin(a) => a.authorize_student(student, pool, action).await,
+            Self::Management(a) => a.authorize_student(student, pool, action).await,
+            Self::Student(a) => a.authorize_student(student, pool, action).await,
+            Self::Teacher(a) => a.authorize_student(student, pool, action).await,
+        }
+    }
 
     async fn authorize_subject(
         &self,
         subject: &DbSubject,
         pool: &PgPool,
         action: ActionType,
-    ) -> Result<()>;
-
-    async fn authorize_subject_group(
-        &self,
-        subject_group: &DbSubjectGroup,
-        pool: &PgPool,
-        action: ActionType,
     ) -> Result<()> {
-        // TODO: Unimplemented
-        Ok(())
+        match self {
+            Self::Admin(a) => a.authorize_subject(subject, pool, action).await,
+            Self::Management(a) => a.authorize_subject(subject, pool, action).await,
+            Self::Student(a) => a.authorize_subject(subject, pool, action).await,
+            Self::Teacher(a) => a.authorize_subject(subject, pool, action).await,
+        }
     }
 
     async fn authorize_teacher(
@@ -147,9 +266,14 @@ pub trait Authorizer: Send + Sync {
         teacher: &DbTeacher,
         pool: &PgPool,
         action: ActionType,
-    ) -> Result<()>;
-
-    fn clone_to_arc(&self) -> Arc<dyn Authorizer>;
+    ) -> Result<()> {
+        match self {
+            Self::Admin(a) => a.authorize_teacher(teacher, pool, action).await,
+            Self::Management(a) => a.authorize_teacher(teacher, pool, action).await,
+            Self::Student(a) => a.authorize_teacher(teacher, pool, action).await,
+            Self::Teacher(a) => a.authorize_teacher(teacher, pool, action).await,
+        }
+    }
 }
 
 pub fn authorize_read_only(action: ActionType, source: &str) -> Result<()> {
@@ -176,46 +300,4 @@ pub fn deny(source: &str) -> Result<()> {
         "Insufficient permissions to perform this action".to_string(),
         source.to_string(),
     ))
-}
-
-pub async fn get_authorizer(
-    pool: &PgPool,
-    user: &User,
-    source: String,
-) -> Result<Box<dyn Authorizer>> {
-    match user.role {
-        _ if user.is_admin => Ok(Box::new(AdminRole)),
-
-        UserRole::Student => Ok(Box::new(StudentRole::new(
-            query!(
-                "\
-                SELECT s.id FROM students AS s JOIN users AS u ON u.id = s.user_id WHERE u.id = $1\
-                ",
-                user.id,
-            )
-            .fetch_one(pool)
-            .await?
-            .id,
-            user.id,
-            source,
-        ))),
-
-        UserRole::Teacher => Ok(Box::new(TeacherRole::new(
-            query!(
-                "\
-                SELECT t.id FROM teachers AS t JOIN users AS u ON u.id = t.user_id WHERE u.id = $1\
-                ",
-                user.id,
-            )
-            .fetch_one(pool)
-            .await?
-            .id,
-            user.id,
-            source,
-        ))),
-
-        UserRole::Management => Ok(Box::new(ManagementRole::new(user.id, source))),
-
-        _ => unimplemented!(),
-    }
 }

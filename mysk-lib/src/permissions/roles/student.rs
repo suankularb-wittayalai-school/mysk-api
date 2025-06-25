@@ -4,23 +4,22 @@ use crate::{
         online_teaching_reports::db::DbOnlineTeachingReports, student::db::DbStudent,
         subject::db::DbSubject, teacher::db::DbTeacher,
     },
-    permissions::{authorize_default_read_only, authorize_read_only, deny, ActionType, Authorizer},
+    permissions::{
+        ActionType, Authorizable, authorize_default_read_only, authorize_read_only, deny,
+    },
     prelude::*,
 };
-use async_trait::async_trait;
-use sqlx::{query, PgPool};
-use std::sync::Arc;
+use sqlx::{PgPool, query};
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StudentRole {
     id: Uuid,
     user_id: Uuid,
     source: String,
 }
 
-#[async_trait]
-impl Authorizer for StudentRole {
+impl Authorizable for StudentRole {
     async fn authorize_classroom(
         &self,
         _: &DbClassroom,
@@ -136,10 +135,6 @@ impl Authorizer for StudentRole {
 
     async fn authorize_teacher(&self, _: &DbTeacher, _: &PgPool, action: ActionType) -> Result<()> {
         authorize_default_read_only(action, &self.source)
-    }
-
-    fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
-        Arc::new(self.clone())
     }
 }
 

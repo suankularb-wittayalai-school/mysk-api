@@ -3,18 +3,15 @@ use crate::{
         classroom::db::DbClassroom, contact::db::DbContact, student::db::DbStudent,
         subject::db::DbSubject, teacher::db::DbTeacher,
     },
-    permissions::authorizer::{ActionType, Authorizer},
+    permissions::authorizer::{ActionType, Authorizable},
     prelude::*,
 };
-use async_trait::async_trait;
 use sqlx::PgPool;
-use std::sync::Arc;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AdminRole;
 
-#[async_trait]
-impl Authorizer for AdminRole {
+impl Authorizable for AdminRole {
     async fn authorize_classroom(&self, _: &DbClassroom, _: &PgPool, _: ActionType) -> Result<()> {
         Ok(())
     }
@@ -33,9 +30,5 @@ impl Authorizer for AdminRole {
 
     async fn authorize_teacher(&self, _: &DbTeacher, _: &PgPool, _: ActionType) -> Result<()> {
         Ok(())
-    }
-
-    fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
-        Arc::new(self.clone())
     }
 }

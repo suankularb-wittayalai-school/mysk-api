@@ -7,7 +7,7 @@ use crate::{
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById as _},
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -32,7 +32,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
         pool: &PgPool,
         table: DbClassroom,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         authorizer
             .authorize_classroom(&table, pool, ActionType::ReadDefault)

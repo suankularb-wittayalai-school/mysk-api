@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
         requests::RequestType,
@@ -10,14 +10,15 @@ use mysk_lib::{
     },
     models::{
         elective_subject::{
-            request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
             ElectiveSubject,
+            request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
         },
         traits::TopLevelQuery as _,
     },
-    permissions,
+    permissions::{Authorizer, roles::AdminRole},
     prelude::*,
 };
+use std::sync::Arc;
 
 #[get("")]
 pub async fn query_elective_subject(
@@ -36,8 +37,8 @@ pub async fn query_elective_subject(
     let pool = &data.db;
     // TODO: Fix later
     // let authorizer =
-    //     permissions::get_authorizer(pool, &user, "/subjects/electives".to_string()).await?;
-    let authorizer: Box<dyn permissions::Authorizer> = Box::new(permissions::roles::AdminRole);
+    //     Authorizer::new(pool, &user, "/subjects/electives".to_string()).await?;
+    let authorizer = Authorizer::Admin(Arc::new(AdminRole));
 
     let (electives, pagination) = ElectiveSubject::query(
         pool,
@@ -46,7 +47,7 @@ pub async fn query_elective_subject(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(electives, Some(MetadataType::new(Some(pagination))));

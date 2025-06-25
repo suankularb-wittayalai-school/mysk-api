@@ -31,7 +31,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
         pool: &PgPool,
         table: DbElectiveTradeOffer,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         Ok(Self {
             id: table.id,

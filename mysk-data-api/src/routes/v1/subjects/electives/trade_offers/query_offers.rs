@@ -17,7 +17,7 @@ use mysk_lib::{
         },
         traits::TopLevelQuery as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -37,7 +37,7 @@ pub async fn query_trade_offers(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
+        Authorizer::new(pool, &user, "/subjects/electives/trade-offers".to_string())
             .await?;
 
     let (trade_offers, pagination) = ElectiveTradeOffer::query(
@@ -47,7 +47,7 @@ pub async fn query_trade_offers(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(trade_offers, Some(MetadataType::new(Some(pagination))));

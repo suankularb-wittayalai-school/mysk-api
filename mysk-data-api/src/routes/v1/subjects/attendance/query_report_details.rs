@@ -13,7 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{online_teaching_reports::OnlineTeachingReports, traits::TopLevelGetById},
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -33,7 +33,7 @@ pub async fn query_report_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let online_teaching_report_id = online_teaching_report_id.into_inner();
-    let authorizer = permissions::get_authorizer(
+    let authorizer = Authorizer::new(
         pool,
         &user,
         format!("/subjects/attendance/{online_teaching_report_id}"),
@@ -45,7 +45,7 @@ pub async fn query_report_details(
         online_teaching_report_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(report, None);

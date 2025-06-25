@@ -20,7 +20,7 @@ use mysk_lib::{
         subject::db::DbSubject,
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -62,7 +62,7 @@ pub async fn create_report(
         ));
     };
     let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/attendance".to_string()).await?;
+        Authorizer::new(pool, &user, "/subjects/attendance".to_string()).await?;
 
     // Check if subject exists
     let subject_id = DbSubject::get_by_id(pool, class_report.subject_id)
@@ -128,7 +128,7 @@ pub async fn create_report(
         new_class_report_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(new_class_report, None);

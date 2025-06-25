@@ -11,7 +11,7 @@ use crate::{
         teacher::Teacher,
         traits::{FetchLevelVariant, TopLevelGetById as _},
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
 use async_trait::async_trait;
@@ -42,7 +42,7 @@ impl FetchLevelVariant<DbSubject> for DetailedSubject {
         pool: &PgPool,
         table: DbSubject,
         descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         authorizer
             .authorize_subject(&table, pool, ActionType::ReadDetailed)

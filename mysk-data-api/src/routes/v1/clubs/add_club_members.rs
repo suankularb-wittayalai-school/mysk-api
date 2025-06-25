@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -17,7 +16,7 @@ use mysk_lib::{
         club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
         traits::TopLevelGetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -55,8 +54,7 @@ pub async fn add_club_members(
             format!("/clubs/{club_id}/add"),
         ));
     };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
+    let authorizer = Authorizer::new(pool, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists
@@ -65,7 +63,7 @@ pub async fn add_club_members(
         invitee_student_id,
         Some(FetchLevel::Default),
         Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &authorizer,
     )
     .await
     .map_err(|e| match e {
@@ -92,7 +90,7 @@ pub async fn add_club_members(
         club_id,
         Some(FetchLevel::Detailed),
         Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &authorizer,
     )
     .await
     .map_err(|e| match e {
@@ -149,7 +147,7 @@ pub async fn add_club_members(
                 return Err(Error::InvalidPermission(
                     "Invitee student is already a member of the club".to_string(),
                     format!("/clubs/{club_id}/add"),
-                ))
+                ));
             }
             SubmissionStatus::Pending => insert_new_member = false,
             SubmissionStatus::Declined => unreachable!(),
@@ -191,7 +189,7 @@ pub async fn add_club_members(
         club_member_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club_member, None);

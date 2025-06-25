@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -14,11 +13,11 @@ use mysk_lib::{
         string::FlexibleMultiLangString,
     },
     models::{
-        contact::{db::DbContact, Contact},
+        contact::{Contact, db::DbContact},
         enums::ContactType,
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions::{self, ActionType},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
     query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
@@ -53,8 +52,7 @@ pub async fn modify_contacts(
             format!("/contacts/{contact_id}"),
         ));
     };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/contacts/{contact_id}")).await?;
+    let authorizer = Authorizer::new(pool, &user, format!("/contacts/{contact_id}")).await?;
 
     // Check if the contact exists
     let db_contact = DbContact::get_by_id(pool, contact_id).await?;
@@ -80,7 +78,7 @@ pub async fn modify_contacts(
         contact_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(updated_contact, None);

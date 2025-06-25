@@ -15,7 +15,7 @@ use mysk_lib::{
         },
         traits::TopLevelQuery as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -34,7 +34,7 @@ pub async fn query_students(
     }: RequestType<(), QueryableStudent, SortableStudent>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = permissions::get_authorizer(pool, &user, "/students".to_string()).await?;
+    let authorizer = Authorizer::new(pool, &user, "/students".to_string()).await?;
 
     let (student, pagination) = Student::query(
         pool,
@@ -43,7 +43,7 @@ pub async fn query_students(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(student, Some(MetadataType::new(Some(pagination))));

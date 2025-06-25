@@ -13,7 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{club_request::ClubRequest, traits::TopLevelGetById as _},
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -34,7 +34,7 @@ pub async fn query_club_request_details(
     let pool = &data.db;
     let club_request_id = club_request_id.into_inner();
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
+        Authorizer::new(pool, &user, format!("/clubs/requests/{club_request_id}"))
             .await?;
 
     let club_request = ClubRequest::get_by_id(
@@ -42,7 +42,7 @@ pub async fn query_club_request_details(
         club_request_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club_request, None);

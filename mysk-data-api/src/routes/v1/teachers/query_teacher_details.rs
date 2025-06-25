@@ -13,7 +13,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{teacher::Teacher, traits::TopLevelGetById as _},
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -34,14 +34,14 @@ pub async fn query_teacher_details(
     let pool = &data.db;
     let teacher_id = id.into_inner();
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}")).await?;
+        Authorizer::new(pool, &user, format!("/teachers/{teacher_id}")).await?;
 
     let teacher = Teacher::get_by_id(
         pool,
         teacher_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(teacher, None);

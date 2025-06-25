@@ -17,7 +17,7 @@ use mysk_lib::{
         elective_subject::{db::DbElectiveSubject, ElectiveSubject},
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -41,7 +41,7 @@ async fn modify_elective_subject(
     let pool = &data.db;
     let mut transaction = pool.begin().await?;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
-    let authorizer = permissions::get_authorizer(
+    let authorizer = Authorizer::new(
         pool,
         &user,
         format!("/subjects/electives/{elective_subject_session_id}/enroll"),
@@ -151,7 +151,7 @@ async fn modify_elective_subject(
         elective_subject_session_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(elective, None);

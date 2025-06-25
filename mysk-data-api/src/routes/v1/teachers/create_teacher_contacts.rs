@@ -19,7 +19,7 @@ use mysk_lib::{
         teacher::db::DbTeacher,
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -56,7 +56,7 @@ pub async fn create_teacher_contacts(
         ));
     };
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/teachers/{teacher_id}/contacts"))
+        Authorizer::new(pool, &user, format!("/teachers/{teacher_id}/contacts"))
             .await?;
 
     // Check if client is teacher
@@ -102,7 +102,7 @@ pub async fn create_teacher_contacts(
         new_contact_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(new_contact, None);

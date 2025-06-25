@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
         requests::RequestType,
@@ -10,12 +10,12 @@ use mysk_lib::{
     },
     models::{
         contact::{
-            request::{queryable::QueryableContact, sortable::SortableContact},
             Contact,
+            request::{queryable::QueryableContact, sortable::SortableContact},
         },
         traits::TopLevelQuery as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -34,7 +34,7 @@ pub async fn query_contacts(
     }: RequestType<(), QueryableContact, SortableContact>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = permissions::get_authorizer(pool, &user, "/contacts".to_string()).await?;
+    let authorizer = Authorizer::new(pool, &user, "/contacts".to_string()).await?;
 
     let (contacts, pagination) = Contact::query(
         pool,
@@ -43,7 +43,7 @@ pub async fn query_contacts(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(contacts, Some(MetadataType::new(Some(pagination))));

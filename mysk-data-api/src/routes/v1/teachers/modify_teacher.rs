@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use chrono::NaiveDate;
 use mysk_lib::{
@@ -17,10 +16,10 @@ use mysk_lib::{
     helpers::date::get_current_academic_year,
     models::{
         enums::ShirtSize,
-        teacher::{db::DbTeacher, Teacher},
+        teacher::{Teacher, db::DbTeacher},
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions::{self, ActionType},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
     query::{QueryParam, QueryablePlaceholder, SqlSetClause},
 };
@@ -74,8 +73,7 @@ pub async fn modify_teacher(
             format!("/teachers/{teacher_id}"),
         ));
     };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("teachers/{teacher_id}")).await?;
+    let authorizer = Authorizer::new(pool, &user, format!("teachers/{teacher_id}")).await?;
 
     let db_teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
     let person_id = db_teacher
@@ -213,7 +211,7 @@ pub async fn modify_teacher(
         teacher_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(teacher, None);

@@ -18,7 +18,7 @@ use mysk_lib::{
         enums::ContactType,
         traits::{GetById as _, TopLevelGetById as _},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -55,7 +55,7 @@ pub async fn create_club_contacts(
         ));
     };
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
+        Authorizer::new(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
 
     let club = DbClub::get_by_id(pool, club_id).await?;
 
@@ -74,7 +74,7 @@ pub async fn create_club_contacts(
         DbClub::get_club_contacts(pool, club_id).await?,
         Some(FetchLevel::Default),
         Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     if club_contacts.iter().any(|contact| match contact {
@@ -113,7 +113,7 @@ pub async fn create_club_contacts(
         new_contact_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(new_contact, None);

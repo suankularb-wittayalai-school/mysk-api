@@ -15,7 +15,7 @@ use mysk_lib::{
         },
         traits::TopLevelQuery as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -35,7 +35,7 @@ pub async fn query_club_requests(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let authorizer =
-        permissions::get_authorizer(pool, &user, "/clubs/requests".to_string()).await?;
+        Authorizer::new(pool, &user, "/clubs/requests".to_string()).await?;
 
     let (club_requests, pagination) = ClubRequest::query(
         pool,
@@ -44,7 +44,7 @@ pub async fn query_club_requests(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club_requests, Some(MetadataType::new(Some(pagination))));

@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
@@ -13,7 +12,7 @@ use mysk_lib::{
         response::ResponseType,
     },
     models::{contact::Contact, traits::TopLevelGetById as _},
-    permissions,
+    permissions::Authorizer,
     prelude::*,
     query::QueryablePlaceholder,
 };
@@ -33,15 +32,14 @@ pub async fn query_contact_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let contact_id = contact_id.into_inner();
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/contacts/{contact_id}")).await?;
+    let authorizer = Authorizer::new(pool, &user, format!("/contacts/{contact_id}")).await?;
 
     let contact = Contact::get_by_id(
         pool,
         contact_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(contact, None);
