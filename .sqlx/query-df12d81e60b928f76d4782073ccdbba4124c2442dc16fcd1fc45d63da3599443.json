@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO elective_subject_trade_offers (sender_id, receiver_id, status, sender_elective_subject_session_id,receiver_elective_subject_session_id) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "submission_status",
+            "kind": {
+              "Enum": [
+                "approved",
+                "pending",
+                "declined"
+              ]
+            }
+          }
+        },
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "df12d81e60b928f76d4782073ccdbba4124c2442dc16fcd1fc45d63da3599443"
+}

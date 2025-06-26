@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) FROM elective_subject_trade_offers WHERE (sender_id = $1 OR receiver_id = $1) AND status = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "submission_status",
+            "kind": {
+              "Enum": [
+                "approved",
+                "pending",
+                "declined"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "897376c2c270a8703a21a54ed180035e2a435ba92ff05b245119e51fbfa6efd2"
+}

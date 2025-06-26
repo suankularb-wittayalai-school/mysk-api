@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(CASE WHEN ac.contact_id IS NOT NULL THEN 'classroom' END,CASE WHEN uc.contact_id IS NOT NULL THEN 'club' END,CASE WHEN pc.contact_id IS NOT NULL THEN 'person' END,'none') AS role FROM contacts AS c LEFT JOIN classroom_contacts AS ac ON ac.contact_id = c.id LEFT JOIN club_contacts AS uc ON uc.contact_id = c.id LEFT JOIN person_contacts AS pc ON pc.contact_id = c.id WHERE c.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "8a8f66441e6cfde1bc24b456e834724537b0350584bfcb7026382b3c7c943c89"
+}

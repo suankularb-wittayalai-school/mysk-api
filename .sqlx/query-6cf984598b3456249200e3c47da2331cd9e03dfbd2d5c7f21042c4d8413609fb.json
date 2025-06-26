@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT FROM contacts AS c JOIN person_contacts AS pc ON pc.contact_id = c.id JOIN teachers AS t ON t.person_id = pc.person_id WHERE t.id = $1 AND c.id = $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6cf984598b3456249200e3c47da2331cd9e03dfbd2d5c7f21042c4d8413609fb"
+}

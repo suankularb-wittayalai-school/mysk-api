@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE elective_subject_trade_offers SET status = $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "submission_status",
+            "kind": {
+              "Enum": [
+                "approved",
+                "pending",
+                "declined"
+              ]
+            }
+          }
+        },
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fb76cb30384816791424a288e843b9b56fa4ae313b371cf5b59f4acdd6bacd71"
+}

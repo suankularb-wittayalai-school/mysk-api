@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE elective_subject_session_enrolled_students AS esses SET updated_at = now(), elective_subject_session_id = CASE student_id WHEN $1 THEN (SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students AS esses JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id WHERE student_id = $2 AND year = $3 AND semester = $4) WHEN $2 THEN (SELECT elective_subject_session_id FROM elective_subject_session_enrolled_students AS esses JOIN elective_subject_sessions AS ess ON ess.id = esses.elective_subject_session_id WHERE student_id = $1 AND year = $3 AND semester = $4) END FROM elective_subject_sessions AS ess WHERE student_id IN ($1, $2) AND ess.id = esses.elective_subject_session_id AND ess.year = $3 AND ess.semester = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b169f1d82a373f8322d4a94e640d2b218e10cbf206055d818833eb6fbf5c0b12"
+}

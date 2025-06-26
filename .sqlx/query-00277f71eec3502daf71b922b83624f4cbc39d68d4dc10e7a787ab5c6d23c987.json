@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT membership_status AS \"membership_status: SubmissionStatus\" FROM club_members WHERE club_id = $1 AND year = $2 and membership_status = $3 AND student_id = $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "membership_status: SubmissionStatus",
+        "type_info": {
+          "Custom": {
+            "name": "submission_status",
+            "kind": {
+              "Enum": [
+                "approved",
+                "pending",
+                "declined"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        {
+          "Custom": {
+            "name": "submission_status",
+            "kind": {
+              "Enum": [
+                "approved",
+                "pending",
+                "declined"
+              ]
+            }
+          }
+        },
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "00277f71eec3502daf71b922b83624f4cbc39d68d4dc10e7a787ab5c6d23c987"
+}

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rsvp_status \"rsvp_status: SubmissionStatus\" FROM student_certificates WHERE student_id = $1 AND year = $2 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rsvp_status: SubmissionStatus",
+        "type_info": {
+          "Custom": {
+            "name": "submission_status",
+            "kind": {
+              "Enum": [
+                "approved",
+                "pending",
+                "declined"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "3c9ec6e390c38952445513e8b2ffc2316c5f119a5a47a27169206aed57c57786"
+}

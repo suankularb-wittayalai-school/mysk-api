@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE online_teaching_reports SET image_ext = COALESCE($1, image_ext) WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3a21d6a82b710bd2a973bf01b055d3a203bdf902beec0785e5dd644f9e6ee17f"
+}

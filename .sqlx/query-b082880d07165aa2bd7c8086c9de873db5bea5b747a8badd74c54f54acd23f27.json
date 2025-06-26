@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT FROM subject_teachers WHERE teacher_id = $1 AND subject_id = $2 AND year = $3 UNION SELECT FROM subject_co_teachers WHERE teacher_id = $1 AND subject_id = $2 AND year = $3)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b082880d07165aa2bd7c8086c9de873db5bea5b747a8badd74c54f54acd23f27"
+}

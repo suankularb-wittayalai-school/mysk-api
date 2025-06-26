@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT FROM certificate_ceremony_rsvp_periods WHERE now() BETWEEN start_time AND end_time)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "28e735039f100a441e49ae136e8b95224470a3a0c1313ef854efff6442b014d7"
+}

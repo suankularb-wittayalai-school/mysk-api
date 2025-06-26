@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO person_allergies (person_id, allergy_name)SELECT $1, * FROM UNNEST($2::text[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e941e2c53459f30cbc86a1fcd5cd843c55a57d749f8ac9fcce0a440473e6bfe0"
+}

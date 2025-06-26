@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO classroom_advisors (classroom_id, teacher_id)VALUES ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f8c5269d059dd8e7ffa794912b4d0c7fc218fa0fab0836ec6b50ab4237cef44e"
+}

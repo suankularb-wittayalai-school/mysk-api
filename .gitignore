@@ -5,7 +5,6 @@
 Cargo.lock
 
 .idea/
-.sqlx/
 .vscode/
 debug/
 target/

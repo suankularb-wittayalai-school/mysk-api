@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO elective_subject_session_enrolled_students(student_id, elective_subject_session_id) VALUES ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e806856eaceaaa0ffb77b13f59c99a71f2b7a38a968cd2fd6d3f2986e5f2bb9e"
+}

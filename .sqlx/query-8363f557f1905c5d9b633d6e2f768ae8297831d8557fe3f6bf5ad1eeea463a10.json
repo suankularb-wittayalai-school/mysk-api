@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO user_api_keys (user_id, short_token, long_token_hash, expire_at)\n            VALUES ($1, $2, $3, NOW() + ($4 * INTERVAL '1 DAY'))\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8363f557f1905c5d9b633d6e2f768ae8297831d8557fe3f6bf5ad1eeea463a10"
+}

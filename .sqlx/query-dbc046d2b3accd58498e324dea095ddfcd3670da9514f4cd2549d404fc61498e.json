@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE elective_subject_session_enrolled_students SET updated_at = now(), elective_subject_session_id = $1 WHERE student_id = $2 AND elective_subject_session_id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dbc046d2b3accd58498e324dea095ddfcd3670da9514f4cd2549d404fc61498e"
+}

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT classroom_id, class_no FROM classroom_students JOIN classrooms ON classrooms.id = classroom_id WHERE student_id = $1 AND year = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classroom_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "class_no",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "ed765f38a58b53761e298626604daf808db312e8187bba56d5bcb3327fe1ab93"
+}

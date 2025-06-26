@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ess.id FROM elective_subject_sessions AS ess JOIN subjects AS su ON su.id = ess.subject_id WHERE su.id IN (SELECT i_su.id FROM subjects AS i_su JOIN elective_subject_sessions AS i_ess ON i_ess.subject_id = i_su.id JOIN elective_subject_session_enrolled_students AS i_esses ON i_esses.elective_subject_session_id = i_ess.id AND (i_ess.year != $2 OR i_ess.semester != $3)WHERE i_esses.student_id = $1) AND ess.year = $2 AND ess.semester = $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "41a981a4994a58c8b07635ada5e17febef27913f288f6cf3e5bcb55b36d2b598"
+}

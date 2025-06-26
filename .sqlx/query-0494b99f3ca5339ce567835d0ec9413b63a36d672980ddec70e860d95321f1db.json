@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (s.person_id IS NOT NULL OR t.person_id IS NOT NULL) AS is_ghost_contact FROM person_contacts AS pc LEFT JOIN students AS s ON pc.person_id = s.person_id LEFT JOIN teachers AS t ON pc.person_id = t.person_id WHERE pc.contact_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_ghost_contact",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0494b99f3ca5339ce567835d0ec9413b63a36d672980ddec70e860d95321f1db"
+}
