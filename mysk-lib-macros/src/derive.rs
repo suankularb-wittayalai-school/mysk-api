@@ -1,11 +1,12 @@
 use darling::FromDeriveInput;
 use proc_macro::{self, TokenStream};
-use quote::quote;
-use syn::{DeriveInput, parse_macro_input};
+use quote::{ToTokens, quote};
+use syn::{DeriveInput, TypePath, parse_macro_input};
 
 #[derive(FromDeriveInput, Default)]
 #[darling(default, attributes(from_query))]
 struct GetByIdOpts {
+    id: Option<TypePath>,
     relation: Option<String>,
     query: String,
     count_query: String,
@@ -14,6 +15,7 @@ struct GetByIdOpts {
 pub(crate) fn expand_from_query(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input);
     let GetByIdOpts {
+        id,
         relation,
         query,
         count_query,
@@ -22,6 +24,11 @@ pub(crate) fn expand_from_query(input: TokenStream) -> TokenStream {
         Err(err) => {
             return err.write_errors().into();
         }
+    };
+    let id = if let Some(id) = id {
+        id.to_token_stream()
+    } else {
+        quote! { ::uuid::Uuid }
     };
     let DeriveInput { ident, .. } = input;
 
@@ -44,28 +51,22 @@ pub(crate) fn expand_from_query(input: TokenStream) -> TokenStream {
 
             const COUNT_QUERY: &str = #count_query;
 
-            async fn get_by_id<T>(
+            type Id = #id;
+
+            async fn get_by_id(
                 conn: &mut ::sqlx::PgConnection,
-                id: T,
-            ) -> ::std::result::Result<Self, sqlx::Error>
-            where
-                T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres> + ::sqlx::Type<::sqlx::Postgres>,
-            {
+                id: Self::Id,
+            ) -> ::std::result::Result<Self, sqlx::Error> {
                 ::sqlx::query_as::<_, #ident>(#query_one)
                     .bind(id)
                     .fetch_one(&mut *conn)
                     .await
             }
 
-            async fn get_by_ids<T>(
+            async fn get_by_ids(
                 conn: &mut ::sqlx::PgConnection,
-                id: &[T],
-            ) -> ::std::result::Result<Vec<Self>, sqlx::Error>
-            where
-                T: for<'q> ::sqlx::Encode<'q, ::sqlx::Postgres>
-                    + ::sqlx::postgres::PgHasArrayType
-                    + ::sqlx::Type<::sqlx::Postgres>,
-            {
+                id: &[Self::Id],
+            ) -> ::std::result::Result<Vec<Self>, sqlx::Error> {
                 ::sqlx::query_as::<_, #ident>(#query_many)
                     .bind(id)
                     .fetch_all(&mut *conn)

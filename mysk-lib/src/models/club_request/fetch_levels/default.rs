@@ -2,7 +2,7 @@ use crate::{
     common::requests::FetchLevel,
     models::{
         club::Club, club_request::db::DbClubRequest, enums::SubmissionStatus, student::Student,
-        traits::FetchLevelVariant,
+        traits::FetchVariant,
     },
     permissions::Authorizer,
     prelude::*,
@@ -22,19 +22,21 @@ pub struct DefaultClubRequest {
     pub membership_status: SubmissionStatus,
 }
 
-impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
-    async fn from_table(
+impl FetchVariant for DefaultClubRequest {
+    type Relation = DbClubRequest;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbClubRequest,
+        relation: Self::Relation,
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         Ok(Self {
-            id: table.id,
-            created_at: table.created_at,
+            id: relation.id,
+            created_at: relation.created_at,
             club: Club::get_by_id(
                 pool,
-                table.club_id,
+                relation.club_id,
                 descendant_fetch_level,
                 FetchLevel::IdOnly,
                 authorizer,
@@ -42,14 +44,14 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
             .await?,
             student: Student::get_by_id(
                 pool,
-                table.student_id,
+                relation.student_id,
                 descendant_fetch_level,
                 FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
-            year: table.year,
-            membership_status: table.membership_status,
+            year: relation.year,
+            membership_status: relation.membership_status,
         })
     }
 }

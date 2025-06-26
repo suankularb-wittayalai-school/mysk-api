@@ -5,7 +5,7 @@ use crate::{
             queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
         },
         enums::SubmissionStatus,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
@@ -30,7 +30,10 @@ pub struct DbElectiveTradeOffer {
     pub receiver_elective_subject_session_id: Uuid,
 }
 
-impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElectiveTradeOffer {
+impl QueryRelation for DbElectiveTradeOffer {
+    type Q = QueryableElectiveTradeOffer;
+    type S = SortableElectiveTradeOffer;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableElectiveTradeOffer>>,

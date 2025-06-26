@@ -34,7 +34,7 @@ pub async fn enroll_elective_subject(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<()>>,
+    }): Json<RequestType>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut transaction = data.db.begin().await?;

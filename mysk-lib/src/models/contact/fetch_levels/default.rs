@@ -2,7 +2,7 @@ use crate::{
     common::string::FlexibleMultiLangString,
     models::{contact::db::DbContact, enums::ContactType},
 };
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use mysk_lib_macros::impl_fetch_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -39,4 +39,4 @@ impl From<DbContact> for DefaultContact {
     }
 }
 
-impl_fetch_level_variant_from!(contact, Default, DefaultContact, DbContact);
+impl_fetch_variant_from!(contact, Default, DefaultContact, DbContact);

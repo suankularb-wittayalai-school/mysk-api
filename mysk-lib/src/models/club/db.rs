@@ -4,7 +4,7 @@ use crate::{
     models::{
         club::request::{queryable::QueryableClub, sortable::SortableClub},
         enums::SubmissionStatus,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::{QueryParam, Queryable as _, SqlWhereClause},
@@ -76,7 +76,10 @@ impl DbClub {
     }
 }
 
-impl QueryDb<QueryableClub, SortableClub> for DbClub {
+impl QueryRelation for DbClub {
+    type Q = QueryableClub;
+    type S = SortableClub;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableClub>>,

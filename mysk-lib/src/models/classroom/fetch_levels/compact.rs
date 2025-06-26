@@ -1,5 +1,5 @@
 use crate::models::classroom::db::DbClassroom;
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use mysk_lib_macros::impl_fetch_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -20,4 +20,4 @@ impl From<DbClassroom> for CompactClassroom {
     }
 }
 
-impl_fetch_level_variant_from!(classroom, Compact, CompactClassroom, DbClassroom);
+impl_fetch_variant_from!(classroom, Compact, CompactClassroom, DbClassroom);

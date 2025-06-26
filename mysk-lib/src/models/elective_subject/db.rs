@@ -7,7 +7,7 @@ use crate::{
         },
         enums::SubjectType,
         student::db::DbStudent,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::Queryable as _,
@@ -217,7 +217,10 @@ impl DbElectiveSubject {
     }
 }
 
-impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
+impl QueryRelation for DbElectiveSubject {
+    type Q = QueryableElectiveSubject;
+    type S = SortableElectiveSubject;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableElectiveSubject>>,

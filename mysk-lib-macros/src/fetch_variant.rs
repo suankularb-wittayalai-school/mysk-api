@@ -16,28 +16,28 @@ fn parse_trailing_comma(input: ParseStream) -> SynResult<()> {
 }
 
 struct ImplFetchLevelInput {
-    table: Ident,
+    relation_ident: Ident,
     fetch_level: Ident,
     fetch_variant: Type,
-    row: Type,
+    relation_ty: Type,
 }
 
 impl Parse for ImplFetchLevelInput {
     fn parse(input: ParseStream) -> SynResult<Self> {
-        let table = input.call(Ident::parse_any)?;
+        let relation_ident = input.call(Ident::parse_any)?;
         _ = input.parse::<Token![,]>()?;
         let fetch_level = input.call(Ident::parse_any)?;
         _ = input.parse::<Token![,]>()?;
         let fetch_variant = input.call(Type::parse)?;
         _ = input.parse::<Token![,]>()?;
-        let row = input.call(Type::parse)?;
+        let relation_ty = input.call(Type::parse)?;
         parse_trailing_comma(input)?;
 
         Ok(Self {
-            table,
+            relation_ident,
             fetch_level,
             fetch_variant,
-            row,
+            relation_ty,
         })
     }
 }
@@ -45,33 +45,35 @@ impl Parse for ImplFetchLevelInput {
 pub(crate) fn make_from(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as ImplFetchLevelInput);
     let ImplFetchLevelInput {
-        table,
+        relation_ident,
         fetch_level,
         fetch_variant,
-        row,
+        relation_ty,
     } = input;
-    let authorize_table = format_ident!("authorize_{}", table);
+    let authorize_relation_ident = format_ident!("authorize_{}", relation_ident);
     let action_type = format_ident!("Read{}", fetch_level);
 
     let expanded = quote! {
-        use crate::permissions::Authorizable as _;
-
         #[automatically_derived]
-        impl crate::models::traits::FetchLevelVariant<#row> for #fetch_variant {
-            async fn from_table(
+        impl crate::models::traits::FetchVariant for #fetch_variant {
+            type Relation = #relation_ty;
+
+            async fn from_relation(
                 pool: &::sqlx::PgPool,
-                table: #row,
+                relation: #relation_ty,
                 descendant_fetch_level: crate::common::requests::FetchLevel,
                 authorizer: &crate::permissions::Authorizer,
             ) -> crate::prelude::Result<Self> {
-                authorizer.#authorize_table(
-                    &table,
+                <crate::permissions::Authorizer as crate::permissions::Authorizable>
+                ::#authorize_relation_ident(
+                    authorizer,
+                    &relation,
                     &mut *(pool.acquire().await?),
                     crate::permissions::ActionType::#action_type,
                 )
                 .await?;
 
-                Ok(Self::from(table))
+                Ok(Self::from(relation))
             }
         }
     };
@@ -80,47 +82,47 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
 }
 
 struct ImplIdOnlyInput {
-    table: Ident,
+    relation_ident: Ident,
     fetch_variant: Type,
-    row: Type,
+    relation_ty: Type,
 }
 
 impl Parse for ImplIdOnlyInput {
     fn parse(input: ParseStream) -> SynResult<Self> {
-        let table = input.call(Ident::parse_any)?;
+        let relation_ident = input.call(Ident::parse_any)?;
         _ = input.parse::<Token![,]>()?;
         let fetch_variant = input.call(Type::parse)?;
         _ = input.parse::<Token![,]>()?;
-        let row = input.call(Type::parse)?;
+        let relation_ty = input.call(Type::parse)?;
         parse_trailing_comma(input)?;
 
         Ok(Self {
-            table,
+            relation_ident,
             fetch_variant,
-            row,
+            relation_ty,
         })
     }
 }
 
 pub(crate) fn make_from_id_only(input: TokenStream) -> TokenStream {
     let ImplIdOnlyInput {
-        table,
+        relation_ident,
         fetch_variant,
-        row,
+        relation_ty,
     } = parse_macro_input!(input as ImplIdOnlyInput);
 
     let expanded = quote! {
-        impl From<#row> for #fetch_variant {
-            fn from(row: #row) -> Self {
-                Self { id: row.id }
+        impl From<#relation_ty> for #fetch_variant {
+            fn from(relation_ty: #relation_ty) -> Self {
+                Self { id: relation_ty.id }
             }
         }
 
-        ::mysk_lib_macros::impl_fetch_level_variant_from!(
-            #table,
+        ::mysk_lib_macros::impl_fetch_variant_from!(
+            #relation_ident,
             IdOnly,
             #fetch_variant,
-            #row,
+            #relation_ty,
         );
     };
 

@@ -44,7 +44,7 @@ impl FromRequest for ApiKeyHeader {
             hasher.update(token.get_long_token().as_bytes());
             let hash = bs58::encode(hasher.finalize()).into_string();
 
-            let api_key = query_as!(
+            let Some(api_key) = query_as!(
                 ApiKey,
                 "\
                 SELECT * FROM user_api_keys \
@@ -54,8 +54,11 @@ impl FromRequest for ApiKeyHeader {
                 hash,
                 token.get_short_token(),
             )
-            .fetch_one(&pool)
-            .await?;
+            .fetch_optional(&pool)
+            .await?
+            else {
+                return Err(Error::MissingApiKey("Missing API Key".to_string(), source));
+            };
 
             Ok(ApiKeyHeader(api_key))
         }

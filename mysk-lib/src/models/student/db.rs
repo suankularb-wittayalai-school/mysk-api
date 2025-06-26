@@ -4,7 +4,7 @@ use crate::{
     models::{
         classroom::ClassroomWClassNo,
         student::request::{queryable::QueryableStudent, sortable::SortableStudent},
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::Queryable as _,
@@ -88,7 +88,10 @@ impl DbStudent {
     }
 }
 
-impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
+impl QueryRelation for DbStudent {
+    type Q = QueryableStudent;
+    type S = SortableStudent;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableStudent>>,

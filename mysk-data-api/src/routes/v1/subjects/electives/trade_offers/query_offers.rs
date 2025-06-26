@@ -5,7 +5,7 @@ use crate::{
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
     models::elective_trade_offer::{
@@ -28,7 +28,7 @@ pub async fn query_trade_offers(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableElectiveTradeOffer, SortableElectiveTradeOffer>,
+    }: RequestType<EmptyRequestData, QueryableElectiveTradeOffer, SortableElectiveTradeOffer>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;

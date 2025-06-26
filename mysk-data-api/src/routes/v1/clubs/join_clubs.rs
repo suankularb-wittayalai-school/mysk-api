@@ -30,7 +30,7 @@ pub async fn join_clubs(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<()>,
+    }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;

@@ -3,7 +3,7 @@ use crate::{
     models::{
         club_request::request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
         enums::SubmissionStatus,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
@@ -27,7 +27,10 @@ pub struct DbClubRequest {
     pub student_id: Uuid,
 }
 
-impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
+impl QueryRelation for DbClubRequest {
+    type Q = QueryableClubRequest;
+    type S = SortableClubRequest;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableClubRequest>>,

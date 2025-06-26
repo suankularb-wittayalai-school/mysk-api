@@ -3,7 +3,7 @@ use crate::{
     helpers::date::get_current_academic_year,
     models::{
         teacher::request::{queryable::QueryableTeacher, sortable::SortableTeacher},
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::Queryable as _,
@@ -139,10 +139,13 @@ impl DbTeacher {
     }
 }
 
-impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
+impl QueryRelation for DbTeacher {
+    type Q = QueryableTeacher;
+    type S = SortableTeacher;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
-        filter: Option<FilterConfig<QueryableTeacher>>,
+        filter: Option<FilterConfig<Self::Q>>,
     ) {
         if let Some(filter) = filter {
             if let Some(data) = filter.data {

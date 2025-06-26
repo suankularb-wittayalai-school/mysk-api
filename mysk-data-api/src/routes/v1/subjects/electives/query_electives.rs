@@ -2,7 +2,7 @@ use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
     models::elective_subject::{
@@ -25,7 +25,7 @@ pub async fn query_elective_subject(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableElectiveSubject, SortableElectiveSubject>,
+    }: RequestType<EmptyRequestData, QueryableElectiveSubject, SortableElectiveSubject>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     // TODO: Fix later

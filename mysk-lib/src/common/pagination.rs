@@ -26,7 +26,7 @@ impl PaginationConfig {
         if self.p == 0 {
             return Err(Error::InvalidRequest(
                 "Page number must be greater than zero".to_string(),
-                "QueryDb::query".to_string(),
+                "QueryRelation::query".to_string(),
             ));
         }
 

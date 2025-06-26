@@ -6,11 +6,11 @@ use crate::models::{
             id_only::IdOnlySubject,
         },
     },
-    top_level_variant::TopLevelVariant,
+    model::Model,
 };
 
 pub mod db;
 pub mod fetch_levels;
 
 pub type Subject =
-    TopLevelVariant<DbSubject, IdOnlySubject, CompactSubject, DefaultSubject, DetailedSubject>;
+    Model<DbSubject, IdOnlySubject, CompactSubject, DefaultSubject, DetailedSubject>;

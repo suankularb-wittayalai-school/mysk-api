@@ -3,7 +3,7 @@ use crate::{
     models::{
         contact::request::{queryable::QueryableContact, sortable::SortableContact},
         enums::ContactType,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
@@ -27,7 +27,10 @@ pub struct DbContact {
     pub value: String,
 }
 
-impl QueryDb<QueryableContact, SortableContact> for DbContact {
+impl QueryRelation for DbContact {
+    type Q = QueryableContact;
+    type S = SortableContact;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableContact>>,

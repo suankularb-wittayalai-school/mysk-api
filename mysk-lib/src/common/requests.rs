@@ -63,8 +63,7 @@ impl Display for SortablePlaceholder {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
-pub struct EmptyRequestData;
+pub type EmptyRequestData = Option<()>;
 
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct RequestType<
@@ -76,7 +75,9 @@ pub struct RequestType<
     pub pagination: Option<PaginationConfig>,
     pub filter: Option<FilterConfig<Q>>,
     pub sort: Option<SortingConfig<S>>,
+    #[serde(default)]
     pub fetch_level: FetchLevel,
+    #[serde(default)]
     pub descendant_fetch_level: FetchLevel,
 }
 

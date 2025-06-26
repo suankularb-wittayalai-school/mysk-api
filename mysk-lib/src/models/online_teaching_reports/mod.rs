@@ -1,26 +1,21 @@
 use crate::models::{
+    model::Model,
     online_teaching_reports::{
         db::DbOnlineTeachingReports,
         fetch_levels::{
             default::DefaultOnlineTeachingReports, id_only::IdOnlyOnlineTeachingReports,
         },
-        requests::{
-            queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
-        },
     },
-    top_level_variant::TopLevelVariant,
 };
 
 pub mod db;
 pub mod fetch_levels;
 pub mod requests;
 
-pub type OnlineTeachingReports = TopLevelVariant<
+pub type OnlineTeachingReports = Model<
     DbOnlineTeachingReports,
     IdOnlyOnlineTeachingReports,
     DefaultOnlineTeachingReports,
     DefaultOnlineTeachingReports,
     DefaultOnlineTeachingReports,
-    QueryableOnlineTeachingReports,
-    SortableOnlineTeachingReports,
 >;

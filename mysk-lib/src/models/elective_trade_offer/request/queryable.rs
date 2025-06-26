@@ -1,5 +1,5 @@
 use crate::{
-    models::enums::SubmissionStatus,
+    models::{elective_trade_offer::db::DbElectiveTradeOffer, enums::SubmissionStatus},
     query::{QueryParam, Queryable, SqlWhereClause},
 };
 use serde::{Deserialize, Serialize};
@@ -14,6 +14,8 @@ pub struct QueryableElectiveTradeOffer {
 }
 
 impl Queryable for QueryableElectiveTradeOffer {
+    type Relation = DbElectiveTradeOffer;
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {

@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     models::contact::Contact,
     permissions::Authorizer,
     prelude::*,
@@ -27,7 +24,7 @@ pub async fn query_contact_details(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<()>,
+    }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;

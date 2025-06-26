@@ -2,7 +2,7 @@ use crate::{
     common::requests::FetchLevel,
     models::{
         classroom::Classroom, contact::Contact, person::Person, subject::Subject,
-        subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchLevelVariant, user::User,
+        subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchVariant, user::User,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
@@ -23,44 +23,46 @@ pub struct DetailedTeacher {
     pub subjects_in_charge: Vec<Subject>,
 }
 
-impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
-    async fn from_table(
+impl FetchVariant for DetailedTeacher {
+    type Relation = DbTeacher;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbTeacher,
+        relation: Self::Relation,
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_teacher(&table, &mut conn, ActionType::ReadDetailed)
+            .authorize_teacher(&relation, &mut conn, ActionType::ReadDetailed)
             .await?;
 
-        let contact_ids = DbTeacher::get_teacher_contacts(&mut conn, table.id).await?;
-        let classroom_id = DbTeacher::get_teacher_advisor_at(&mut conn, table.id, None).await?;
-        let subject_ids = DbTeacher::get_subject_in_charge(&mut conn, table.id, None).await?;
+        let contact_ids = DbTeacher::get_teacher_contacts(&mut conn, relation.id).await?;
+        let classroom_id = DbTeacher::get_teacher_advisor_at(&mut conn, relation.id, None).await?;
+        let subject_ids = DbTeacher::get_subject_in_charge(&mut conn, relation.id, None).await?;
 
         let subject_group = SubjectGroup::get_by_id(
             pool,
-            table.subject_group_id,
+            relation.subject_group_id,
             descendant_fetch_level,
             FetchLevel::IdOnly,
             authorizer,
         )
         .await?;
 
-        let user = match table.user_id {
+        let user = match relation.user_id {
             Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
             None => None,
         };
 
-        let person = match table.person_id {
+        let person = match relation.person_id {
             Some(person_id) => Some(Person::get_by_id(&mut conn, person_id).await?),
             None => None,
         };
 
         Ok(Self {
-            id: table.id,
-            teacher_id: table.teacher_id,
+            id: relation.id,
+            teacher_id: relation.teacher_id,
             contacts: Contact::get_by_ids(
                 pool,
                 &contact_ids,

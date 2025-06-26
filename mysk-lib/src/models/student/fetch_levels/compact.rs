@@ -1,5 +1,5 @@
 use crate::models::student::db::DbStudent;
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use mysk_lib_macros::impl_fetch_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -22,4 +22,4 @@ impl From<DbStudent> for CompactStudent {
     }
 }
 
-impl_fetch_level_variant_from!(student, Compact, CompactStudent, DbStudent);
+impl_fetch_variant_from!(student, Compact, CompactStudent, DbStudent);

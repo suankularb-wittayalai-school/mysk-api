@@ -1,4 +1,7 @@
-use crate::query::{QueryParam, Queryable, SqlWhereClause};
+use crate::{
+    models::teacher::db::DbTeacher,
+    query::{QueryParam, Queryable, SqlWhereClause},
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -11,6 +14,8 @@ pub struct QueryableTeacher {
 }
 
 impl Queryable for QueryableTeacher {
+    type Relation = DbTeacher;
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {

@@ -14,55 +14,65 @@ use sqlx::{
 };
 use std::fmt::Display;
 
-pub trait GetById: Sized {
+/// Get data from relations by its' ID via a base query.
+pub trait GetById: for<'r> FromRow<'r, PgRow> + Sized {
+    /// The base query of the relation.
     const BASE_QUERY: &'static str;
 
+    /// The count query of the relation, it is used in the [`QueryRelation`] trait.
     const COUNT_QUERY: &'static str;
 
-    fn get_by_id<T>(
-        conn: &mut PgConnection,
-        id: T,
-    ) -> impl Future<Output = Result<Self, SqlxError>>
-    where
-        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres>;
+    /// The type corresponding to the ID or primary key of the relation.
+    type Id: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType;
 
-    fn get_by_ids<T>(
+    /// Gets a single row of the relation by ID.
+    fn get_by_id(
         conn: &mut PgConnection,
-        ids: &[T],
-    ) -> impl Future<Output = Result<Vec<Self>, SqlxError>>
-    where
-        T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType;
+        id: Self::Id,
+    ) -> impl Future<Output = Result<Self, SqlxError>>;
+
+    /// Get multiple rows of the relation by IDs.
+    fn get_by_ids(
+        conn: &mut PgConnection,
+        ids: &[Self::Id],
+    ) -> impl Future<Output = Result<Vec<Self>, SqlxError>>;
 }
 
-/// A trait for Fetch Level Variants of a database entity with ability to convert to be converted
-/// from DB variant.
-pub trait FetchLevelVariant<Table>: Sized {
-    fn from_table(
+/// A fetch variant is a data model that can be derived from a base relation.
+pub trait FetchVariant: Sized {
+    /// The base relation for this fetch variant.
+    type Relation: GetById;
+
+    /// Converts to this fetch variant from the base relation and any additional dependencies.
+    fn from_relation(
         pool: &PgPool,
-        table: Table,
+        relation: Self::Relation,
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> impl Future<Output = Result<Self>>;
 }
 
-/// A trait for DB variant to allow querying and creating pagination response.
-pub trait QueryDb<Q, S>
-where
-    Self: for<'q> FromRow<'q, PgRow> + GetById + Send + Unpin,
-    Q: Clone + Queryable,
-    S: Display,
-{
+/// Query data using complex conditions and predicates from relations.
+pub trait QueryRelation: for<'r> FromRow<'r, PgRow> + GetById + Send + Unpin {
+    /// The query configuration object.
+    type Q: Clone + Queryable<Relation = Self>;
+
+    /// The columns to sort by described as variants in an enum.
+    type S: Display;
+
+    /// Builds a shared query with applicable filters and sorting rules to be used for data fetching
+    /// and count fetching.
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
-        filter: Option<FilterConfig<Q>>,
+        filter: Option<FilterConfig<Self::Q>>,
     );
 
     /// Queries the database with optional filters, sorting, and pagination. If pagination is not
     /// provided, a default configuration is used.
     fn query(
         conn: &mut PgConnection,
-        filter: Option<FilterConfig<Q>>,
-        sort: Option<SortingConfig<S>>,
+        filter: Option<FilterConfig<Self::Q>>,
+        sort: Option<SortingConfig<Self::S>>,
         pagination: Option<PaginationConfig>,
     ) -> impl Future<Output = Result<(Vec<Self>, PaginationType)>> {
         async move {
@@ -88,7 +98,7 @@ where
             .map_err(|_| {
                 Error::InvalidRequest(
                     "Page number is out of bounds".to_string(),
-                    "QueryDb::query".to_string(),
+                    "QueryRelation::query".to_string(),
                 )
             })?;
 
@@ -98,22 +108,4 @@ where
             ))
         }
     }
-}
-
-pub trait TopLevelQuery<Table, Q, S>
-where
-    Self: Sized,
-    Table: QueryDb<Q, S>,
-    Q: Clone + Queryable,
-    S: Display,
-{
-    fn query(
-        pool: &PgPool,
-        fetch_level: FetchLevel,
-        descendant_fetch_level: FetchLevel,
-        filter: Option<FilterConfig<Q>>,
-        sort: Option<SortingConfig<S>>,
-        pagination: Option<PaginationConfig>,
-        authorizer: &Authorizer,
-    ) -> impl Future<Output = Result<(Vec<Self>, PaginationType)>>;
 }

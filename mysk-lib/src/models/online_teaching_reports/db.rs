@@ -4,7 +4,7 @@ use crate::{
         online_teaching_reports::requests::{
             queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
         },
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
@@ -36,9 +36,10 @@ pub struct DbOnlineTeachingReports {
     pub image_ext: Option<String>,
 }
 
-impl QueryDb<QueryableOnlineTeachingReports, SortableOnlineTeachingReports>
-    for DbOnlineTeachingReports
-{
+impl QueryRelation for DbOnlineTeachingReports {
+    type Q = QueryableOnlineTeachingReports;
+    type S = SortableOnlineTeachingReports;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableOnlineTeachingReports>>,

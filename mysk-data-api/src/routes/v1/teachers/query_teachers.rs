@@ -5,7 +5,7 @@ use crate::{
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
     models::teacher::{
@@ -28,7 +28,7 @@ pub async fn query_teachers(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableTeacher, SortableTeacher>,
+    }: RequestType<EmptyRequestData, QueryableTeacher, SortableTeacher>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
