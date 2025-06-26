@@ -9,18 +9,18 @@ use crate::{
     query::Queryable as _,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "
     SELECT id, created_at, teacher_id, subject_group_id, user_id, person_id FROM teachers",
     count_query = "SELECT COUNT(distinct id) FROM teachers"
 )]
-#[get_by_id(table = "teachers")]
+#[from_query(relation = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

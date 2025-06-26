@@ -4,14 +4,9 @@ use crate::{
         string::{FlexibleMultiLangString, MultiLangString},
     },
     models::{
-        classroom::Classroom,
-        elective_subject::db::DbElectiveSubject,
-        enums::SubjectType,
-        student::Student,
-        subject::db::DbSubject,
-        subject_group::SubjectGroup,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, },
+        classroom::Classroom, elective_subject::db::DbElectiveSubject, enums::SubjectType,
+        student::Student, subject::db::DbSubject, subject_group::SubjectGroup, teacher::Teacher,
+        traits::FetchLevelVariant,
     },
     permissions::Authorizer,
     prelude::*,
@@ -49,12 +44,18 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
     async fn from_table(
         pool: &PgPool,
         table: DbElectiveSubject,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
-        let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            table.subject_group_id,
+            FetchLevel::IdOnly,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
         let teacher_ids =
             DbSubject::get_subject_teachers(&mut conn, table.subject_id, None).await?;
@@ -97,17 +98,17 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
             syllabus: table.syllabus,
             teachers: Teacher::get_by_ids(
                 pool,
-                teacher_ids,
+                &teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             co_teachers: Teacher::get_by_ids(
                 pool,
-                co_teacher_ids,
+                &co_teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -116,17 +117,17 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
             room: table.room,
             applicable_classrooms: Classroom::get_by_ids(
                 pool,
-                applicable_classroom_ids,
+                &applicable_classroom_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             students: Student::get_by_ids(
                 pool,
-                student_ids,
+                &student_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -134,9 +135,9 @@ impl FetchLevelVariant<DbElectiveSubject> for DetailedElectiveSubject {
             requirements: DbSubject::get_requirements(&mut conn, table.id).await?,
             randomized_students: Student::get_by_ids(
                 pool,
-                randomized_students_ids,
+                &randomized_students_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

@@ -28,7 +28,7 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
     async fn from_table(
         pool: &PgPool,
         table: DbClub,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let contact_ids =
@@ -55,9 +55,9 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
             logo_url: table.logo_url,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

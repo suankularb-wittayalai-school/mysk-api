@@ -9,13 +9,13 @@ use crate::{
     query::Queryable as _,
 };
 use chrono::{DateTime, NaiveDate, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, QueryBuilder, prelude::FromRow};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM online_teaching_reports",
     count_query = "SELECT COUNT(*) FROM online_teaching_reports"
 )]

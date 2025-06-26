@@ -5,13 +5,12 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
-    models::{elective_subject::ElectiveSubject},
+    models::elective_subject::ElectiveSubject,
     permissions::{Authorizer, roles::AdminRole},
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 
@@ -25,7 +24,7 @@ pub async fn query_elective_details(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType<()>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let elective_subject_session_id = elective_subject_session_id.into_inner();

@@ -8,7 +8,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     helpers::date::{get_current_academic_year, get_current_semester},
@@ -16,11 +16,10 @@ use mysk_lib::{
         elective_subject::db::DbElectiveSubject,
         elective_trade_offer::{ElectiveTradeOffer, db::DbElectiveTradeOffer},
         enums::SubmissionStatus,
-        traits::{GetById, },
+        traits::GetById,
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -44,25 +43,18 @@ async fn update_trade_offer(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdatableElectiveOffer>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut transaction = data.db.begin().await?;
     let trade_offer_id = trade_offer_id.into_inner();
-    let trade_offer_status = if let Some(request_data) = request_data {
-        if matches!(request_data.status, SubmissionStatus::Pending) {
-            return Err(Error::InvalidRequest(
-                "Status must be either `approved` or `declined`".to_string(),
-                format!("/subjects/electives/trade-offers/{trade_offer_id}"),
-            ));
-        }
-
-        request_data.status
-    } else {
+    let trade_offer_status = if matches!(request_data.status, SubmissionStatus::Pending) {
         return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
+            "Status must be either `approved` or `declined`".to_string(),
             format!("/subjects/electives/trade-offers/{trade_offer_id}"),
         ));
+    } else {
+        request_data.status
     };
 
     let authorizer = Authorizer::new(

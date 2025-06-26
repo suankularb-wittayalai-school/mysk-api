@@ -1,11 +1,8 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::db::DbClassroom,
-        contact::Contact,
-        student::Student,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, },
+        classroom::db::DbClassroom, contact::Contact, student::Student, teacher::Teacher,
+        traits::FetchLevelVariant,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
@@ -29,7 +26,7 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
     async fn from_table(
         pool: &PgPool,
         table: DbClassroom,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
@@ -48,26 +45,26 @@ impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
             room: table.main_room,
             students: Student::get_by_ids(
                 pool,
-                student_ids,
+                &student_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             year: table.year,
             class_advisor: Teacher::get_by_ids(
                 pool,
-                class_advisor_ids,
+                &class_advisor_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

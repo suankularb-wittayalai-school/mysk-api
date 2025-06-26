@@ -26,7 +26,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
     async fn from_table(
         pool: &PgPool,
         table: DbStudent,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
@@ -47,9 +47,9 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
             student_id: table.student_id,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -59,7 +59,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
                         pool,
                         classroom.id,
                         descendant_fetch_level,
-                        Some(FetchLevel::IdOnly),
+                        FetchLevel::IdOnly,
                         authorizer,
                     )
                     .await?,

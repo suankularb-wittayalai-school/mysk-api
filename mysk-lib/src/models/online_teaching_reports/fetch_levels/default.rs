@@ -32,7 +32,7 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
     async fn from_table(
         pool: &PgPool,
         table: DbOnlineTeachingReports,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         authorizer
@@ -49,7 +49,7 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
                     pool,
                     table.subject_id.unwrap(),
                     descendant_fetch_level,
-                    Some(FetchLevel::IdOnly),
+                    FetchLevel::IdOnly,
                     authorizer,
                 )
                 .await?,
@@ -63,7 +63,7 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
                     pool,
                     table.classroom_id.unwrap(),
                     descendant_fetch_level,
-                    Some(FetchLevel::IdOnly),
+                    FetchLevel::IdOnly,
                     authorizer,
                 )
                 .await?,
@@ -79,7 +79,7 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
                 pool,
                 table.teacher_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

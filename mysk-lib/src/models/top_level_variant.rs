@@ -41,19 +41,22 @@ where
     pub async fn from_table(
         pool: &PgPool,
         table: Table,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
+        fetch_level: FetchLevel,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        // Implementation detail:
+        // If the underlying type (fetch variant) is cyclic/recursive, then Rust requires that the
+        // future must be pinned in-place. Since we won't know which types are cyclic/recursive, we
+        // pin everything except for `IdOnly`.
         match fetch_level {
-            Some(FetchLevel::IdOnly) | None => Ok(Self::IdOnly(
-                // We don't need to return a pinned box because IdOnly is never recursive
+            FetchLevel::IdOnly => Ok(Self::IdOnly(
                 Box::new(
                     IdOnly::from_table(pool, table, descendant_fetch_level, authorizer).await?,
                 ),
                 PhantomData,
             )),
-            Some(FetchLevel::Compact) => Ok(Self::Compact(
+            FetchLevel::Compact => Ok(Self::Compact(
                 Box::new(
                     Box::pin(Compact::from_table(
                         pool,
@@ -65,7 +68,7 @@ where
                 ),
                 PhantomData,
             )),
-            Some(FetchLevel::Default) => Ok(Self::Default(
+            FetchLevel::Default => Ok(Self::Default(
                 Box::new(
                     Box::pin(Default::from_table(
                         pool,
@@ -77,7 +80,7 @@ where
                 ),
                 PhantomData,
             )),
-            Some(FetchLevel::Detailed) => Ok(Self::Detailed(
+            FetchLevel::Detailed => Ok(Self::Detailed(
                 Box::new(
                     Box::pin(Detailed::from_table(
                         pool,
@@ -95,8 +98,8 @@ where
     pub async fn get_by_id<T>(
         pool: &PgPool,
         id: T,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
+        fetch_level: FetchLevel,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self>
     where
@@ -116,9 +119,9 @@ where
 
     pub async fn get_by_ids<T>(
         pool: &PgPool,
-        ids: Vec<T>,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
+        ids: &[T],
+        fetch_level: FetchLevel,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Vec<Self>>
     where
@@ -157,8 +160,8 @@ where
 {
     pub async fn query(
         pool: &PgPool,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
+        fetch_level: FetchLevel,
+        descendant_fetch_level: FetchLevel,
         filter: Option<FilterConfig<Q>>,
         sort: Option<SortingConfig<S>>,
         pagination: Option<PaginationConfig>,

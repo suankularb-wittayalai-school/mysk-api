@@ -8,17 +8,16 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::{ElectiveSubject, db::DbElectiveSubject},
-        traits::{GetById as _, },
+        traits::GetById as _,
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -35,7 +34,7 @@ async fn modify_elective_subject(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<(), QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<()>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut transaction = data.db.begin().await?;

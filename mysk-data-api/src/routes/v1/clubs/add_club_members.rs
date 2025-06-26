@@ -8,16 +8,13 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
-    models::{
-        club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-    },
+    models::{club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student},
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -41,19 +38,12 @@ pub async fn add_club_members(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<AddClubMemberRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
-    let invitee_student_id = if let Some(request_data) = request_data {
-        request_data.id
-    } else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/clubs/{club_id}/add"),
-        ));
-    };
+    let invitee_student_id = request_data.id;
     let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
 
@@ -61,8 +51,8 @@ pub async fn add_club_members(
     match Student::get_by_id(
         pool,
         invitee_student_id,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
         &authorizer,
     )
     .await
@@ -88,8 +78,8 @@ pub async fn add_club_members(
     let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(FetchLevel::Detailed),
-        Some(FetchLevel::IdOnly),
+        FetchLevel::Detailed,
+        FetchLevel::IdOnly,
         &authorizer,
     )
     .await

@@ -9,16 +9,16 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     models::{
         online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
-        traits::{GetById as _, },
+        traits::GetById as _,
     },
     permissions::Authorizer,
     prelude::*,
-    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
+    query::{QueryParam, SqlSetClause},
 };
 use serde::Deserialize;
 use sqlx::Error as SqlxError;
@@ -45,21 +45,15 @@ pub async fn modify_report(
     LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: update_data,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdateReportRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/subjects/attendance/{report_id}"),
-        ));
-    };
     let authorizer = Authorizer::new(
         &mut conn,
         &user,

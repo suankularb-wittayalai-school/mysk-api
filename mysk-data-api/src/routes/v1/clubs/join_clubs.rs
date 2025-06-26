@@ -8,14 +8,13 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
     models::{club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student},
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -31,7 +30,7 @@ pub async fn join_clubs(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType<()>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
@@ -43,8 +42,8 @@ pub async fn join_clubs(
     let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(FetchLevel::Detailed),
-        Some(FetchLevel::IdOnly),
+        FetchLevel::Detailed,
+        FetchLevel::IdOnly,
         &authorizer,
     )
     .await?

@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "SELECT * FROM organizations")]
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(query = "SELECT * FROM organizations")]
 pub struct DbOrganization {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

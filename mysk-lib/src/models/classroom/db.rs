@@ -1,12 +1,12 @@
 use crate::{helpers::date::get_current_academic_year, prelude::*};
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(query = "SELECT id, created_at, number, year, main_room FROM classrooms")]
+#[derive(Debug, Clone, Deserialize, FromRow, GetById)]
+#[from_query(query = "SELECT id, created_at, number, year, main_room FROM classrooms")]
 pub struct DbClassroom {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

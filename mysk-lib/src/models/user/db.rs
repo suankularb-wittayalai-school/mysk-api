@@ -1,12 +1,12 @@
 use crate::{models::enums::UserRole, prelude::*};
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
-#[base_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
+#[derive(Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
+#[from_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
 pub struct DbUser {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

@@ -8,13 +8,13 @@ use crate::{
     query::Queryable as _,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT id, created_at, club_id, year, membership_status, student_id FROM club_members",
     count_query = "SELECT COUNT(*) FROM club_members"
 )]

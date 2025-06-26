@@ -9,18 +9,18 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
     models::{
         enums::ShirtSize,
         student::{Student, db::DbStudent},
-        traits::{GetById as _, },
+        traits::GetById as _,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
-    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
+    query::{QueryParam, SqlSetClause},
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -52,21 +52,15 @@ pub async fn modify_student(
     LoggedIn(user): LoggedIn,
     student_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: update_data,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdateStudentRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdateStudentRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let student_id = student_id.into_inner();
-    let Some(update_data) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/students/{student_id}"),
-        ));
-    };
     let authorizer = Authorizer::new(&mut conn, &user, format!("students/{student_id}")).await?;
 
     let db_student = DbStudent::get_by_id(&mut conn, student_id).await?;

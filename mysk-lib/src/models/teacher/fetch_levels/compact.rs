@@ -1,10 +1,6 @@
 use crate::{
     common::requests::FetchLevel,
-    models::{
-        subject_group::SubjectGroup,
-        teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, },
-    },
+    models::{subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchLevelVariant},
     permissions::Authorizer,
     prelude::*,
 };
@@ -23,11 +19,17 @@ impl FetchLevelVariant<DbTeacher> for CompactTeacher {
     async fn from_table(
         pool: &PgPool,
         table: DbTeacher,
-        _: Option<FetchLevel>,
+        _: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
-        let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            table.subject_group_id,
+            FetchLevel::IdOnly,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
         Ok(Self {
             id: table.id,

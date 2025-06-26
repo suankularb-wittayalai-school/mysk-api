@@ -9,13 +9,12 @@ use actix_web::{
 use futures::future;
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::{EmptyResponseData, ResponseType},
     },
     models::{contact::db::DbContact, traits::GetById as _},
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -26,21 +25,15 @@ pub async fn delete_contacts(
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
     Json(RequestType {
-        data: request_data, ..
-    }): Json<RequestType<Vec<Uuid>, QueryablePlaceholder, SortablePlaceholder>>,
+        data: contact_ids, ..
+    }): Json<RequestType<Vec<Uuid>>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
-    let Some(contact_ids) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            "/contacts".to_string(),
-        ));
-    };
     let authorizer = Authorizer::new(&mut conn, &user, "/contacts".to_string()).await?;
 
     // Check if the contacts exists
-    let db_contacts = DbContact::get_by_ids(&mut conn, contact_ids.clone()).await?;
+    let db_contacts = DbContact::get_by_ids(&mut conn, &contact_ids).await?;
 
     let futures = db_contacts
         .iter()

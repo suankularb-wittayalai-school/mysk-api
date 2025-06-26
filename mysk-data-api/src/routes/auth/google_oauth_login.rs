@@ -103,7 +103,7 @@ pub async fn google_oauth_handler(
         &EncodingKey::from_secret(data.env.token_secret.as_bytes()),
     )?;
 
-    let cookie = Cookie::build("token", token.clone())
+    let cookie = Cookie::build("token", &token)
         .secure(true)
         .http_only(true)
         .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
@@ -112,10 +112,10 @@ pub async fn google_oauth_handler(
 
     let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
         GoogleTokenResponse {
-            access_token: token,
+            access_token: &token,
             expires_in: data.env.token_max_age * 60,
-            token_type: "Bearer".to_string(),
-            scope: "openid email profile".to_string(),
+            token_type: "Bearer",
+            scope: "openid email profile",
             id_token,
         },
         None,

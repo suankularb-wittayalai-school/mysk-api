@@ -9,19 +9,16 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     helpers::date::get_current_date,
     models::{
-        classroom::db::DbClassroom,
-        online_teaching_reports::OnlineTeachingReports,
-        subject::db::DbSubject,
-        traits::{GetById as _, },
+        classroom::db::DbClassroom, online_teaching_reports::OnlineTeachingReports,
+        subject::db::DbSubject, traits::GetById as _,
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::{Error as SqlxError, query};
@@ -47,20 +44,14 @@ pub async fn create_report(
     LoggedIn(user): LoggedIn,
     LoggedInTeacher(teacher_id): LoggedInTeacher,
     Json(RequestType {
-        data: request_data,
+        data: class_report,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<CreateReportRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<CreateReportRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
-    let Some(class_report) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            "/subjects/attendance".to_string(),
-        ));
-    };
     let authorizer = Authorizer::new(&mut conn, &user, "/subjects/attendance".to_string()).await?;
 
     // Check if subject exists

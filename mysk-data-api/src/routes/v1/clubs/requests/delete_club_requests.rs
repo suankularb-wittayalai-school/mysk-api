@@ -40,8 +40,8 @@ pub async fn delete_club_requests(
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
         &authorizer,
     )
     .await?

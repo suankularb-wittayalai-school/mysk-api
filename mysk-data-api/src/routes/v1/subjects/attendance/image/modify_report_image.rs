@@ -8,16 +8,15 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     models::{
         online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
-        traits::{GetById as _, },
+        traits::GetById as _,
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use reqwest::{
     Client,
@@ -40,22 +39,16 @@ pub async fn modify_report_image(
     LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
     RequestType {
-        data: request_data,
+        data: update_data,
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<ModifyReportImageRequest, QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType<ModifyReportImageRequest>,
     request_body: Bytes,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Query deserialize error: field `data` can not be empty".to_string(),
-            format!("/subjects/attendance/image/{report_id}"),
-        ));
-    };
     let authorizer = Authorizer::new(
         &mut conn,
         &user,

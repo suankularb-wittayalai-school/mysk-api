@@ -3,13 +3,13 @@ use crate::{
     prelude::*,
 };
 use chrono::{DateTime, NaiveDate, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "\
         SELECT id, created_at, prefix_en, prefix_th, first_name_en, first_name_th, last_name_en,\
             last_name_th, middle_name_en, middle_name_th, nickname_en, nickname_th, birthdate,\
@@ -17,7 +17,7 @@ use uuid::Uuid;
         FROM people",
     count_query = "SELECT COUNT(distinct id) FROM people"
 )]
-#[get_by_id(table = "people")]
+#[from_query(relation = "people")]
 pub struct DbPerson {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,

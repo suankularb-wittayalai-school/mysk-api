@@ -1,14 +1,8 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::Classroom,
-        contact::Contact,
-        person::Person,
-        subject::Subject,
-        subject_group::SubjectGroup,
-        teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, },
-        user::User,
+        classroom::Classroom, contact::Contact, person::Person, subject::Subject,
+        subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchLevelVariant, user::User,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
@@ -33,7 +27,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
     async fn from_table(
         pool: &PgPool,
         table: DbTeacher,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
@@ -49,7 +43,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
             pool,
             table.subject_group_id,
             descendant_fetch_level,
-            Some(FetchLevel::IdOnly),
+            FetchLevel::IdOnly,
             authorizer,
         )
         .await?;
@@ -69,9 +63,9 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
             teacher_id: table.teacher_id,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -81,7 +75,7 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
                         pool,
                         classroom_id,
                         descendant_fetch_level,
-                        Some(FetchLevel::IdOnly),
+                        FetchLevel::IdOnly,
                         authorizer,
                     )
                     .await?,
@@ -93,9 +87,9 @@ impl FetchLevelVariant<DbTeacher> for DetailedTeacher {
             subject_group,
             subjects_in_charge: Subject::get_by_ids(
                 pool,
-                subject_ids,
+                &subject_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

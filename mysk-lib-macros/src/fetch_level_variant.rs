@@ -61,7 +61,7 @@ pub(crate) fn make_from(input: TokenStream) -> TokenStream {
             async fn from_table(
                 pool: &::sqlx::PgPool,
                 table: #row,
-                _: Option<crate::common::requests::FetchLevel>,
+                descendant_fetch_level: crate::common::requests::FetchLevel,
                 authorizer: &crate::permissions::Authorizer,
             ) -> crate::prelude::Result<Self> {
                 authorizer.#authorize_table(

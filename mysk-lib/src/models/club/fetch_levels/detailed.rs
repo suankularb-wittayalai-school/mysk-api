@@ -3,12 +3,7 @@ use crate::{
         requests::FetchLevel,
         string::{FlexibleMultiLangString, MultiLangString},
     },
-    models::{
-        club::db::DbClub,
-        contact::Contact,
-        student::Student,
-        traits::{FetchLevelVariant, },
-    },
+    models::{club::db::DbClub, contact::Contact, student::Student, traits::FetchLevelVariant},
     permissions::Authorizer,
     prelude::*,
 };
@@ -35,7 +30,7 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
     async fn from_table(
         pool: &PgPool,
         table: DbClub,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
@@ -64,25 +59,25 @@ impl FetchLevelVariant<DbClub> for DetailedClub {
             logo_url: table.logo_url,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             staffs: Student::get_by_ids(
                 pool,
-                staff_ids,
+                &staff_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             members: Student::get_by_ids(
                 pool,
-                member_ids,
+                &member_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

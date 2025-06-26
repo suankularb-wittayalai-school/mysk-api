@@ -8,18 +8,18 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
     models::{
         contact::{Contact, db::DbContact},
         enums::ContactType,
-        traits::{GetById as _, },
+        traits::GetById as _,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
-    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
+    query::{QueryParam, SqlSetClause},
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -38,21 +38,15 @@ pub async fn modify_contacts(
     LoggedIn(user): LoggedIn,
     contact_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: contact,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<ModifyContactsRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<ModifyContactsRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let contact_id = contact_id.into_inner();
-    let Some(contact) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/contacts/{contact_id}"),
-        ));
-    };
     let authorizer = Authorizer::new(&mut conn, &user, format!("/contacts/{contact_id}")).await?;
 
     // Check if the contact exists

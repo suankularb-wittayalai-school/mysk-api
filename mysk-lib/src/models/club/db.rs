@@ -10,13 +10,13 @@ use crate::{
     query::{QueryParam, Queryable as _, SqlWhereClause},
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM clubs_with_detail_view",
     count_query = "SELECT COUNT(*) FROM clubs_with_detail_view"
 )]

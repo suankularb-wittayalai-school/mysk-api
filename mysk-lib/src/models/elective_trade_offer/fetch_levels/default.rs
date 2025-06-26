@@ -1,11 +1,8 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        elective_subject::ElectiveSubject,
-        elective_trade_offer::db::DbElectiveTradeOffer,
-        enums::SubmissionStatus,
-        student::Student,
-        traits::{FetchLevelVariant, },
+        elective_subject::ElectiveSubject, elective_trade_offer::db::DbElectiveTradeOffer,
+        enums::SubmissionStatus, student::Student, traits::FetchLevelVariant,
     },
     permissions::Authorizer,
     prelude::*,
@@ -28,7 +25,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
     async fn from_table(
         pool: &PgPool,
         table: DbElectiveTradeOffer,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         Ok(Self {
@@ -37,7 +34,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 pool,
                 table.sender_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -45,7 +42,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 pool,
                 table.receiver_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -53,7 +50,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 pool,
                 table.sender_elective_subject_session_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -61,7 +58,7 @@ impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
                 pool,
                 table.receiver_elective_subject_session_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

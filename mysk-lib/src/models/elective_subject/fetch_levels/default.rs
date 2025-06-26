@@ -4,12 +4,8 @@ use crate::{
         string::{FlexibleMultiLangString, MultiLangString},
     },
     models::{
-        elective_subject::db::DbElectiveSubject,
-        enums::SubjectType,
-        subject::db::DbSubject,
-        subject_group::SubjectGroup,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, },
+        elective_subject::db::DbElectiveSubject, enums::SubjectType, subject::db::DbSubject,
+        subject_group::SubjectGroup, teacher::Teacher, traits::FetchLevelVariant,
     },
     permissions::Authorizer,
     prelude::*,
@@ -43,12 +39,18 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
     async fn from_table(
         pool: &PgPool,
         table: DbElectiveSubject,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         let mut conn = pool.acquire().await?;
-        let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            table.subject_group_id,
+            FetchLevel::IdOnly,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
         let teacher_ids =
             DbSubject::get_subject_teachers(&mut conn, table.subject_id, None).await?;
@@ -87,17 +89,17 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
             syllabus: table.syllabus,
             teachers: Teacher::get_by_ids(
                 pool,
-                teacher_ids,
+                &teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             co_teachers: Teacher::get_by_ids(
                 pool,
-                co_teacher_ids,
+                &co_teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

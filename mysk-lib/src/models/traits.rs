@@ -14,15 +14,11 @@ use sqlx::{
 };
 use std::fmt::Display;
 
-pub trait BaseQuery {
-    #[must_use]
-    fn base_query() -> &'static str;
+pub trait GetById: Sized {
+    const BASE_QUERY: &'static str;
 
-    #[must_use]
-    fn count_query() -> &'static str;
-}
+    const COUNT_QUERY: &'static str;
 
-pub trait GetById: BaseQuery + Sized {
     fn get_by_id<T>(
         conn: &mut PgConnection,
         id: T,
@@ -32,7 +28,7 @@ pub trait GetById: BaseQuery + Sized {
 
     fn get_by_ids<T>(
         conn: &mut PgConnection,
-        ids: Vec<T>,
+        ids: &[T],
     ) -> impl Future<Output = Result<Vec<Self>, SqlxError>>
     where
         T: for<'q> Encode<'q, Postgres> + SqlxType<Postgres> + PgHasArrayType;
@@ -44,7 +40,7 @@ pub trait FetchLevelVariant<Table>: Sized {
     fn from_table(
         pool: &PgPool,
         table: Table,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> impl Future<Output = Result<Self>>;
 }
@@ -52,7 +48,7 @@ pub trait FetchLevelVariant<Table>: Sized {
 /// A trait for DB variant to allow querying and creating pagination response.
 pub trait QueryDb<Q, S>
 where
-    Self: BaseQuery + for<'q> FromRow<'q, PgRow> + Send + Unpin,
+    Self: for<'q> FromRow<'q, PgRow> + GetById + Send + Unpin,
     Q: Clone + Queryable,
     S: Display,
 {
@@ -70,7 +66,7 @@ where
         pagination: Option<PaginationConfig>,
     ) -> impl Future<Output = Result<(Vec<Self>, PaginationType)>> {
         async move {
-            let mut query = QueryBuilder::new(<Self as BaseQuery>::base_query());
+            let mut query = QueryBuilder::new(<Self as GetById>::BASE_QUERY);
             Self::build_shared_query(&mut query, filter.clone());
 
             if let Some(sorting) = sort {
@@ -80,7 +76,7 @@ where
             let pagination = pagination.unwrap_or_default();
             pagination.append_into_query_builder(&mut query)?;
 
-            let mut count_query = QueryBuilder::new(<Self as BaseQuery>::count_query());
+            let mut count_query = QueryBuilder::new(<Self as GetById>::COUNT_QUERY);
             Self::build_shared_query(&mut count_query, filter);
             let count = u32::try_from(
                 count_query
@@ -113,8 +109,8 @@ where
 {
     fn query(
         pool: &PgPool,
-        fetch_level: Option<FetchLevel>,
-        descendant_fetch_level: Option<FetchLevel>,
+        fetch_level: FetchLevel,
+        descendant_fetch_level: FetchLevel,
         filter: Option<FilterConfig<Q>>,
         sort: Option<SortingConfig<S>>,
         pagination: Option<PaginationConfig>,

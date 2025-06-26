@@ -3,13 +3,13 @@ use crate::{
     models::enums::SubjectType, prelude::*,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(query = "
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(query = "
     SELECT
         id, created_at, name_th, name_en, code_th, code_en, short_name_th, short_name_en, type,
         credit, description_th, description_en, semester, subject_group_id, syllabus

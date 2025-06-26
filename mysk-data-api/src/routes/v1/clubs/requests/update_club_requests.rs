@@ -8,7 +8,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
     models::{
@@ -18,7 +18,6 @@ use mysk_lib::{
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -41,25 +40,18 @@ pub async fn update_club_requests(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdateClubRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let club_request_id = club_request_id.into_inner();
-    let club_request_status = if let Some(request_data) = request_data {
-        if matches!(request_data.status, SubmissionStatus::Pending) {
-            return Err(Error::InvalidRequest(
-                "Status must be either `approved` or `declined`".to_string(),
-                format!("/clubs/requests/{club_request_id}"),
-            ));
-        }
-
-        request_data.status
-    } else {
+    let club_request_status = if matches!(request_data.status, SubmissionStatus::Pending) {
         return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
+            "Status must be either `approved` or `declined`".to_string(),
             format!("/clubs/requests/{club_request_id}"),
         ));
+    } else {
+        request_data.status
     };
     let authorizer = Authorizer::new(
         &mut conn,
@@ -72,8 +64,8 @@ pub async fn update_club_requests(
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
         &authorizer,
     )
     .await

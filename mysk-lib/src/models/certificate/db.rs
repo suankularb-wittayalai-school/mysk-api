@@ -4,13 +4,13 @@ use crate::{
     prelude::*,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, prelude::FromRow, query};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM student_certificates",
     count_query = "SELECT COUNT(*) FROM student_certificates"
 )]

@@ -8,13 +8,12 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
-    models::{teacher::Teacher},
+    models::teacher::Teacher,
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 
@@ -28,7 +27,7 @@ pub async fn query_teacher_details(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType<()>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;

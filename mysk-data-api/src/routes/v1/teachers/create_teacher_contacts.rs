@@ -8,7 +8,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
         string::MultiLangString,
     },
@@ -16,11 +16,10 @@ use mysk_lib::{
         contact::{Contact, db::DbContact},
         enums::ContactType,
         teacher::db::DbTeacher,
-        traits::{GetById as _, },
+        traits::GetById as _,
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -40,21 +39,15 @@ pub async fn create_teacher_contacts(
     LoggedIn(user): LoggedIn,
     teacher_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: teacher_contact,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<TeacherContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<TeacherContactRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let teacher_id = teacher_id.into_inner();
-    let Some(teacher_contact) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/teachers/{teacher_id}/contacts"),
-        ));
-    };
     let authorizer =
         Authorizer::new(&mut conn, &user, format!("/teachers/{teacher_id}/contacts")).await?;
 

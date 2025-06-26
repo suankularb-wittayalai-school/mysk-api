@@ -1,11 +1,8 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        club::Club,
-        club_request::db::DbClubRequest,
-        enums::SubmissionStatus,
-        student::Student,
-        traits::{FetchLevelVariant, },
+        club::Club, club_request::db::DbClubRequest, enums::SubmissionStatus, student::Student,
+        traits::FetchLevelVariant,
     },
     permissions::Authorizer,
     prelude::*,
@@ -29,7 +26,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
     async fn from_table(
         pool: &PgPool,
         table: DbClubRequest,
-        descendant_fetch_level: Option<FetchLevel>,
+        descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
         Ok(Self {
@@ -39,7 +36,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
                 pool,
                 table.club_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -47,7 +44,7 @@ impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
                 pool,
                 table.student_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

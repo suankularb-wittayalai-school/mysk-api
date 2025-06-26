@@ -8,18 +8,15 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     models::{
-        elective_subject::db::DbElectiveSubject,
-        elective_trade_offer::ElectiveTradeOffer,
-        enums::SubmissionStatus,
-        traits::{GetById, },
+        elective_subject::db::DbElectiveSubject, elective_trade_offer::ElectiveTradeOffer,
+        enums::SubmissionStatus, traits::GetById,
     },
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -42,18 +39,11 @@ async fn create_trade_offer(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<ElectiveTradeOfferRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<ElectiveTradeOfferRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut transaction = data.db.begin().await?;
-    let other_student_id = if let Some(request_data) = request_data {
-        request_data.receiver_id
-    } else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            "/subjects/electives/trade-offers".to_string(),
-        ));
-    };
+    let other_student_id = request_data.receiver_id;
     let authorizer = Authorizer::new(
         &mut transaction,
         &user,

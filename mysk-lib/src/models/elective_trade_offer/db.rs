@@ -10,13 +10,13 @@ use crate::{
     query::Queryable as _,
 };
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM elective_subject_trade_offers",
     count_query = "SELECT COUNT(*) FROM elective_subject_trade_offers"
 )]

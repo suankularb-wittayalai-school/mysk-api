@@ -8,18 +8,12 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
-    models::{
-        club::db::DbClub,
-        contact::Contact,
-        enums::ContactType,
-        traits::{GetById as _, },
-    },
+    models::{club::db::DbClub, contact::Contact, enums::ContactType, traits::GetById as _},
     permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -39,21 +33,15 @@ pub async fn create_club_contacts(
     LoggedInStudent(student_id): LoggedInStudent,
     club_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: club_contact,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<ClubContactRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
-    let Some(club_contact) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/clubs/{club_id}/contacts"),
-        ));
-    };
     let authorizer =
         Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/contacts")).await?;
 
@@ -71,9 +59,9 @@ pub async fn create_club_contacts(
     // Check if the contact is a duplicate
     let club_contacts = Contact::get_by_ids(
         pool,
-        DbClub::get_club_contacts(&mut conn, club_id).await?,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
+        &DbClub::get_club_contacts(&mut conn, club_id).await?,
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
         &authorizer,
     )
     .await?;
