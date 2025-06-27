@@ -1,5 +1,5 @@
 use crate::{
-    models::enums::ContactType,
+    models::{contact::db::DbContact, enums::ContactType},
     query::{QueryParam, Queryable, SqlWhereClause},
 };
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,8 @@ pub struct QueryableContact {
 }
 
 impl Queryable for QueryableContact {
+    type Relation = DbContact;
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {

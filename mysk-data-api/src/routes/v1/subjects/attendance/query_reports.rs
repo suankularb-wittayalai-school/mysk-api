@@ -1,20 +1,20 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
-    common::{requests::RequestType, response::ResponseType},
-    models::{
-        online_teaching_reports::{
-            requests::{
-                queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
-            },
-            OnlineTeachingReports,
-        },
-        traits::TopLevelQuery,
+    common::{
+        requests::{EmptyRequestData, RequestType},
+        response::ResponseType,
     },
-    permissions,
+    models::online_teaching_reports::{
+        OnlineTeachingReports,
+        requests::{
+            queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
+        },
+    },
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -30,11 +30,15 @@ pub async fn query_reports(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableOnlineTeachingReports, SortableOnlineTeachingReports>,
+    }: RequestType<
+        EmptyRequestData,
+        QueryableOnlineTeachingReports,
+        SortableOnlineTeachingReports,
+    >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/attendance".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/subjects/attendance".to_string()).await?;
 
     let reports = OnlineTeachingReports::query(
         pool,
@@ -43,7 +47,7 @@ pub async fn query_reports(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
 

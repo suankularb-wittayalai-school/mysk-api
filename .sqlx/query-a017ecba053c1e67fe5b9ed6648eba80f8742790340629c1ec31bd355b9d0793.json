@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT label_th, label_en FROM subject_requirements WHERE subject_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "label_th",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "label_en",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "a017ecba053c1e67fe5b9ed6648eba80f8742790340629c1ec31bd355b9d0793"
+}

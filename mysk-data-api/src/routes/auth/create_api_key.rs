@@ -1,8 +1,7 @@
-use crate::{extractors::logged_in::LoggedIn, AppState};
+use crate::{AppState, extractors::logged_in::LoggedIn};
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use mysk_lib::{auth::key::ApiKey, common::response::ResponseType, prelude::*};
 use serde::{Deserialize, Serialize};
@@ -23,8 +22,8 @@ pub async fn create_api_key(
     Json(query): Json<CreateApiKeyRequest>,
     LoggedIn(user): LoggedIn,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
-    let api_key = ApiKey::create(pool, user.id, query.expire_days).await?;
+    let mut conn = data.db.acquire().await?;
+    let api_key = ApiKey::create(&mut conn, user.id, query.expire_days).await?;
 
     let response = ResponseType::new(
         CreateApiKeyResponse {

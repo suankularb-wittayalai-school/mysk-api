@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO contacts (type, value, name_th, name_en) VALUES ($1, $2, $3, $4) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "contact_types",
+            "kind": {
+              "Enum": [
+                "phone",
+                "email",
+                "facebook",
+                "line",
+                "instagram",
+                "website",
+                "discord",
+                "other"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "14cc961d9164617d072ea3663002ec5b5ad66bc6eff7dc8462cf85a5e9951ef7"
+}

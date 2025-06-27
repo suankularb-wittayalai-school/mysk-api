@@ -1,26 +1,25 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
     models::{
-        contact::{db::DbContact, Contact},
+        contact::{Contact, db::DbContact},
         enums::ContactType,
-        traits::{GetById as _, TopLevelGetById as _},
+        traits::GetById as _,
     },
-    permissions::{self, ActionType},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
-    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
+    query::{QueryParam, SqlSetClause},
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -39,28 +38,22 @@ pub async fn modify_contacts(
     LoggedIn(user): LoggedIn,
     contact_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: contact,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<ModifyContactsRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<ModifyContactsRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let contact_id = contact_id.into_inner();
-    let Some(contact) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/contacts/{contact_id}"),
-        ));
-    };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/contacts/{contact_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/contacts/{contact_id}")).await?;
 
     // Check if the contact exists
-    let db_contact = DbContact::get_by_id(pool, contact_id).await?;
+    let db_contact = DbContact::get_by_id(&mut conn, contact_id).await?;
 
     authorizer
-        .authorize_contact(&db_contact, pool, ActionType::Update)
+        .authorize_contact(&db_contact, &mut conn, ActionType::Update)
         .await?;
 
     let mut qb = SqlSetClause::new();
@@ -72,7 +65,7 @@ pub async fn modify_contacts(
     qb.push(" WHERE id = ")
         .push_bind(contact_id)
         .build()
-        .execute(pool)
+        .execute(&mut *conn)
         .await?;
 
     let updated_contact = Contact::get_by_id(
@@ -80,7 +73,7 @@ pub async fn modify_contacts(
         contact_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(updated_contact, None);

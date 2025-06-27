@@ -1,23 +1,18 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
-    models::{
-        elective_trade_offer::{
-            request::{
-                queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
-            },
-            ElectiveTradeOffer,
-        },
-        traits::TopLevelQuery as _,
+    models::elective_trade_offer::{
+        ElectiveTradeOffer,
+        request::{queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -33,12 +28,16 @@ pub async fn query_trade_offers(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableElectiveTradeOffer, SortableElectiveTradeOffer>,
+    }: RequestType<EmptyRequestData, QueryableElectiveTradeOffer, SortableElectiveTradeOffer>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer =
-        permissions::get_authorizer(pool, &user, "/subjects/electives/trade-offers".to_string())
-            .await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        "/subjects/electives/trade-offers".to_string(),
+    )
+    .await?;
 
     let (trade_offers, pagination) = ElectiveTradeOffer::query(
         pool,
@@ -47,7 +46,7 @@ pub async fn query_trade_offers(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(trade_offers, Some(MetadataType::new(Some(pagination))));

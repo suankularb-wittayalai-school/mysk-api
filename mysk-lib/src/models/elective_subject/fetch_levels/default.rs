@@ -4,17 +4,12 @@ use crate::{
         string::{FlexibleMultiLangString, MultiLangString},
     },
     models::{
-        elective_subject::db::DbElectiveSubject,
-        enums::SubjectType,
-        subject::db::DbSubject,
-        subject_group::SubjectGroup,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        elective_subject::db::DbElectiveSubject, enums::SubjectType, subject::db::DbSubject,
+        subject_group::SubjectGroup, teacher::Teacher, traits::FetchVariant,
     },
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -40,22 +35,31 @@ pub struct DefaultElectiveSubject {
     pub requirements: Vec<MultiLangString>,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
-    async fn from_table(
+impl FetchVariant for DefaultElectiveSubject {
+    type Relation = DbElectiveSubject;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbElectiveSubject,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
-        let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
+        let mut conn = pool.acquire().await?;
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            relation.subject_group_id,
+            FetchLevel::IdOnly,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
-        let teacher_ids = DbSubject::get_subject_teachers(pool, table.subject_id, None).await?;
+        let teacher_ids =
+            DbSubject::get_subject_teachers(&mut conn, relation.subject_id, None).await?;
         let co_teacher_ids =
-            DbSubject::get_subject_co_teachers(pool, table.subject_id, None).await?;
+            DbSubject::get_subject_co_teachers(&mut conn, relation.subject_id, None).await?;
 
-        let description = match (table.description_th, table.description_en) {
+        let description = match (relation.description_th, relation.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
                 th: Some(description_th),
                 en: Some(description_en),
@@ -72,40 +76,40 @@ impl FetchLevelVariant<DbElectiveSubject> for DefaultElectiveSubject {
         };
 
         Ok(Self {
-            id: table.id,
-            name: MultiLangString::new(table.name_th, Some(table.name_en)),
-            code: MultiLangString::new(table.code_th, Some(table.code_en)),
+            id: relation.id,
+            name: MultiLangString::new(relation.name_th, Some(relation.name_en)),
+            code: MultiLangString::new(relation.code_th, Some(relation.code_en)),
             short_name: MultiLangString::new(
-                table.short_name_th.unwrap_or_default(),
-                table.short_name_en,
+                relation.short_name_th.unwrap_or_default(),
+                relation.short_name_en,
             ),
-            r#type: table.r#type,
-            credit: table.credit,
+            r#type: relation.r#type,
+            credit: relation.credit,
             description,
-            semester: table.semester,
+            semester: relation.semester,
             subject_group,
-            syllabus: table.syllabus,
+            syllabus: relation.syllabus,
             teachers: Teacher::get_by_ids(
                 pool,
-                teacher_ids,
+                &teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             co_teachers: Teacher::get_by_ids(
                 pool,
-                co_teacher_ids,
+                &co_teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
-            class_size: table.class_size,
-            cap_size: table.cap_size,
-            room: table.room,
-            session_code: table.session_code,
-            requirements: DbSubject::get_requirements(pool, table.subject_id).await?,
+            class_size: relation.class_size,
+            cap_size: relation.cap_size,
+            room: relation.room,
+            session_code: relation.session_code,
+            requirements: DbSubject::get_requirements(&mut conn, relation.subject_id).await?,
         })
     }
 }

@@ -1,25 +1,20 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
-    models::{
-        club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-        traits::TopLevelGetById as _,
-    },
-    permissions,
+    models::{club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student},
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -35,21 +30,21 @@ pub async fn join_clubs(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let current_year = get_current_academic_year(None);
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/join")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/join")).await?;
 
     // Check if club exists
     let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(FetchLevel::Detailed),
-        Some(FetchLevel::IdOnly),
-        &*authorizer,
+        FetchLevel::Detailed,
+        FetchLevel::IdOnly,
+        &authorizer,
     )
     .await?
     else {
@@ -89,7 +84,7 @@ pub async fn join_clubs(
         SubmissionStatus::Pending as SubmissionStatus,
         student_id,
     )
-    .fetch_optional(pool)
+    .fetch_optional(&mut *conn)
     .await?
     {
         match has_requested.membership_status {
@@ -113,7 +108,7 @@ pub async fn join_clubs(
         SubmissionStatus::Pending as SubmissionStatus,
         student_id,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .id;
 
@@ -122,7 +117,7 @@ pub async fn join_clubs(
         club_member_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club_request_id, None);

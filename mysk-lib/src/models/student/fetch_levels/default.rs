@@ -1,17 +1,12 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::Classroom,
-        contact::Contact,
-        person::Person,
-        student::db::DbStudent,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
-        user::User,
+        classroom::Classroom, contact::Contact, person::Person, student::db::DbStudent,
+        traits::FetchVariant, user::User,
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -27,34 +22,36 @@ pub struct DefaultStudent {
     pub person: Person,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbStudent> for DefaultStudent {
-    async fn from_table(
+impl FetchVariant for DefaultStudent {
+    type Relation = DbStudent;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbStudent,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_student(&table, pool, ActionType::ReadDefault)
+            .authorize_student(&relation, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let contact_ids = DbStudent::get_student_contacts(pool, table.id).await?;
+        let contact_ids = DbStudent::get_student_contacts(&mut conn, relation.id).await?;
 
-        let classroom = DbStudent::get_student_classroom(pool, table.id, None).await?;
-        let user = match table.user_id {
-            Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
+        let classroom = DbStudent::get_student_classroom(&mut conn, relation.id, None).await?;
+        let user = match relation.user_id {
+            Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
             None => None,
         };
 
         Ok(Self {
-            id: table.id,
-            student_id: table.student_id,
+            id: relation.id,
+            student_id: relation.student_id,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -64,7 +61,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
                         pool,
                         classroom.id,
                         descendant_fetch_level,
-                        Some(FetchLevel::IdOnly),
+                        FetchLevel::IdOnly,
                         authorizer,
                     )
                     .await?,
@@ -73,7 +70,7 @@ impl FetchLevelVariant<DbStudent> for DefaultStudent {
             },
             class_no: classroom.map(|classroom| classroom.class_no),
             user,
-            person: Person::get_by_id(pool, table.person_id).await?,
+            person: Person::get_by_id(&mut conn, relation.person_id).await?,
         })
     }
 }

@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::response::ResponseType, models::certificate::db::DbCertificate, prelude::*,
@@ -19,7 +18,7 @@ pub async fn query_invitation_details(
     LoggedInStudent(client_student_id): LoggedInStudent,
     student_id: Path<Uuid>,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let student_id = student_id.into_inner();
 
     // TODO: too lazy to write authorizer right now (27/02/25)
@@ -31,7 +30,7 @@ pub async fn query_invitation_details(
         ));
     }
 
-    let rsvp_status = DbCertificate::get_rsvp_status(pool, student_id).await?;
+    let rsvp_status = DbCertificate::get_rsvp_status(&mut conn, student_id).await?;
     let response = ResponseType::new(rsvp_status, None);
 
     Ok(HttpResponse::Ok().json(response))

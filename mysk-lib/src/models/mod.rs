@@ -13,6 +13,6 @@ pub mod student;
 pub mod subject;
 pub mod subject_group;
 pub mod teacher;
-pub mod top_level_variant;
+pub mod model;
 pub mod traits;
 pub mod user;

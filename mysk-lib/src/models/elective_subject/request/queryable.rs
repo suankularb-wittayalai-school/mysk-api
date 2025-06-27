@@ -1,4 +1,7 @@
-use crate::query::{QueryParam, Queryable, SqlWhereClause};
+use crate::{
+    models::elective_subject::db::DbElectiveSubject,
+    query::{QueryParam, Queryable, SqlWhereClause},
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -21,6 +24,8 @@ pub struct QueryableElectiveSubject {
 }
 
 impl Queryable for QueryableElectiveSubject {
+    type Relation = DbElectiveSubject;
+
     #[allow(clippy::too_many_lines)]
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new_empty();

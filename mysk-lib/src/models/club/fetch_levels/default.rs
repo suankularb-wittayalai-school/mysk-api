@@ -3,15 +3,10 @@ use crate::{
         requests::FetchLevel,
         string::{FlexibleMultiLangString, MultiLangString},
     },
-    models::{
-        club::db::DbClub,
-        contact::Contact,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
-    },
+    models::{club::db::DbClub, contact::Contact, traits::FetchVariant},
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -29,20 +24,22 @@ pub struct DefaultClub {
     pub staff_count: i64,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbClub> for DefaultClub {
-    async fn from_table(
+impl FetchVariant for DefaultClub {
+    type Relation = DbClub;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbClub,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
-        let contact_ids = DbClub::get_club_contacts(pool, table.id).await?;
+        let contact_ids =
+            DbClub::get_club_contacts(&mut *(pool.acquire().await?), relation.id).await?;
 
         Ok(Self {
-            id: table.id,
-            name: MultiLangString::new(table.name_th, table.name_en),
-            description: match (table.description_th, table.description_en) {
+            id: relation.id,
+            name: MultiLangString::new(relation.name_th, relation.name_en),
+            description: match (relation.description_th, relation.description_en) {
                 (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
                     th: Some(description_th),
                     en: Some(description_en),
@@ -57,19 +54,19 @@ impl FetchLevelVariant<DbClub> for DefaultClub {
                 }),
                 (None, None) => None,
             },
-            logo_url: table.logo_url,
+            logo_url: relation.logo_url,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
-            accent_color: table.accent_color,
-            background_color: table.background_color,
-            member_count: table.member_count,
-            staff_count: table.staff_count,
+            accent_color: relation.accent_color,
+            background_color: relation.background_color,
+            member_count: relation.member_count,
+            staff_count: relation.staff_count,
         })
     }
 }

@@ -1,11 +1,10 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     models::{
@@ -14,8 +13,8 @@ use mysk_lib::{
     prelude::*,
 };
 use reqwest::{
-    header::{HeaderValue, AUTHORIZATION},
     Client,
+    header::{AUTHORIZATION, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -45,10 +44,10 @@ pub async fn get_report_image(
     LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
 
-    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id).await?;
+    let class_report = DbOnlineTeachingReports::get_by_id(&mut conn, report_id).await?;
 
     // Check if the report is owned by the teacher
     if !matches!(user.role, UserRole::Management) && class_report.teacher_id != teacher_id {

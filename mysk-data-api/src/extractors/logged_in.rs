@@ -1,7 +1,10 @@
-use crate::{extractors::ExtractorFuture, AppState};
-use actix_web::{dev::Payload, http::header, web::Data, FromRequest, HttpRequest};
-use futures::{future, FutureExt as _};
-use jsonwebtoken::{decode, DecodingKey, Validation};
+use crate::AppState;
+use actix_web::{FromRequest, HttpRequest, dev::Payload, http::header, web::Data};
+use futures::{
+    FutureExt as _,
+    future::{self, LocalBoxFuture},
+};
+use jsonwebtoken::{DecodingKey, Validation, decode};
 use mysk_lib::{auth::oauth::TokenClaims, models::user::User, prelude::*};
 use serde::Serialize;
 use uuid::Uuid;
@@ -12,13 +15,13 @@ pub struct LoggedIn(pub User);
 
 impl FromRequest for LoggedIn {
     type Error = Error;
-    type Future = ExtractorFuture<Self>;
+    type Future = LocalBoxFuture<'static, Result<Self>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let app_state = req
             .app_data::<Data<AppState>>()
             .expect("Irrecoverable error, AppState is None");
-        let pool = app_state.db.clone();
+        let conn = app_state.db.acquire();
         let source = req.path().to_string();
         let Some(authorization_header) = req.headers().get(header::AUTHORIZATION) else {
             return future::err(Error::MissingToken(
@@ -75,6 +78,11 @@ impl FromRequest for LoggedIn {
                 .boxed();
         };
 
-        async move { Ok(LoggedIn(User::get_by_id(&pool, user_id).await?)) }.boxed()
+        async move {
+            Ok(LoggedIn(
+                User::get_by_id(&mut *(conn.await?), user_id).await?,
+            ))
+        }
+        .boxed()
     }
 }

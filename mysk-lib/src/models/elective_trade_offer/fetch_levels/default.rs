@@ -1,16 +1,12 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        elective_subject::ElectiveSubject,
-        elective_trade_offer::db::DbElectiveTradeOffer,
-        enums::SubmissionStatus,
-        student::Student,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        elective_subject::ElectiveSubject, elective_trade_offer::db::DbElectiveTradeOffer,
+        enums::SubmissionStatus, student::Student, traits::FetchVariant,
     },
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -25,49 +21,50 @@ pub struct DefaultElectiveTradeOffer {
     pub status: SubmissionStatus,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbElectiveTradeOffer> for DefaultElectiveTradeOffer {
-    async fn from_table(
+impl FetchVariant for DefaultElectiveTradeOffer {
+    type Relation = DbElectiveTradeOffer;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbElectiveTradeOffer,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         Ok(Self {
-            id: table.id,
+            id: relation.id,
             sender: Student::get_by_id(
                 pool,
-                table.sender_id,
+                relation.sender_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             receiver: Student::get_by_id(
                 pool,
-                table.receiver_id,
+                relation.receiver_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             sender_elective_subject: ElectiveSubject::get_by_id(
                 pool,
-                table.sender_elective_subject_session_id,
+                relation.sender_elective_subject_session_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             receiver_elective_subject: ElectiveSubject::get_by_id(
                 pool,
-                table.receiver_elective_subject_session_id,
+                relation.receiver_elective_subject_session_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
-            status: table.status,
+            status: relation.status,
         })
     }
 }

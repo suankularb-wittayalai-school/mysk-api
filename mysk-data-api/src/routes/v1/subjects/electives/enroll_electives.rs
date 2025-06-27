@@ -1,25 +1,23 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
-        elective_subject::{db::DbElectiveSubject, ElectiveSubject},
-        traits::{GetById as _, TopLevelGetById as _},
+        elective_subject::{ElectiveSubject, db::DbElectiveSubject},
+        traits::GetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use sqlx::query;
 use uuid::Uuid;
@@ -36,20 +34,20 @@ pub async fn enroll_elective_subject(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<(), QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
-    let authorizer = permissions::get_authorizer(
-        pool,
+    let authorizer = Authorizer::new(
+        &mut transaction,
         &user,
         format!("/subjects/electives/{elective_subject_session_id}/enroll"),
     )
     .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, student_id).await? {
+    if DbElectiveSubject::is_student_blacklisted(&mut transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
@@ -57,7 +55,7 @@ pub async fn enroll_elective_subject(
     }
 
     // Checks if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, student_id).await? {
+    if !DbElectiveSubject::is_enrollment_period(&mut transaction, student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective enrollment period has ended".to_string(),
             format!("/subjects/electives/{elective_subject_session_id}/enroll"),
@@ -65,7 +63,7 @@ pub async fn enroll_elective_subject(
     }
 
     // Checks if the student has already enrolled in an elective in the current semester
-    if DbElectiveSubject::is_currently_enrolled(&mut *transaction, student_id)
+    if DbElectiveSubject::is_currently_enrolled(&mut transaction, student_id)
         .await?
         .is_some()
     {
@@ -97,9 +95,10 @@ pub async fn enroll_elective_subject(
     .await?;
 
     // Checks if the elective the student is trying to enroll in is available
-    let elective = DbElectiveSubject::get_by_id(pool, elective_subject_session_id).await?;
+    let elective =
+        DbElectiveSubject::get_by_id(&mut transaction, elective_subject_session_id).await?;
 
-    if DbElectiveSubject::get_previously_enrolled_electives(&mut *transaction, student_id)
+    if DbElectiveSubject::get_previously_enrolled_electives(&mut transaction, student_id)
         .await?
         .contains(&elective_subject_session_id)
     {
@@ -127,7 +126,7 @@ pub async fn enroll_elective_subject(
 
     // Checks if the student is in a class available for the elective
     if !DbElectiveSubject::is_student_eligible(
-        &mut *transaction,
+        &mut transaction,
         elective_subject_session_id,
         student_id,
     )
@@ -157,7 +156,7 @@ pub async fn enroll_elective_subject(
         elective_subject_session_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(elective, None);

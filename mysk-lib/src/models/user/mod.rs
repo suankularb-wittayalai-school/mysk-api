@@ -4,7 +4,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::PgConnection;
 use uuid::Uuid;
 
 pub mod db;
@@ -21,9 +21,9 @@ pub struct User {
 }
 
 impl User {
-    pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Self> {
-        let user = DbUser::get_by_id(pool, id).await?;
-        let permissions = DbUser::get_user_permissions(pool, user.id).await?;
+    pub async fn get_by_id(conn: &mut PgConnection, id: Uuid) -> Result<Self> {
+        let user = DbUser::get_by_id(conn, id).await?;
+        let permissions = DbUser::get_user_permissions(conn, user.id).await?;
 
         Ok(Self {
             id: user.id,
@@ -36,9 +36,9 @@ impl User {
         })
     }
 
-    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Self> {
-        let id = DbUser::get_by_email(pool, email).await?;
+    pub async fn get_by_email(conn: &mut PgConnection, email: &str) -> Result<Self> {
+        let id = DbUser::get_by_email(conn, email).await?;
 
-        Self::get_by_id(pool, id).await
+        Self::get_by_id(conn, id).await
     }
 }

@@ -1,16 +1,16 @@
-use crate::{routes::auth::gsi_login::GoogleTokenResponse, AppState};
+use crate::{AppState, routes::auth::gsi_login::GoogleTokenResponse};
 use actix_web::{
-    cookie::{time::Duration as ActixWebDuration, Cookie},
+    HttpResponse, Responder,
+    cookie::{Cookie, time::Duration as ActixWebDuration},
     get,
     web::{Data, Query, Redirect},
-    HttpResponse, Responder,
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header};
 use mysk_lib::{
     auth::oauth::{
-        exchange_oauth_code, generate_oauth_init_url, verify_id_token, GoogleUserResult,
-        TokenClaims,
+        GoogleUserResult, TokenClaims, exchange_oauth_code, generate_oauth_init_url,
+        verify_id_token,
     },
     common::response::ResponseType,
     models::user::User,
@@ -82,7 +82,9 @@ pub async fn google_oauth_handler(
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-    let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
+    let user_id = User::get_by_email(&mut *(data.db.acquire().await?), &google_user.email)
+        .await?
+        .id;
 
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())
@@ -101,7 +103,7 @@ pub async fn google_oauth_handler(
         &EncodingKey::from_secret(data.env.token_secret.as_bytes()),
     )?;
 
-    let cookie = Cookie::build("token", token.clone())
+    let cookie = Cookie::build("token", &token)
         .secure(true)
         .http_only(true)
         .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
@@ -110,10 +112,10 @@ pub async fn google_oauth_handler(
 
     let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
         GoogleTokenResponse {
-            access_token: token,
+            access_token: &token,
             expires_in: data.env.token_max_age * 60,
-            token_type: "Bearer".to_string(),
-            scope: "openid email profile".to_string(),
+            token_type: "Bearer",
+            scope: "openid email profile",
             id_token,
         },
         None,

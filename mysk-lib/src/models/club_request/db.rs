@@ -3,19 +3,18 @@ use crate::{
     models::{
         club_request::request::{queryable::QueryableClubRequest, sortable::SortableClubRequest},
         enums::SubmissionStatus,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT id, created_at, club_id, year, membership_status, student_id FROM club_members",
     count_query = "SELECT COUNT(*) FROM club_members"
 )]
@@ -28,8 +27,10 @@ pub struct DbClubRequest {
     pub student_id: Uuid,
 }
 
-#[async_trait]
-impl QueryDb<QueryableClubRequest, SortableClubRequest> for DbClubRequest {
+impl QueryRelation for DbClubRequest {
+    type Q = QueryableClubRequest;
+    type S = SortableClubRequest;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableClubRequest>>,

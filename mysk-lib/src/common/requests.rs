@@ -1,14 +1,19 @@
-use crate::{common::PaginationConfig, prelude::*, query::Queryable};
-use actix_web::{dev::Payload, FromRequest, HttpRequest};
+use crate::{
+    common::PaginationConfig,
+    prelude::*,
+    query::{Queryable, QueryablePlaceholder},
+};
+use actix_web::{FromRequest, HttpRequest, dev::Payload};
 use futures::future;
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::{Deserialize, de::DeserializeOwned};
 use sqlx::{Postgres, QueryBuilder};
 use std::fmt::{Display, Formatter};
 use std::string::ToString;
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FetchLevel {
+    #[default]
     IdOnly,
     Compact,
     Default,
@@ -49,7 +54,7 @@ impl<S: Display> SortingConfig<S> {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SortablePlaceholder;
 
 impl Display for SortablePlaceholder {
@@ -58,14 +63,22 @@ impl Display for SortablePlaceholder {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct RequestType<T, Q: Queryable, S: Display> {
-    pub data: Option<T>,
+pub type EmptyRequestData = Option<()>;
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct RequestType<
+    T = EmptyRequestData,
+    Q: Queryable = QueryablePlaceholder,
+    S: Display = SortablePlaceholder,
+> {
+    pub data: T,
     pub pagination: Option<PaginationConfig>,
     pub filter: Option<FilterConfig<Q>>,
     pub sort: Option<SortingConfig<S>>,
-    pub fetch_level: Option<FetchLevel>,
-    pub descendant_fetch_level: Option<FetchLevel>,
+    #[serde(default)]
+    pub fetch_level: FetchLevel,
+    #[serde(default)]
+    pub descendant_fetch_level: FetchLevel,
 }
 
 // Implement from request for `RequestType` with any `T`, `Q`, and `S`

@@ -1,26 +1,19 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
-    models::{
-        club::db::DbClub,
-        contact::Contact,
-        enums::ContactType,
-        traits::{GetById as _, TopLevelGetById as _},
-    },
-    permissions,
+    models::{club::db::DbClub, contact::Contact, enums::ContactType, traits::GetById as _},
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -40,28 +33,23 @@ pub async fn create_club_contacts(
     LoggedInStudent(student_id): LoggedInStudent,
     club_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: club_contact,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<ClubContactRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<ClubContactRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
-    let Some(club_contact) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/clubs/{club_id}/contacts"),
-        ));
-    };
     let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/contacts")).await?;
+        Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/contacts")).await?;
 
-    let club = DbClub::get_by_id(pool, club_id).await?;
+    let club = DbClub::get_by_id(&mut conn, club_id).await?;
 
     // Check if the student is a staff of the club
-    let club_staffs = DbClub::get_club_staffs(pool, club_id).await?;
-    if !club_staffs.iter().any(|staff_id| *staff_id == student_id) {
+    let club_staffs = DbClub::get_club_staffs(&mut conn, club_id).await?;
+    if !club_staffs.contains(&student_id) {
         return Err(Error::InvalidPermission(
             "Insufficient permissions to perform this action".to_string(),
             format!("/clubs/{club_id}/contacts"),
@@ -71,10 +59,10 @@ pub async fn create_club_contacts(
     // Check if the contact is a duplicate
     let club_contacts = Contact::get_by_ids(
         pool,
-        DbClub::get_club_contacts(pool, club_id).await?,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
-        &*authorizer,
+        &DbClub::get_club_contacts(&mut conn, club_id).await?,
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
+        &authorizer,
     )
     .await?;
     if club_contacts.iter().any(|contact| match contact {
@@ -87,7 +75,7 @@ pub async fn create_club_contacts(
         ));
     }
 
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
 
     let new_contact_id = query!(
         "INSERT INTO contacts (type, value) VALUES ($1, $2) RETURNING id",
@@ -113,7 +101,7 @@ pub async fn create_club_contacts(
         new_contact_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(new_contact, None);

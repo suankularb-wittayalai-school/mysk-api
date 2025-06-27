@@ -2,7 +2,7 @@ use crate::{
     common::string::{FlexibleMultiLangString, MultiLangString},
     models::club::db::DbClub,
 };
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use mysk_lib_macros::impl_fetch_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -43,4 +43,4 @@ impl From<DbClub> for CompactClub {
     }
 }
 
-impl_fetch_level_variant_from!(club, Compact, CompactClub, DbClub);
+impl_fetch_variant_from!(club, Compact, CompactClub, DbClub);

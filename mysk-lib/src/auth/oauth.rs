@@ -1,8 +1,8 @@
 use crate::{common::config::Config, prelude::*};
-use rand::{rngs::OsRng, RngCore};
+use rand::{RngCore, rngs::OsRng};
 use reqwest::{
-    header::{HeaderValue, CONTENT_LENGTH},
     Client,
+    header::{CONTENT_LENGTH, HeaderValue},
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -83,13 +83,13 @@ struct GooglePublicKeys {
 }
 
 #[derive(Debug, Serialize)]
-struct GoogleOAuthInitQueryParams {
+struct GoogleOAuthInitQueryParams<'a> {
     client_id: String,
     redirect_uri: String,
     response_type: String,
     scope: String,
     access_type: String,
-    state: String,
+    state: &'a str,
     include_granted_scopes: bool,
     hd: String,
     prompt: Option<String>,
@@ -111,7 +111,7 @@ pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> Result<(S
         .join(" ")
         .to_string(),
         access_type: "online".to_string(),
-        state: state.clone(),
+        state: &state,
         include_granted_scopes: true,
         hd: "sk.ac.th".to_string(),
         #[cfg(debug_assertions)]

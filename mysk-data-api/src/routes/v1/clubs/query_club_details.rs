@@ -1,21 +1,19 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
-    models::{club::Club, traits::TopLevelGetById as _},
-    permissions,
+    models::club::Club,
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 
@@ -29,18 +27,19 @@ pub async fn query_club_details(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
-    let authorizer = permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}")).await?;
 
     let club = Club::get_by_id(
         pool,
         club_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club, None);

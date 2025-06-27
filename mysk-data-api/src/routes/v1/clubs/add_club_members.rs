@@ -1,25 +1,20 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    post,
+    HttpResponse, Responder, post,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
-    models::{
-        club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student,
-        traits::TopLevelGetById as _,
-    },
-    permissions,
+    models::{club::Club, club_request::ClubRequest, enums::SubmissionStatus, student::Student},
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -43,29 +38,22 @@ pub async fn add_club_members(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<AddClubMemberRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<AddClubMemberRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
-    let invitee_student_id = if let Some(request_data) = request_data {
-        request_data.id
-    } else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/clubs/{club_id}/add"),
-        ));
-    };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/{club_id}/add")).await?;
+    let invitee_student_id = request_data.id;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/add")).await?;
     let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists
     match Student::get_by_id(
         pool,
         invitee_student_id,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
-        &*authorizer,
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
+        &authorizer,
     )
     .await
     .map_err(|e| match e {
@@ -84,15 +72,15 @@ pub async fn add_club_members(
             }
         }
         _ => unreachable!("Student::get_by_id should always return a Default variant"),
-    };
+    }
 
     // Check if the club exists
     let Club::Detailed(club, _) = Club::get_by_id(
         pool,
         club_id,
-        Some(FetchLevel::Detailed),
-        Some(FetchLevel::IdOnly),
-        &*authorizer,
+        FetchLevel::Detailed,
+        FetchLevel::IdOnly,
+        &authorizer,
     )
     .await
     .map_err(|e| match e {
@@ -141,7 +129,7 @@ pub async fn add_club_members(
         SubmissionStatus::Declined as SubmissionStatus,
         invitee_student_id,
     )
-    .fetch_optional(pool)
+    .fetch_optional(&mut *conn)
     .await?
     {
         match club_request.membership_status {
@@ -149,7 +137,7 @@ pub async fn add_club_members(
                 return Err(Error::InvalidPermission(
                     "Invitee student is already a member of the club".to_string(),
                     format!("/clubs/{club_id}/add"),
-                ))
+                ));
             }
             SubmissionStatus::Pending => insert_new_member = false,
             SubmissionStatus::Declined => unreachable!(),
@@ -167,7 +155,7 @@ pub async fn add_club_members(
             SubmissionStatus::Approved as SubmissionStatus,
             invitee_student_id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .id
     } else {
@@ -181,7 +169,7 @@ pub async fn add_club_members(
             current_year,
             invitee_student_id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .id
     };
@@ -191,7 +179,7 @@ pub async fn add_club_members(
         club_member_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(club_member, None);

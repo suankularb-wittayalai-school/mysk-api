@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE classroom_advisors SET classroom_id = $1 WHERE teacher_id = $2 AND classroom_id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0d4f3a339892af67406b67ddcc4350bc17ce79c00673ecea65d3371cd914854a"
+}

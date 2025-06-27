@@ -1,21 +1,16 @@
-use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
-    AppState,
-};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{
-    get,
+    HttpResponse, Responder, get,
     web::{Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
-    models::{elective_subject::ElectiveSubject, traits::TopLevelGetById as _},
-    permissions,
+    models::elective_subject::ElectiveSubject,
+    permissions::{Authorizer, roles::AdminRole},
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use uuid::Uuid;
 
@@ -29,25 +24,26 @@ pub async fn query_elective_details(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
-    // TODO: fix
-    // let authorizer = permissions::get_authorizer(
+    // TODO: Fix later
+    // let mut conn = data.db.acquire().await?;
+    // let authorizer = Authorizer::new(
     //     pool,
     //     &user,
     //     format!("/subjects/electives/{elective_subject_session_id}"),
     // )
     // .await?;
-    let authorizer: Box<dyn permissions::Authorizer> = Box::new(permissions::roles::AdminRole);
+    let authorizer = Authorizer::Admin(AdminRole);
 
     let elective_subject = ElectiveSubject::get_by_id(
         pool,
         elective_subject_session_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(elective_subject, None);

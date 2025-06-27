@@ -1,5 +1,6 @@
 use crate::{
     helpers::date::get_current_academic_year,
+    models::club::db::DbClub,
     query::{QueryParam, Queryable, SqlWhereClause},
 };
 use serde::{Deserialize, Serialize};
@@ -16,6 +17,8 @@ pub struct QueryableClub {
 }
 
 impl Queryable for QueryableClub {
+    type Relation = DbClub;
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new_empty();
         wc.push_if_some(self.ids, |mut f, ids| {

@@ -5,25 +5,18 @@ use crate::models::{
             compact::CompactElectiveSubject, default::DefaultElectiveSubject,
             detailed::DetailedElectiveSubject, id_only::IdOnlyElectiveSubject,
         },
-        request::{queryable::QueryableElectiveSubject, sortable::SortableElectiveSubject},
     },
-    top_level_variant::TopLevelVariant,
-    traits::TopLevelQuery,
+    model::Model,
 };
 
 pub mod db;
 pub mod fetch_levels;
 pub mod request;
 
-pub type ElectiveSubject = TopLevelVariant<
+pub type ElectiveSubject = Model<
     DbElectiveSubject,
     IdOnlyElectiveSubject,
     CompactElectiveSubject,
     DefaultElectiveSubject,
     DetailedElectiveSubject,
 >;
-
-impl TopLevelQuery<DbElectiveSubject, QueryableElectiveSubject, SortableElectiveSubject>
-    for ElectiveSubject
-{
-}

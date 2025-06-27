@@ -1,21 +1,18 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
-    models::{
-        teacher::{
-            request::{queryable::QueryableTeacher, sortable::SortableTeacher},
-            Teacher,
-        },
-        traits::TopLevelQuery as _,
+    models::teacher::{
+        Teacher,
+        request::{queryable::QueryableTeacher, sortable::SortableTeacher},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -31,10 +28,11 @@ pub async fn query_teachers(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableTeacher, SortableTeacher>,
+    }: RequestType<EmptyRequestData, QueryableTeacher, SortableTeacher>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = permissions::get_authorizer(pool, &user, "/teachers".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/teachers".to_string()).await?;
 
     let (teacher, pagination) = Teacher::query(
         pool,
@@ -43,7 +41,7 @@ pub async fn query_teachers(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(teacher, Some(MetadataType::new(Some(pagination))));

@@ -1,16 +1,12 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::Classroom,
-        online_teaching_reports::db::DbOnlineTeachingReports,
-        subject::Subject,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById},
+        classroom::Classroom, online_teaching_reports::db::DbOnlineTeachingReports,
+        subject::Subject, teacher::Teacher, traits::FetchVariant,
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -32,25 +28,30 @@ pub struct DefaultOnlineTeachingReports {
     pub has_image: bool,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports {
-    async fn from_table(
+impl FetchVariant for DefaultOnlineTeachingReports {
+    type Relation = DbOnlineTeachingReports;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbOnlineTeachingReports,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         authorizer
-            .authorize_online_teaching_reports(&table, pool, ActionType::ReadDefault)
+            .authorize_online_teaching_reports(
+                &relation,
+                &mut *(pool.acquire().await?),
+                ActionType::ReadDefault,
+            )
             .await?;
 
-        let subject = if table.subject_id.is_some() {
+        let subject = if relation.subject_id.is_some() {
             Some(
                 Subject::get_by_id(
                     pool,
-                    table.subject_id.unwrap(),
+                    relation.subject_id.unwrap(),
                     descendant_fetch_level,
-                    Some(FetchLevel::IdOnly),
+                    FetchLevel::IdOnly,
                     authorizer,
                 )
                 .await?,
@@ -58,13 +59,13 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
         } else {
             None
         };
-        let classroom = if table.classroom_id.is_some() {
+        let classroom = if relation.classroom_id.is_some() {
             Some(
                 Classroom::get_by_id(
                     pool,
-                    table.classroom_id.unwrap(),
+                    relation.classroom_id.unwrap(),
                     descendant_fetch_level,
-                    Some(FetchLevel::IdOnly),
+                    FetchLevel::IdOnly,
                     authorizer,
                 )
                 .await?,
@@ -74,25 +75,25 @@ impl FetchLevelVariant<DbOnlineTeachingReports> for DefaultOnlineTeachingReports
         };
 
         Ok(Self {
-            id: table.id,
+            id: relation.id,
             subject,
             teacher: Teacher::get_by_id(
                 pool,
-                table.teacher_id,
+                relation.teacher_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             classroom,
-            date: table.date,
-            teaching_methods: table.teaching_methods,
-            teaching_topic: table.teaching_topic,
-            suggestions: table.suggestions,
-            absent_student_no: table.absent_student_no,
-            start_time: table.start_time,
-            duration: table.duration,
-            has_image: table.has_image,
+            date: relation.date,
+            teaching_methods: relation.teaching_methods,
+            teaching_topic: relation.teaching_topic,
+            suggestions: relation.suggestions,
+            absent_student_no: relation.absent_student_no,
+            start_time: relation.start_time,
+            duration: relation.duration,
+            has_image: relation.has_image,
         })
     }
 }

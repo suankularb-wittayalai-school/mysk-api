@@ -4,19 +4,18 @@ use crate::{
         online_teaching_reports::requests::{
             queryable::QueryableOnlineTeachingReports, sortable::SortableOnlineTeachingReports,
         },
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, Postgres, QueryBuilder};
+use sqlx::{Postgres, QueryBuilder, prelude::FromRow};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM online_teaching_reports",
     count_query = "SELECT COUNT(*) FROM online_teaching_reports"
 )]
@@ -37,10 +36,10 @@ pub struct DbOnlineTeachingReports {
     pub image_ext: Option<String>,
 }
 
-#[async_trait]
-impl QueryDb<QueryableOnlineTeachingReports, SortableOnlineTeachingReports>
-    for DbOnlineTeachingReports
-{
+impl QueryRelation for DbOnlineTeachingReports {
+    type Q = QueryableOnlineTeachingReports;
+    type S = SortableOnlineTeachingReports;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableOnlineTeachingReports>>,

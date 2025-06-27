@@ -1,16 +1,12 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        club::Club,
-        club_request::db::DbClubRequest,
-        enums::SubmissionStatus,
-        student::Student,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        club::Club, club_request::db::DbClubRequest, enums::SubmissionStatus, student::Student,
+        traits::FetchVariant,
     },
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -26,35 +22,36 @@ pub struct DefaultClubRequest {
     pub membership_status: SubmissionStatus,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbClubRequest> for DefaultClubRequest {
-    async fn from_table(
+impl FetchVariant for DefaultClubRequest {
+    type Relation = DbClubRequest;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbClubRequest,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
         Ok(Self {
-            id: table.id,
-            created_at: table.created_at,
+            id: relation.id,
+            created_at: relation.created_at,
             club: Club::get_by_id(
                 pool,
-                table.club_id,
+                relation.club_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             student: Student::get_by_id(
                 pool,
-                table.student_id,
+                relation.student_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
-            year: table.year,
-            membership_status: table.membership_status,
+            year: relation.year,
+            membership_status: relation.membership_status,
         })
     }
 }

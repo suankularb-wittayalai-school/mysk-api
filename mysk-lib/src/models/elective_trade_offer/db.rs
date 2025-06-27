@@ -5,19 +5,18 @@ use crate::{
             queryable::QueryableElectiveTradeOffer, sortable::SortableElectiveTradeOffer,
         },
         enums::SubmissionStatus,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM elective_subject_trade_offers",
     count_query = "SELECT COUNT(*) FROM elective_subject_trade_offers"
 )]
@@ -31,8 +30,10 @@ pub struct DbElectiveTradeOffer {
     pub receiver_elective_subject_session_id: Uuid,
 }
 
-#[async_trait]
-impl QueryDb<QueryableElectiveTradeOffer, SortableElectiveTradeOffer> for DbElectiveTradeOffer {
+impl QueryRelation for DbElectiveTradeOffer {
+    type Q = QueryableElectiveTradeOffer;
+    type S = SortableElectiveTradeOffer;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableElectiveTradeOffer>>,

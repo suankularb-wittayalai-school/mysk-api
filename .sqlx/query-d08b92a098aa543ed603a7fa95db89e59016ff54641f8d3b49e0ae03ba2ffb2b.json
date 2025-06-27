@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT classroom_id FROM classroom_advisors INNER JOIN classrooms ON classrooms.id = classroom_id WHERE teacher_id = $1 AND classrooms.year = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classroom_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d08b92a098aa543ed603a7fa95db89e59016ff54641f8d3b49e0ae03ba2ffb2b"
+}

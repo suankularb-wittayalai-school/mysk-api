@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE online_teaching_reports SET has_image = true, image_ext = $1 WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4782890289cb04cf78a83faccd06515459b0ae9bdfc5861f868ca64d7ec9acae"
+}

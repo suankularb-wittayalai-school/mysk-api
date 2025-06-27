@@ -1,19 +1,12 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::Classroom,
-        contact::Contact,
-        person::Person,
-        subject::Subject,
-        subject_group::SubjectGroup,
-        teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
-        user::User,
+        classroom::Classroom, contact::Contact, person::Person, subject::Subject,
+        subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchVariant, user::User,
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -30,49 +23,51 @@ pub struct DefaultTeacher {
     pub subjects_in_charge: Vec<Subject>,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
-    async fn from_table(
+impl FetchVariant for DefaultTeacher {
+    type Relation = DbTeacher;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbTeacher,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_teacher(&table, pool, ActionType::ReadDefault)
+            .authorize_teacher(&relation, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let contact_ids = DbTeacher::get_teacher_contacts(pool, table.id).await?;
-        let classroom_id = DbTeacher::get_teacher_advisor_at(pool, table.id, None).await?;
-        let subject_id = DbTeacher::get_subject_in_charge(pool, table.id, None).await?;
+        let contact_ids = DbTeacher::get_teacher_contacts(&mut conn, relation.id).await?;
+        let classroom_id = DbTeacher::get_teacher_advisor_at(&mut conn, relation.id, None).await?;
+        let subject_id = DbTeacher::get_subject_in_charge(&mut conn, relation.id, None).await?;
 
         let subject_group = SubjectGroup::get_by_id(
             pool,
-            table.subject_group_id,
+            relation.subject_group_id,
             descendant_fetch_level,
-            Some(FetchLevel::IdOnly),
+            FetchLevel::IdOnly,
             authorizer,
         )
         .await?;
 
-        let user = match table.user_id {
-            Some(user_id) => Some(User::get_by_id(pool, user_id).await?),
+        let user = match relation.user_id {
+            Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
             None => None,
         };
 
-        let person = match table.person_id {
-            Some(person_id) => Some(Person::get_by_id(pool, person_id).await?),
+        let person = match relation.person_id {
+            Some(person_id) => Some(Person::get_by_id(&mut conn, person_id).await?),
             None => None,
         };
 
         Ok(Self {
-            id: table.id,
-            teacher_id: table.teacher_id,
+            id: relation.id,
+            teacher_id: relation.teacher_id,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
@@ -82,7 +77,7 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
                         pool,
                         classroom_id,
                         descendant_fetch_level,
-                        Some(FetchLevel::IdOnly),
+                        FetchLevel::IdOnly,
                         authorizer,
                     )
                     .await?,
@@ -94,9 +89,9 @@ impl FetchLevelVariant<DbTeacher> for DefaultTeacher {
             subject_group,
             subjects_in_charge: Subject::get_by_ids(
                 pool,
-                subject_id,
+                &subject_id,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

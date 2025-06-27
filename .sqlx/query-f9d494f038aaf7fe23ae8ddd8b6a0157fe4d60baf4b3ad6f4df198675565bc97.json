@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT permissions.name FROM user_permissions JOIN permissions ON user_permissions.permission_id = permissions.id WHERE user_permissions.user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f9d494f038aaf7fe23ae8ddd8b6a0157fe4d60baf4b3ad6f4df198675565bc97"
+}

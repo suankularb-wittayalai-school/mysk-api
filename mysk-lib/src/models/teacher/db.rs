@@ -3,25 +3,24 @@ use crate::{
     helpers::date::get_current_academic_year,
     models::{
         teacher::request::{queryable::QueryableTeacher, sortable::SortableTeacher},
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{query, FromRow, PgPool, Postgres, QueryBuilder};
+use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "
     SELECT id, created_at, teacher_id, subject_group_id, user_id, person_id FROM teachers",
     count_query = "SELECT COUNT(distinct id) FROM teachers"
 )]
-#[get_by_id(table = "teachers")]
+#[from_query(relation = "teachers")]
 pub struct DbTeacher {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -32,15 +31,21 @@ pub struct DbTeacher {
 }
 
 impl DbTeacher {
-    pub async fn get_teacher_from_user_id(pool: &PgPool, user_id: Uuid) -> Result<Option<Uuid>> {
+    pub async fn get_teacher_from_user_id(
+        conn: &mut PgConnection,
+        user_id: Uuid,
+    ) -> Result<Option<Uuid>> {
         let res = query!("SELECT id FROM teachers WHERE user_id = $1", user_id)
-            .fetch_optional(pool)
+            .fetch_optional(conn)
             .await?;
 
         Ok(res.map(|r| r.id))
     }
 
-    pub async fn get_teacher_contacts(pool: &PgPool, teacher_id: Uuid) -> Result<Vec<Uuid>> {
+    pub async fn get_teacher_contacts(
+        conn: &mut PgConnection,
+        teacher_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT contacts.id FROM contacts \
@@ -51,14 +56,14 @@ impl DbTeacher {
             ",
             teacher_id,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.id).collect())
     }
 
     pub async fn get_teacher_advisor_at(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         teacher_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Option<Uuid>> {
@@ -74,27 +79,30 @@ impl DbTeacher {
                 None => get_current_academic_year(None),
             },
         )
-        .fetch_optional(pool)
+        .fetch_optional(conn)
         .await?;
 
         Ok(res.map(|r| r.classroom_id))
     }
 
-    pub async fn get_teacher_subject_group(pool: &PgPool, teacher_id: Uuid) -> Result<Option<i64>> {
+    pub async fn get_teacher_subject_group(
+        conn: &mut PgConnection,
+        teacher_id: Uuid,
+    ) -> Result<Option<i64>> {
         let res = query!(
             "
             SELECT subject_group_id FROM teachers WHERE id = $1
             ",
             teacher_id
         )
-        .fetch_optional(pool)
+        .fetch_optional(conn)
         .await?;
 
         Ok(res.map(|r| r.subject_group_id))
     }
 
     pub async fn get_subject_in_charge(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         teacher_id: Uuid,
         academic_year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
@@ -106,7 +114,7 @@ impl DbTeacher {
                 None => get_current_academic_year(None),
             },
         )
-        .fetch_all(pool)
+        .fetch_all(&mut *conn)
         .await?;
         let as_co_teacher = query!(
             "SELECT subject_id FROM subject_co_teachers WHERE teacher_id = $1 AND year = $2",
@@ -116,7 +124,7 @@ impl DbTeacher {
                 None => get_current_academic_year(None),
             },
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         let mut result = Vec::with_capacity(as_teacher.len() + as_co_teacher.len());
@@ -131,11 +139,13 @@ impl DbTeacher {
     }
 }
 
-#[async_trait]
-impl QueryDb<QueryableTeacher, SortableTeacher> for DbTeacher {
+impl QueryRelation for DbTeacher {
+    type Q = QueryableTeacher;
+    type S = SortableTeacher;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
-        filter: Option<FilterConfig<QueryableTeacher>>,
+        filter: Option<FilterConfig<Self::Q>>,
     ) {
         if let Some(filter) = filter {
             if let Some(data) = filter.data {

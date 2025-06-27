@@ -4,32 +4,31 @@ use crate::{
         classroom::db::DbClassroom, contact::db::DbContact, student::db::DbStudent,
         subject::db::DbSubject, teacher::db::DbTeacher,
     },
-    permissions::{authorize_default_read_only, authorize_read_only, deny, ActionType, Authorizer},
+    permissions::{
+        ActionType, Authorizable, authorize_default_read_only, authorize_read_only, deny,
+    },
     prelude::*,
 };
-use async_trait::async_trait;
-use sqlx::{query, PgPool};
-use std::sync::Arc;
+use sqlx::{PgConnection, query};
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TeacherRole {
     id: Uuid,
     user_id: Uuid,
     source: String,
 }
 
-#[async_trait]
-impl Authorizer for TeacherRole {
+impl Authorizable for TeacherRole {
     async fn authorize_classroom(
         &self,
         classroom: &DbClassroom,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         // Teachers can update the classroom if they're an advisor
         if matches!(action, ActionType::Update) {
-            let advisor_at_classroom_id = DbTeacher::get_teacher_advisor_at(pool, self.id, None)
+            let advisor_at_classroom_id = DbTeacher::get_teacher_advisor_at(conn, self.id, None)
                 .await?
                 .ok_or(deny(&self.source).unwrap_err())?;
 
@@ -46,7 +45,7 @@ impl Authorizer for TeacherRole {
     async fn authorize_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         // Due to certain constraints and to limit code complexity, this function will not perform
@@ -75,17 +74,17 @@ impl Authorizer for TeacherRole {
             ",
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .role
         .unwrap();
 
         match contact_belongs_to.as_str() {
             "classroom" => {
-                self.authorize_classroom_contact(contact, pool, action)
+                self.authorize_classroom_contact(contact, conn, action)
                     .await
             }
-            "person" => self.authorize_person_contact(contact, pool, action).await,
+            "person" => self.authorize_person_contact(contact, conn, action).await,
             // These are "ghost" contacts in the database, a data mishandling issue so they're only
             // allowed to be read from but not written to
             "club" | "none" => authorize_read_only(action, &self.source),
@@ -93,14 +92,19 @@ impl Authorizer for TeacherRole {
         }
     }
 
-    async fn authorize_student(&self, _: &DbStudent, _: &PgPool, action: ActionType) -> Result<()> {
+    async fn authorize_student(
+        &self,
+        _: &DbStudent,
+        _: &mut PgConnection,
+        action: ActionType,
+    ) -> Result<()> {
         authorize_default_read_only(action, &self.source)
     }
 
     async fn authorize_subject(
         &self,
         subject: &DbSubject,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         if matches!(action, ActionType::Update) {
@@ -117,7 +121,7 @@ impl Authorizer for TeacherRole {
                 subject.id,
                 get_current_academic_year(None),
             )
-            .fetch_one(pool)
+            .fetch_one(conn)
             .await?
             .exists
             .unwrap_or(false);
@@ -135,7 +139,7 @@ impl Authorizer for TeacherRole {
     async fn authorize_teacher(
         &self,
         teacher: &DbTeacher,
-        _: &PgPool,
+        _: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         // Teachers can get their own private details and update themselves
@@ -151,10 +155,6 @@ impl Authorizer for TeacherRole {
 
         authorize_read_only(action, &self.source)
     }
-
-    fn clone_to_arc(&self) -> Arc<dyn Authorizer> {
-        Arc::new(self.clone())
-    }
 }
 
 impl TeacherRole {
@@ -169,11 +169,11 @@ impl TeacherRole {
     async fn authorize_classroom_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         if matches!(action, ActionType::Update | ActionType::Delete) {
-            let advisor_at_classroom_id = DbTeacher::get_teacher_advisor_at(pool, self.id, None)
+            let advisor_at_classroom_id = DbTeacher::get_teacher_advisor_at(conn, self.id, None)
                 .await?
                 .ok_or(deny(&self.source).unwrap_err())?;
 
@@ -181,7 +181,7 @@ impl TeacherRole {
                 "SELECT classroom_id FROM classroom_contacts WHERE contact_id = $1",
                 contact.id,
             )
-            .fetch_one(pool)
+            .fetch_one(conn)
             .await?
             .classroom_id;
 
@@ -200,7 +200,7 @@ impl TeacherRole {
     async fn authorize_person_contact(
         &self,
         contact: &DbContact,
-        pool: &PgPool,
+        conn: &mut PgConnection,
         action: ActionType,
     ) -> Result<()> {
         let owned = query!(
@@ -215,7 +215,7 @@ impl TeacherRole {
             self.id,
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(&mut *conn)
         .await?
         .exists
         .unwrap_or(false);
@@ -234,7 +234,7 @@ impl TeacherRole {
             ",
             contact.id,
         )
-        .fetch_one(pool)
+        .fetch_one(conn)
         .await?
         .is_ghost_contact
         .unwrap_or(true);

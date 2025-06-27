@@ -3,19 +3,18 @@ use crate::{
     models::{
         contact::request::{queryable::QueryableContact, sortable::SortableContact},
         enums::ContactType,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, Postgres, QueryBuilder};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT id, created_at, name_th, name_en, type, value FROM contacts",
     count_query = "SELECT COUNT(*) FROM contacts"
 )]
@@ -28,8 +27,10 @@ pub struct DbContact {
     pub value: String,
 }
 
-#[async_trait]
-impl QueryDb<QueryableContact, SortableContact> for DbContact {
+impl QueryRelation for DbContact {
+    type Q = QueryableContact;
+    type S = SortableContact;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableContact>>,

@@ -7,21 +7,20 @@ use crate::{
         },
         enums::SubjectType,
         student::db::DbStudent,
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::Queryable as _,
     query::{QueryParam, SqlWhereClause},
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
-use sqlx::{query, Acquire, FromRow, Postgres, QueryBuilder};
+use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow, BaseQuery, GetById)]
-#[base_query(
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT * FROM elective_subject_sessions_with_detail_view",
     count_query = "SELECT COUNT(*) FROM elective_subject_sessions_with_detail_view"
 )]
@@ -51,15 +50,11 @@ pub struct DbElectiveSubject {
 
 impl DbElectiveSubject {
     /// Checks if the student is in a class available for the elective.
-    pub async fn is_student_eligible<'a, A>(
-        conn: A,
+    pub async fn is_student_eligible(
+        conn: &mut PgConnection,
         session_id: Uuid,
         student_id: Uuid,
-    ) -> Result<bool>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
-        let mut conn = conn.acquire().await?;
+    ) -> Result<bool> {
         let student_classroom_id =
             match DbStudent::get_student_classroom(&mut *conn, student_id, None).await? {
                 Some(classroom) => classroom.id,
@@ -67,7 +62,7 @@ impl DbElectiveSubject {
                     return Err(Error::InvalidPermission(
                         "Student has no classroom".to_string(),
                         "DbElectiveSubject::is_student_eligible".to_string(),
-                    ))
+                    ));
                 }
             };
 
@@ -81,17 +76,14 @@ impl DbElectiveSubject {
             session_id,
             student_classroom_id,
         )
-        .fetch_one(&mut *conn)
+        .fetch_one(conn)
         .await?;
 
         Ok(is_eligible.exists.unwrap_or(false))
     }
 
     /// Checks if the student is "blacklisted" from enrolling in an elective.
-    pub async fn is_student_blacklisted<'a, A>(conn: A, student_id: Uuid) -> Result<bool>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn is_student_blacklisted(conn: &mut PgConnection, student_id: Uuid) -> Result<bool> {
         let res = query!(
             "\
             SELECT EXISTS (\
@@ -100,7 +92,7 @@ impl DbElectiveSubject {
             ",
             student_id,
         )
-        .fetch_one(&mut *(conn.acquire().await?))
+        .fetch_one(conn)
         .await?;
 
         Ok(res.exists.unwrap_or(false))
@@ -108,10 +100,10 @@ impl DbElectiveSubject {
 
     /// Checks if the student has already enrolled in an elective in the current semester.
     /// Returns the elective subject session ID if an enrollment exists.
-    pub async fn is_currently_enrolled<'a, A>(conn: A, student_id: Uuid) -> Result<Option<Uuid>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn is_currently_enrolled(
+        conn: &mut PgConnection,
+        student_id: Uuid,
+    ) -> Result<Option<Uuid>> {
         let res = query!(
             "\
             SELECT elective_subject_session_id \
@@ -123,19 +115,16 @@ impl DbElectiveSubject {
             get_current_academic_year(None),
             get_current_semester(None),
         )
-        .fetch_optional(&mut *(conn.acquire().await?))
+        .fetch_optional(conn)
         .await?;
 
         Ok(res.map(|r| r.elective_subject_session_id))
     }
 
-    pub async fn get_previously_enrolled_electives<'a, A>(
-        conn: A,
+    pub async fn get_previously_enrolled_electives(
+        conn: &mut PgConnection,
         student_id: Uuid,
-    ) -> Result<Vec<Uuid>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    ) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT ess.id FROM elective_subject_sessions AS ess \
@@ -153,16 +142,16 @@ impl DbElectiveSubject {
             get_current_academic_year(None),
             get_current_semester(None),
         )
-        .fetch_all(&mut *(conn.acquire().await?))
+        .fetch_all(conn)
         .await?;
 
         Ok(res.iter().map(|r| r.id).collect())
     }
 
-    pub async fn get_subject_applicable_classrooms<'a, A>(&self, conn: A) -> Result<Vec<Uuid>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn get_subject_applicable_classrooms(
+        &self,
+        conn: &mut PgConnection,
+    ) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT classroom_id FROM elective_subject_session_classrooms \
@@ -170,16 +159,13 @@ impl DbElectiveSubject {
             ",
             self.id,
         )
-        .fetch_all(&mut *(conn.acquire().await?))
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.classroom_id).collect())
     }
 
-    pub async fn get_enrolled_students<'a, A>(&self, conn: A) -> Result<Vec<Uuid>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn get_enrolled_students(&self, conn: &mut PgConnection) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT student_id FROM elective_subject_session_enrolled_students \
@@ -187,16 +173,13 @@ impl DbElectiveSubject {
             ",
             self.id,
         )
-        .fetch_all(&mut *(conn.acquire().await?))
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.student_id).collect())
     }
 
-    pub async fn get_randomized_students<'a, A>(&self, conn: A) -> Result<Vec<Uuid>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn get_randomized_students(&self, conn: &mut PgConnection) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT student_id FROM elective_subject_session_enrolled_students \
@@ -204,16 +187,13 @@ impl DbElectiveSubject {
             ",
             self.id,
         )
-        .fetch_all(&mut *(conn.acquire().await?))
+        .fetch_all(conn)
         .await?;
 
         Ok(res.iter().map(|r| r.student_id).collect())
     }
 
-    pub async fn is_enrollment_period<'a, A>(conn: A, student_id: Uuid) -> Result<bool>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
+    pub async fn is_enrollment_period(conn: &mut PgConnection, student_id: Uuid) -> Result<bool> {
         let res = query!(
             "\
             SELECT EXISTS (\
@@ -230,15 +210,17 @@ impl DbElectiveSubject {
             student_id,
             get_current_academic_year(None),
         )
-        .fetch_one(&mut *(conn.acquire().await?))
+        .fetch_one(conn)
         .await?;
 
         Ok(res.exists.unwrap_or(false))
     }
 }
 
-#[async_trait]
-impl QueryDb<QueryableElectiveSubject, SortableElectiveSubject> for DbElectiveSubject {
+impl QueryRelation for DbElectiveSubject {
+    type Q = QueryableElectiveSubject;
+    type S = SortableElectiveSubject;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableElectiveSubject>>,

@@ -1,28 +1,27 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
         string::FlexibleMultiLangString,
     },
     helpers::date::get_current_academic_year,
     models::{
         enums::ShirtSize,
-        teacher::{db::DbTeacher, Teacher},
-        traits::{GetById as _, TopLevelGetById as _},
+        teacher::{Teacher, db::DbTeacher},
+        traits::GetById as _,
     },
-    permissions::{self, ActionType},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
-    query::{QueryParam, QueryablePlaceholder, SqlSetClause},
+    query::{QueryParam, SqlSetClause},
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -60,30 +59,24 @@ pub async fn modify_teacher(
     LoggedIn(user): LoggedIn,
     teacher_id: Path<Uuid>,
     Json(RequestType {
-        data: request_data,
+        data: update_data,
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdateTeacherRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdateTeacherRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let teacher_id = teacher_id.into_inner();
-    let Some(update_data) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
-            format!("/teachers/{teacher_id}"),
-        ));
-    };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("teachers/{teacher_id}")).await?;
+    let authorizer = Authorizer::new(&mut conn, &user, format!("teachers/{teacher_id}")).await?;
 
-    let db_teacher = DbTeacher::get_by_id(pool, teacher_id).await?;
+    let db_teacher = DbTeacher::get_by_id(&mut conn, teacher_id).await?;
     let person_id = db_teacher
         .person_id
         .expect("Every teacher should have a person_id");
 
     authorizer
-        .authorize_teacher(&db_teacher, pool, ActionType::Update)
+        .authorize_teacher(&db_teacher, &mut conn, ActionType::Update)
         .await?;
 
     // NOTE: Teacher-related updates
@@ -97,7 +90,7 @@ pub async fn modify_teacher(
                 "SELECT id FROM subject_groups WHERE id = $1",
                 subject_group_id
             )
-            .fetch_one(pool)
+            .fetch_one(&mut *conn)
             .await?;
 
             let current_subject_group = db_teacher.subject_group_id;
@@ -111,7 +104,7 @@ pub async fn modify_teacher(
                 .execute(&mut *teacher_transaction)
                 .await?;
             }
-        };
+        }
 
         // Update/insert advisory classroom
         if let Some(class_advisor_at) = tu.advisor_at {
@@ -120,12 +113,15 @@ pub async fn modify_teacher(
                 class_advisor_at,
                 current_academic_year,
             )
-            .fetch_one(pool)
+            .fetch_one(&mut *conn)
             .await?;
 
-            let existing_advisor_at =
-                DbTeacher::get_teacher_advisor_at(pool, teacher_id, Some(current_academic_year))
-                    .await?;
+            let existing_advisor_at = DbTeacher::get_teacher_advisor_at(
+                &mut conn,
+                teacher_id,
+                Some(current_academic_year),
+            )
+            .await?;
 
             if existing_advisor_at != Some(new_classroom.id) {
                 match existing_advisor_at {
@@ -186,7 +182,7 @@ pub async fn modify_teacher(
             )
             .execute(&mut *person_transaction)
             .await?;
-        };
+        }
 
         let mut qb = SqlSetClause::new();
         qb.push_multilang_update_field("prefix", pu.prefix)
@@ -206,14 +202,14 @@ pub async fn modify_teacher(
             .await?;
 
         person_transaction.commit().await?;
-    };
+    }
 
     let teacher = Teacher::get_by_id(
         pool,
         teacher_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(teacher, None);

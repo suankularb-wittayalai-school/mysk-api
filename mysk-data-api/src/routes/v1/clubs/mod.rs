@@ -1,4 +1,4 @@
-use actix_web::web::{scope, ServiceConfig};
+use actix_web::web::{ServiceConfig, scope};
 
 pub mod add_club_members;
 pub mod create_club_contacts;

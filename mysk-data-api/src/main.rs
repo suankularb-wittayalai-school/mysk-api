@@ -3,18 +3,19 @@
 
 use actix_cors::Cors;
 use actix_web::{
+    App, HttpServer,
     http::header,
     middleware::{Logger, NormalizePath},
     web::{Data, JsonConfig},
-    App, HttpServer,
 };
+use anyhow::{Context as _, Result as AnyhowResult};
 use dotenv::dotenv;
-use log::{debug, error, info, warn};
 use mysk_lib::{common::config::Config, prelude::*};
 use parking_lot::Mutex;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
-use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::{collections::HashSet, env, io, process};
+use sqlx::{PgPool, postgres::PgPoolOptions};
+use std::{collections::HashSet, env};
+use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 mod extractors;
 mod routes;
@@ -27,21 +28,22 @@ pub struct AppState {
 }
 
 #[actix_web::main]
-async fn main() -> io::Result<()> {
-    dotenv().ok();
-    // TODO: Change to tracing instead, the `unsafe` blocks are temporary due to changes in Rust 2024 edition's API
-    if env::var_os("RUST_LOG").is_none() {
-        #[cfg(debug_assertions)]
-        unsafe { env::set_var("RUST_LOG", "mysk_data_api=debug,actix_web=debug,sqlx=debug"); }
-        #[cfg(not(debug_assertions))]
-        unsafe { env::set_var("RUST_LOG", "mysk_data_api=info,actix_web=info"); }
-    }
-    env_logger::init();
-    let config = Config::init();
-    let host = config.host;
-    let port = config.port;
+async fn main() -> AnyhowResult<()> {
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::builder().parse(
+            #[cfg(debug_assertions)]
+            "mysk_data_api=debug,mysk_lib=debug,actix_web=info,sqlx=trace",
+            #[cfg(not(debug_assertions))]
+            "mysk_data_api=info,mysk_lib=info,actix_web=warn,sqlx=warn",
+        )?)
+        .with(tracing_subscriber::fmt::layer())
+        .try_init()?;
 
-    info!(
+    dotenv().ok();
+    let config = Config::try_from_env()?;
+    let Config { host, port, .. } = config;
+
+    tracing::info!(
         "MySK API v{} on {} [{} {}]",
         env!("CARGO_PKG_VERSION"),
         env!("TARGET_TRIPLE"),
@@ -49,7 +51,7 @@ async fn main() -> io::Result<()> {
         env!("COMMIT_DATE"),
     );
     #[cfg(debug_assertions)]
-    warn!("Running on DEBUG, not optimised for production");
+    tracing::warn!("Running on DEBUG, not optimised for production");
 
     let pool = PgPoolOptions::new()
         .max_connections(15)
@@ -57,25 +59,21 @@ async fn main() -> io::Result<()> {
             config
                 .database_url
                 .parse::<PgConnectOptions>()
-                .unwrap()
+                .context("Failed to parse DATABASE_URL")?
                 .ssl_mode(PgSslMode::Require),
         )
         .await
-        .map_err(|err| {
-            error!("Failed to connect to the database: {err:?}");
-            process::exit(1);
-        })
-        .unwrap();
+        .context("Failed to connect to the database")?;
 
-    info!("Established connection to the database successfully");
-    info!("Running on http://{host}:{port}");
-    debug!("You can use this link to login with Google via OAuth:");
-    debug!("{}/auth/oauth/init", config.root_uri);
+    tracing::info!("Established connection to the database successfully");
+    tracing::info!("Running on http://{host}:{port}");
+    tracing::debug!("You can use this link to login with Google via OAuth:");
+    tracing::debug!("{}/auth/oauth/init", config.root_uri);
 
     let app_state = Data::new(AppState {
         db: pool.clone(),
         oauth_states: Mutex::new(HashSet::new()),
-        env: config.clone(),
+        env: config,
     });
 
     HttpServer::new(move || {
@@ -103,9 +101,9 @@ async fn main() -> io::Result<()> {
             .wrap(cors_middleware)
             .configure(routes::config)
     })
-    .bind((host, port))
-    .map_err(|_| panic!("Unable to bind to address {host}:{port}! Perhaps it is in use?"))
-    .unwrap()
+    .bind((host, port))?
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }

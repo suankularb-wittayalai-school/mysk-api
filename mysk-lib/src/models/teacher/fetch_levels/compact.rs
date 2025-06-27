@@ -1,14 +1,9 @@
 use crate::{
     common::requests::FetchLevel,
-    models::{
-        subject_group::SubjectGroup,
-        teacher::db::DbTeacher,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
-    },
+    models::{subject_group::SubjectGroup, teacher::db::DbTeacher, traits::FetchVariant},
     permissions::Authorizer,
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -20,20 +15,27 @@ pub struct CompactTeacher {
     pub subject_group: SubjectGroup,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbTeacher> for CompactTeacher {
-    async fn from_table(
+impl FetchVariant for CompactTeacher {
+    type Relation = DbTeacher;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbTeacher,
-        _: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        _: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
-        let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            relation.subject_group_id,
+            FetchLevel::IdOnly,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
         Ok(Self {
-            id: table.id,
-            teacher_id: table.teacher_id,
+            id: relation.id,
+            teacher_id: relation.teacher_id,
             subject_group,
         })
     }

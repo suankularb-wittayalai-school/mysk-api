@@ -1,14 +1,14 @@
 use crate::AppState;
 use actix_web::{
-    cookie::{time::Duration as ActixWebDuration, Cookie},
+    HttpResponse, Responder,
+    cookie::{Cookie, time::Duration as ActixWebDuration},
     post,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header};
 use mysk_lib::{
-    auth::oauth::{verify_id_token, GoogleUserResult, TokenClaims},
+    auth::oauth::{GoogleUserResult, TokenClaims, verify_id_token},
     common::response::ResponseType,
     error::Error,
     models::user::User,
@@ -21,11 +21,11 @@ pub struct OAuthRequest {
     pub credential: String,
 }
 #[derive(Debug, Serialize)]
-pub struct GoogleTokenResponse {
-    pub access_token: String,
+pub struct GoogleTokenResponse<'a> {
+    pub access_token: &'a str,
     pub expires_in: u64,
-    pub token_type: String,
-    pub scope: String,
+    pub token_type: &'static str,
+    pub scope: &'static str,
     pub id_token: String,
 }
 
@@ -56,7 +56,9 @@ async fn gsi_handler(
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-    let user_id = User::get_by_email(&data.db, &google_user.email).await?.id;
+    let user_id = User::get_by_email(&mut *(data.db.acquire().await?), &google_user.email)
+        .await?
+        .id;
 
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())
@@ -75,7 +77,7 @@ async fn gsi_handler(
         &EncodingKey::from_secret(data.env.token_secret.as_bytes()),
     )?;
 
-    let cookie = Cookie::build("token", token.clone())
+    let cookie = Cookie::build("token", &token)
         .secure(true)
         .http_only(true)
         .max_age(ActixWebDuration::minutes(data.env.token_max_age as i64))
@@ -84,10 +86,10 @@ async fn gsi_handler(
 
     let response: ResponseType<GoogleTokenResponse> = ResponseType::new(
         GoogleTokenResponse {
-            access_token: token,
+            access_token: &token,
             expires_in: data.env.token_max_age * 60,
-            token_type: "Bearer".to_string(),
-            scope: "email profile".to_string(),
+            token_type: "Bearer",
+            scope: "email profile",
             id_token,
         },
         None,

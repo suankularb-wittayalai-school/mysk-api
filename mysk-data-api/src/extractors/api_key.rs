@@ -1,6 +1,9 @@
-use crate::{extractors::ExtractorFuture, AppState};
-use actix_web::{dev::Payload, web::Data, FromRequest, HttpRequest};
-use futures::{future, FutureExt as _};
+use crate::AppState;
+use actix_web::{FromRequest, HttpRequest, dev::Payload, web::Data};
+use futures::{
+    FutureExt as _,
+    future::{self, LocalBoxFuture},
+};
 use mysk_lib::{
     auth::key::{ApiKey, PrefixedApiKey},
     prelude::*,
@@ -15,7 +18,7 @@ pub struct ApiKeyHeader(ApiKey);
 
 impl FromRequest for ApiKeyHeader {
     type Error = Error;
-    type Future = ExtractorFuture<Self>;
+    type Future = LocalBoxFuture<'static, Result<Self>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let app_state = req
@@ -41,7 +44,7 @@ impl FromRequest for ApiKeyHeader {
             hasher.update(token.get_long_token().as_bytes());
             let hash = bs58::encode(hasher.finalize()).into_string();
 
-            let api_key = query_as!(
+            let Some(api_key) = query_as!(
                 ApiKey,
                 "\
                 SELECT * FROM user_api_keys \
@@ -51,8 +54,11 @@ impl FromRequest for ApiKeyHeader {
                 hash,
                 token.get_short_token(),
             )
-            .fetch_one(&pool)
-            .await?;
+            .fetch_optional(&pool)
+            .await?
+            else {
+                return Err(Error::MissingApiKey("Missing API Key".to_string(), source));
+            };
 
             Ok(ApiKeyHeader(api_key))
         }

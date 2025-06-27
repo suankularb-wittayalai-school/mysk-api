@@ -4,24 +4,23 @@ use crate::{
     models::{
         classroom::ClassroomWClassNo,
         student::request::{queryable::QueryableStudent, sortable::SortableStudent},
-        traits::QueryDb,
+        traits::QueryRelation,
     },
     prelude::*,
     query::Queryable as _,
 };
-use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{query, Acquire, FromRow, PgPool, Postgres, QueryBuilder};
+use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById)]
-#[base_query(
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
+#[from_query(
     query = "SELECT id, created_at, student_id, user_id, person_id FROM students",
     count_query = "SELECT COUNT(DISTINCT id) FROM students"
 )]
-#[get_by_id(table = "students")]
+#[from_query(relation = "students")]
 pub struct DbStudent {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -31,15 +30,21 @@ pub struct DbStudent {
 }
 
 impl DbStudent {
-    pub async fn get_student_from_user_id(pool: &PgPool, user_id: Uuid) -> Result<Option<Uuid>> {
+    pub async fn get_student_from_user_id(
+        conn: &mut PgConnection,
+        user_id: Uuid,
+    ) -> Result<Option<Uuid>> {
         let res = query!("SELECT id FROM students WHERE user_id = $1", user_id)
-            .fetch_optional(pool)
+            .fetch_optional(conn)
             .await?;
 
         Ok(res.map(|r| r.id))
     }
 
-    pub async fn get_student_contacts(pool: &PgPool, student_id: Uuid) -> Result<Vec<Uuid>> {
+    pub async fn get_student_contacts(
+        conn: &mut PgConnection,
+        student_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT contacts.id FROM contacts \
@@ -50,21 +55,17 @@ impl DbStudent {
             ",
             student_id,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|r| r.id).collect())
     }
 
-    pub async fn get_student_classroom<'a, A>(
-        conn: A,
+    pub async fn get_student_classroom(
+        conn: &mut PgConnection,
         student_id: Uuid,
         academic_year: Option<i64>,
-    ) -> Result<Option<ClassroomWClassNo>>
-    where
-        A: Acquire<'a, Database = Postgres>,
-    {
-        let mut conn = conn.acquire().await?;
+    ) -> Result<Option<ClassroomWClassNo>> {
         let res = query!(
             "\
             SELECT classroom_id, class_no FROM classroom_students \
@@ -77,7 +78,7 @@ impl DbStudent {
                 None => get_current_academic_year(None),
             },
         )
-        .fetch_optional(&mut *conn)
+        .fetch_optional(conn)
         .await?;
 
         Ok(res.map(|res| ClassroomWClassNo {
@@ -87,8 +88,10 @@ impl DbStudent {
     }
 }
 
-#[async_trait]
-impl QueryDb<QueryableStudent, SortableStudent> for DbStudent {
+impl QueryRelation for DbStudent {
+    type Q = QueryableStudent;
+    type S = SortableStudent;
+
     fn build_shared_query(
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableStudent>>,

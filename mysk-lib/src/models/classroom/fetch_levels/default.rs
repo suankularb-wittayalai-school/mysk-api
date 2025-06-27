@@ -1,16 +1,12 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::db::DbClassroom,
-        contact::Contact,
-        student::Student,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        classroom::db::DbClassroom, contact::Contact, student::Student, teacher::Teacher,
+        traits::FetchVariant,
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -26,48 +22,51 @@ pub struct DefaultClassroom {
     pub year: i64,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbClassroom> for DefaultClassroom {
-    async fn from_table(
+impl FetchVariant for DefaultClassroom {
+    type Relation = DbClassroom;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbClassroom,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_classroom(&table, pool, ActionType::ReadDefault)
+            .authorize_classroom(&relation, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let student_ids = DbClassroom::get_classroom_students(pool, table.id).await?;
-        let contact_ids = DbClassroom::get_classroom_contacts(pool, table.id).await?;
-        let class_advisor_ids = DbClassroom::get_classroom_advisors(pool, table.id, None).await?;
+        let student_ids = DbClassroom::get_classroom_students(&mut conn, relation.id).await?;
+        let contact_ids = DbClassroom::get_classroom_contacts(&mut conn, relation.id).await?;
+        let class_advisor_ids =
+            DbClassroom::get_classroom_advisors(&mut conn, relation.id, None).await?;
 
         Ok(Self {
-            id: table.id,
-            number: table.number,
-            room: table.main_room,
+            id: relation.id,
+            number: relation.number,
+            room: relation.main_room,
             students: Student::get_by_ids(
                 pool,
-                student_ids,
+                &student_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             contacts: Contact::get_by_ids(
                 pool,
-                contact_ids,
+                &contact_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
-            year: table.year,
+            year: relation.year,
             class_advisor: Teacher::get_by_ids(
                 pool,
-                class_advisor_ids,
+                &class_advisor_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

@@ -1,21 +1,19 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     helpers::date::get_current_academic_year,
     models::{certificate::db::DbCertificate, enums::SubmissionStatus},
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -32,28 +30,20 @@ async fn modify_invitation(
     LoggedInStudent(student_id): LoggedInStudent,
     Json(RequestType {
         data: request_data, ..
-    }): Json<RequestType<ModifyInvitationRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<ModifyInvitationRequest>>,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
-    let mut transaction = pool.begin().await?;
-    let rsvp_status = if let Some(request_data) = request_data {
-        if matches!(request_data.rsvp_status, SubmissionStatus::Pending) {
-            return Err(Error::InvalidRequest(
-                "Status must be either `approved` or `declined`".to_string(),
-                format!("/certificates/rsvp/{student_id}"),
-            ));
-        }
-
-        request_data.rsvp_status
-    } else {
+    let mut transaction = data.db.begin().await?;
+    let rsvp_status = if matches!(request_data.rsvp_status, SubmissionStatus::Pending) {
         return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
+            "Status must be either `approved` or `declined`".to_string(),
             format!("/certificates/rsvp/{student_id}"),
         ));
+    } else {
+        request_data.rsvp_status
     };
 
     // Checks if the current time is within the rsvp period
-    if !DbCertificate::is_rsvp_period(&mut *transaction).await? {
+    if !DbCertificate::is_rsvp_period(&mut transaction).await? {
         return Err(Error::InvalidPermission(
             "The certificate ceremony RSVP period has ended".to_string(),
             format!("/certificates/rsvp/{student_id}"),

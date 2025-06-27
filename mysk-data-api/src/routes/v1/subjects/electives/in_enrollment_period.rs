@@ -1,8 +1,8 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, student::LoggedInStudent},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::response::ResponseType, models::elective_subject::db::DbElectiveSubject, prelude::*,
 };
@@ -13,9 +13,10 @@ pub async fn in_enrollment_period(
     _: ApiKeyHeader,
     LoggedInStudent(student_id): LoggedInStudent,
 ) -> Result<impl Responder> {
-    let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
 
-    let is_in_enrollment_period = DbElectiveSubject::is_enrollment_period(pool, student_id).await?;
+    let is_in_enrollment_period =
+        DbElectiveSubject::is_enrollment_period(&mut conn, student_id).await?;
     let response = ResponseType::new(is_in_enrollment_period, None);
 
     Ok(HttpResponse::Ok().json(response))

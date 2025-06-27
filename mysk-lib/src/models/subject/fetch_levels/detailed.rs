@@ -4,17 +4,12 @@ use crate::{
         string::{FlexibleMultiLangString, MultiLangString},
     },
     models::{
-        classroom::Classroom,
-        enums::SubjectType,
-        subject::db::DbSubject,
-        subject_group::SubjectGroup,
-        teacher::Teacher,
-        traits::{FetchLevelVariant, TopLevelGetById as _},
+        classroom::Classroom, enums::SubjectType, subject::db::DbSubject,
+        subject_group::SubjectGroup, teacher::Teacher, traits::FetchVariant,
     },
-    permissions::{ActionType, Authorizer},
+    permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -36,26 +31,34 @@ pub struct DetailedSubject {
     pub classrooms: Vec<Classroom>,
 }
 
-#[async_trait]
-impl FetchLevelVariant<DbSubject> for DetailedSubject {
-    async fn from_table(
+impl FetchVariant for DetailedSubject {
+    type Relation = DbSubject;
+
+    async fn from_relation(
         pool: &PgPool,
-        table: DbSubject,
-        descendant_fetch_level: Option<FetchLevel>,
-        authorizer: &dyn Authorizer,
+        relation: Self::Relation,
+        descendant_fetch_level: FetchLevel,
+        authorizer: &Authorizer,
     ) -> Result<Self> {
+        let mut conn = pool.acquire().await?;
         authorizer
-            .authorize_subject(&table, pool, ActionType::ReadDetailed)
+            .authorize_subject(&relation, &mut conn, ActionType::ReadDetailed)
             .await?;
 
-        let subject_group =
-            SubjectGroup::get_by_id(pool, table.subject_group_id, None, None, authorizer).await?;
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            relation.subject_group_id,
+            FetchLevel::IdOnly,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
-        let teacher_ids = DbSubject::get_subject_teachers(pool, table.id, None).await?;
-        let co_teacher_ids = DbSubject::get_subject_co_teachers(pool, table.id, None).await?;
-        let classroom_ids = DbSubject::get_subject_classrooms(pool, table.id, None).await?;
+        let teacher_ids = DbSubject::get_subject_teachers(&mut conn, relation.id, None).await?;
+        let co_teacher_ids = DbSubject::get_subject_co_teachers(&mut conn, relation.id, None).await?;
+        let classroom_ids = DbSubject::get_subject_classrooms(&mut conn, relation.id, None).await?;
 
-        let description = match (table.description_th, table.description_en) {
+        let description = match (relation.description_th, relation.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {
                 th: Some(description_th),
                 en: Some(description_en),
@@ -72,40 +75,40 @@ impl FetchLevelVariant<DbSubject> for DetailedSubject {
         };
 
         Ok(Self {
-            id: table.id,
-            name: MultiLangString::new(table.name_th, Some(table.name_en)),
-            code: MultiLangString::new(table.code_th, Some(table.code_en)),
+            id: relation.id,
+            name: MultiLangString::new(relation.name_th, Some(relation.name_en)),
+            code: MultiLangString::new(relation.code_th, Some(relation.code_en)),
             short_name: MultiLangString::new(
-                table.short_name_th.unwrap_or_default(),
-                table.short_name_en,
+                relation.short_name_th.unwrap_or_default(),
+                relation.short_name_en,
             ),
-            r#type: table.r#type,
-            credit: table.credit,
+            r#type: relation.r#type,
+            credit: relation.credit,
             description,
-            semester: table.semester,
+            semester: relation.semester,
             subject_group,
-            syllabus: table.syllabus,
+            syllabus: relation.syllabus,
             classrooms: Classroom::get_by_ids(
                 pool,
-                classroom_ids,
+                &classroom_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             teachers: Teacher::get_by_ids(
                 pool,
-                teacher_ids,
+                &teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,
             co_teachers: Teacher::get_by_ids(
                 pool,
-                co_teacher_ids,
+                &co_teacher_ids,
                 descendant_fetch_level,
-                Some(FetchLevel::IdOnly),
+                FetchLevel::IdOnly,
                 authorizer,
             )
             .await?,

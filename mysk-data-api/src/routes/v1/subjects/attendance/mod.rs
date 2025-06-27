@@ -1,4 +1,4 @@
-use actix_web::web::{scope, ServiceConfig};
+use actix_web::web::{ServiceConfig, scope};
 
 pub mod create_report;
 pub mod image;

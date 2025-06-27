@@ -1,26 +1,23 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{FetchLevel, RequestType, SortablePlaceholder},
+        requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
     models::{
-        club::{db::DbClub, Club},
+        club::{Club, db::DbClub},
         club_request::ClubRequest,
         enums::SubmissionStatus,
-        traits::TopLevelGetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -43,36 +40,33 @@ pub async fn update_club_requests(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdateClubRequest, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdateClubRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let club_request_id = club_request_id.into_inner();
-    let club_request_status = if let Some(request_data) = request_data {
-        if matches!(request_data.status, SubmissionStatus::Pending) {
-            return Err(Error::InvalidRequest(
-                "Status must be either `approved` or `declined`".to_string(),
-                format!("/clubs/requests/{club_request_id}"),
-            ));
-        }
-
-        request_data.status
-    } else {
+    let club_request_status = if matches!(request_data.status, SubmissionStatus::Pending) {
         return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
+            "Status must be either `approved` or `declined`".to_string(),
             format!("/clubs/requests/{club_request_id}"),
         ));
+    } else {
+        request_data.status
     };
-    let authorizer =
-        permissions::get_authorizer(pool, &user, format!("/clubs/requests/{club_request_id}"))
-            .await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        format!("/clubs/requests/{club_request_id}"),
+    )
+    .await?;
 
     // Check if the club request exists
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(
         pool,
         club_request_id,
-        Some(FetchLevel::Default),
-        Some(FetchLevel::IdOnly),
-        &*authorizer,
+        FetchLevel::Default,
+        FetchLevel::IdOnly,
+        &authorizer,
     )
     .await
     .map_err(|e| match e {
@@ -95,7 +89,7 @@ pub async fn update_club_requests(
                     club_request.membership_status,
                 ),
                 format!("/clubs/requests/{club_request_id}"),
-            ))
+            ));
         }
         SubmissionStatus::Pending => (),
     }
@@ -103,10 +97,9 @@ pub async fn update_club_requests(
     // Check if the student is a staff of the club
     match club_request.club {
         Club::IdOnly(club, _) => {
-            if !DbClub::get_club_staffs(pool, club.id)
+            if !DbClub::get_club_staffs(&mut conn, club.id)
                 .await?
-                .iter()
-                .any(|staff_id| *staff_id == student_id)
+                .contains(&student_id)
             {
                 return Err(Error::InvalidPermission(
                     "Student must be a staff member of the club to update club requests"
@@ -123,7 +116,7 @@ pub async fn update_club_requests(
         club_request_status as SubmissionStatus,
         club_request_id,
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
 
     let updated_club_request = ClubRequest::get_by_id(
@@ -131,7 +124,7 @@ pub async fn update_club_requests(
         club_request_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(updated_club_request, None);

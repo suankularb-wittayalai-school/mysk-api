@@ -1,4 +1,7 @@
-use crate::query::{QueryParam, Queryable, SqlWhereClause};
+use crate::{
+    models::online_teaching_reports::db::DbOnlineTeachingReports,
+    query::{QueryParam, Queryable, SqlWhereClause},
+};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -11,6 +14,8 @@ pub struct QueryableOnlineTeachingReports {
 }
 
 impl Queryable for QueryableOnlineTeachingReports {
+    type Relation = DbOnlineTeachingReports;
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         let mut wc = SqlWhereClause::new();
         wc.push_if_some(self.ids, |mut f, ids| {

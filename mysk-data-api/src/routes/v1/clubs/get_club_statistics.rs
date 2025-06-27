@@ -1,5 +1,5 @@
-use crate::{extractors::api_key::ApiKeyHeader, AppState};
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::response::ResponseType, helpers::date::get_current_academic_year, prelude::*,
 };
@@ -17,7 +17,7 @@ struct ClubStatistics {
 
 #[get("/statistics")]
 async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<impl Responder> {
-    let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
 
     let current_year = get_current_academic_year(None);
 
@@ -26,7 +26,7 @@ async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<im
         "SELECT COUNT(DISTINCT student_id) as count FROM club_members WHERE year = $1",
         current_year,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .count
     .unwrap_or(0);
@@ -36,7 +36,7 @@ async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<im
         "SELECT COUNT(DISTINCT student_id) as count FROM club_staffs WHERE year = $1",
         current_year,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .count
     .unwrap_or(0);
@@ -46,7 +46,7 @@ async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<im
         "SELECT COUNT(DISTINCT club_id) as count FROM club_members WHERE year = $1",
         current_year,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .count
     .unwrap_or(0);
@@ -56,7 +56,7 @@ async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<im
         "SELECT COUNT(DISTINCT club_id) as count FROM club_staffs WHERE year = $1",
         current_year,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .count
     .unwrap_or(0);
@@ -70,7 +70,7 @@ async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<im
         ",
         current_year,
     )
-    .fetch_one(pool)
+    .fetch_one(&mut *conn)
     .await?
     .count
     .unwrap_or(0);

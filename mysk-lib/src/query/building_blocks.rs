@@ -75,14 +75,18 @@ pub enum QueryFragment<'sql> {
 }
 
 /// A trait for Queryable objects with ability to convert to query string conditions.
-pub trait Queryable: Sized {
+pub trait Queryable {
+    type Relation;
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql>;
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct QueryablePlaceholder;
 
 impl Queryable for QueryablePlaceholder {
+    type Relation = ();
+
     fn to_where_clause<'sql>(self) -> SqlWhereClause<'sql> {
         unimplemented!("`QueryablePlaceholder` can't actually be queried");
     }

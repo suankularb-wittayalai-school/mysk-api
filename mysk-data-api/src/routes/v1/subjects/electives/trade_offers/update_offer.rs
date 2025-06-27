@@ -1,27 +1,25 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, student::LoggedInStudent},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Data, Json, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::db::DbElectiveSubject,
-        elective_trade_offer::{db::DbElectiveTradeOffer, ElectiveTradeOffer},
+        elective_trade_offer::{ElectiveTradeOffer, db::DbElectiveTradeOffer},
         enums::SubmissionStatus,
-        traits::{GetById, TopLevelGetById as _},
+        traits::GetById,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -45,36 +43,29 @@ async fn update_trade_offer(
         fetch_level,
         descendant_fetch_level,
         ..
-    }): Json<RequestType<UpdatableElectiveOffer, QueryablePlaceholder, SortablePlaceholder>>,
+    }): Json<RequestType<UpdatableElectiveOffer>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut transaction = pool.begin().await?;
+    let mut transaction = data.db.begin().await?;
     let trade_offer_id = trade_offer_id.into_inner();
-    let trade_offer_status = if let Some(request_data) = request_data {
-        if matches!(request_data.status, SubmissionStatus::Pending) {
-            return Err(Error::InvalidRequest(
-                "Status must be either `approved` or `declined`".to_string(),
-                format!("/subjects/electives/trade-offers/{trade_offer_id}"),
-            ));
-        }
-
-        request_data.status
-    } else {
+    let trade_offer_status = if matches!(request_data.status, SubmissionStatus::Pending) {
         return Err(Error::InvalidRequest(
-            "Json deserialize error: field `data` can not be empty".to_string(),
+            "Status must be either `approved` or `declined`".to_string(),
             format!("/subjects/electives/trade-offers/{trade_offer_id}"),
         ));
+    } else {
+        request_data.status
     };
 
-    let authorizer = permissions::get_authorizer(
-        pool,
+    let authorizer = Authorizer::new(
+        &mut transaction,
         &user,
         format!("/subjects/electives/trade-offers/{trade_offer_id}"),
     )
     .await?;
 
     // Checks if the student is "blacklisted" from enrolling in an elective
-    if DbElectiveSubject::is_student_blacklisted(&mut *transaction, client_student_id).await? {
+    if DbElectiveSubject::is_student_blacklisted(&mut transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "Student is blacklisted from enrolling in electives".to_string(),
             format!("/subjects/electives/trade-offers/{trade_offer_id}"),
@@ -82,14 +73,14 @@ async fn update_trade_offer(
     }
 
     // Check if the current time is within the elective's enrollment period
-    if !DbElectiveSubject::is_enrollment_period(&mut *transaction, client_student_id).await? {
+    if !DbElectiveSubject::is_enrollment_period(&mut transaction, client_student_id).await? {
         return Err(Error::InvalidPermission(
             "The elective enrollment period has ended".to_string(),
             format!("/subjects/electives/trade-offers/{trade_offer_id}"),
         ));
     }
 
-    let trade_offer = DbElectiveTradeOffer::get_by_id(&mut *transaction, trade_offer_id).await?;
+    let trade_offer = DbElectiveTradeOffer::get_by_id(&mut transaction, trade_offer_id).await?;
 
     // Check if trade offer is already approved or declined
     if matches!(
@@ -187,7 +178,7 @@ async fn update_trade_offer(
         trade_offer_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(elective_trade_offer, None);

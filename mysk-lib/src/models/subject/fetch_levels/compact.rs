@@ -1,5 +1,5 @@
 use crate::{common::string::MultiLangString, models::subject::db::DbSubject};
-use mysk_lib_macros::impl_fetch_level_variant_from;
+use mysk_lib_macros::impl_fetch_variant_from;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -25,4 +25,4 @@ impl From<DbSubject> for CompactSubject {
     }
 }
 
-impl_fetch_level_variant_from!(subject, Compact, CompactSubject, DbSubject);
+impl_fetch_variant_from!(subject, Compact, CompactSubject, DbSubject);

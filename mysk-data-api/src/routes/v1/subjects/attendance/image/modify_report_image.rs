@@ -1,28 +1,26 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn, teacher::LoggedInTeacher},
 };
 use actix_web::{
-    put,
+    HttpResponse, Responder, put,
     web::{Bytes, Data, Path},
-    HttpResponse, Responder,
 };
 use mysk_lib::{
     common::{
-        requests::{RequestType, SortablePlaceholder},
+        requests::RequestType,
         response::ResponseType,
     },
     models::{
-        online_teaching_reports::{db::DbOnlineTeachingReports, OnlineTeachingReports},
-        traits::{GetById as _, TopLevelGetById as _},
+        online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
+        traits::GetById as _,
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
-    query::QueryablePlaceholder,
 };
 use reqwest::{
-    header::{HeaderValue, AUTHORIZATION, CONTENT_TYPE},
     Client,
+    header::{AUTHORIZATION, CONTENT_TYPE, HeaderValue},
 };
 use serde::Deserialize;
 use sqlx::query;
@@ -41,29 +39,24 @@ pub async fn modify_report_image(
     LoggedInTeacher(teacher_id): LoggedInTeacher,
     report_id: Path<Uuid>,
     RequestType {
-        data: request_data,
+        data: update_data,
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<ModifyReportImageRequest, QueryablePlaceholder, SortablePlaceholder>,
+    }: RequestType<ModifyReportImageRequest>,
     request_body: Bytes,
 ) -> Result<impl Responder> {
     let pool = &data.db;
+    let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
-    let Some(update_data) = request_data else {
-        return Err(Error::InvalidRequest(
-            "Query deserialize error: field `data` can not be empty".to_string(),
-            format!("/subjects/attendance/image/{report_id}"),
-        ));
-    };
-    let authorizer = permissions::get_authorizer(
-        pool,
+    let authorizer = Authorizer::new(
+        &mut conn,
         &user,
         format!("/subjects/attendance/image/{report_id}"),
     )
     .await?;
 
-    let class_report = DbOnlineTeachingReports::get_by_id(pool, report_id).await?;
+    let class_report = DbOnlineTeachingReports::get_by_id(&mut conn, report_id).await?;
 
     // Check if the report is owned by the teacher
     if class_report.teacher_id != teacher_id {
@@ -134,7 +127,7 @@ pub async fn modify_report_image(
         update_data.file_extension,
         report_id,
     )
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
 
     let class_report = OnlineTeachingReports::get_by_id(
@@ -142,7 +135,7 @@ pub async fn modify_report_image(
         report_id,
         fetch_level,
         descendant_fetch_level,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(class_report, None);

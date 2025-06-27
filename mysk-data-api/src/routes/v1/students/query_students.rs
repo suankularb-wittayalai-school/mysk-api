@@ -1,21 +1,18 @@
 use crate::{
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
     AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
-use actix_web::{get, web::Data, HttpResponse, Responder};
+use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
-    models::{
-        student::{
-            request::{queryable::QueryableStudent, sortable::SortableStudent},
-            Student,
-        },
-        traits::TopLevelQuery as _,
+    models::student::{
+        Student,
+        request::{queryable::QueryableStudent, sortable::SortableStudent},
     },
-    permissions,
+    permissions::Authorizer,
     prelude::*,
 };
 
@@ -31,10 +28,11 @@ pub async fn query_students(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<(), QueryableStudent, SortableStudent>,
+    }: RequestType<EmptyRequestData, QueryableStudent, SortableStudent>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = permissions::get_authorizer(pool, &user, "/students".to_string()).await?;
+    let mut conn = data.db.acquire().await?;
+    let authorizer = Authorizer::new(&mut conn, &user, "/students".to_string()).await?;
 
     let (student, pagination) = Student::query(
         pool,
@@ -43,7 +41,7 @@ pub async fn query_students(
         filter,
         sort,
         pagination,
-        &*authorizer,
+        &authorizer,
     )
     .await?;
     let response = ResponseType::new(student, Some(MetadataType::new(Some(pagination))));

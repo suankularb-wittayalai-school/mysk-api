@@ -1,12 +1,12 @@
 use crate::{models::enums::UserRole, prelude::*};
 use chrono::{DateTime, Utc};
-use mysk_lib_macros::{BaseQuery, GetById};
+use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
-use sqlx::{query, FromRow, PgPool};
+use sqlx::{FromRow, PgConnection, query};
 use uuid::Uuid;
 
-#[derive(BaseQuery, Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
-#[base_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
+#[derive(Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
+#[from_query(query = "SELECT id, created_at, email, role, is_admin, onboarded FROM users")]
 pub struct DbUser {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -17,15 +17,18 @@ pub struct DbUser {
 }
 
 impl DbUser {
-    pub async fn get_by_email(pool: &PgPool, email: &str) -> Result<Uuid> {
+    pub async fn get_by_email(conn: &mut PgConnection, email: &str) -> Result<Uuid> {
         let res = query!("SELECT id FROM users WHERE email = $1", email)
-            .fetch_one(pool)
+            .fetch_one(conn)
             .await?;
 
         Ok(res.id)
     }
 
-    pub async fn get_user_permissions(pool: &PgPool, user_id: Uuid) -> Result<Vec<String>> {
+    pub async fn get_user_permissions(
+        conn: &mut PgConnection,
+        user_id: Uuid,
+    ) -> Result<Vec<String>> {
         let res = query!(
             "\
             SELECT permissions.name FROM user_permissions \
@@ -34,7 +37,7 @@ impl DbUser {
             ",
             user_id,
         )
-        .fetch_all(pool)
+        .fetch_all(conn)
         .await?;
 
         Ok(res.into_iter().map(|row| row.name).collect())
