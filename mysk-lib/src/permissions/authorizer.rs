@@ -1,12 +1,13 @@
 use crate::{
     models::{
-        certificate::db::DbCertificate, cheer_practice_period::db::DbCheerPracticePeriod,
-        classroom::db::DbClassroom, club::db::DbClub, club_request::db::DbClubRequest,
-        contact::db::DbContact, elective_subject::db::DbElectiveSubject,
-        elective_trade_offer::db::DbElectiveTradeOffer, enums::UserRole,
-        online_teaching_reports::db::DbOnlineTeachingReports, organization::db::DbOrganization,
-        person::db::DbPerson, student::db::DbStudent, subject::db::DbSubject,
-        subject_group::db::DbSubjectGroup, teacher::db::DbTeacher, user::User,
+        certificate::db::DbCertificate, cheer_practice_attendance::db::DbCheerPracticeAttendance,
+        cheer_practice_period::db::DbCheerPracticePeriod, classroom::db::DbClassroom,
+        club::db::DbClub, club_request::db::DbClubRequest, contact::db::DbContact,
+        elective_subject::db::DbElectiveSubject, elective_trade_offer::db::DbElectiveTradeOffer,
+        enums::UserRole, online_teaching_reports::db::DbOnlineTeachingReports,
+        organization::db::DbOrganization, person::db::DbPerson, student::db::DbStudent,
+        subject::db::DbSubject, subject_group::db::DbSubjectGroup, teacher::db::DbTeacher,
+        user::User,
     },
     permissions::roles::{AdminRole, ManagementRole, StudentRole, TeacherRole},
     prelude::*,
@@ -30,6 +31,16 @@ pub trait Authorizable {
     fn authorize_certificate(
         &self,
         certificate: &DbCertificate,
+        conn: &mut PgConnection,
+        action: ActionType,
+    ) -> impl Future<Output = Result<()>> {
+        // TODO: Unimplemented
+        future::ok(())
+    }
+
+    fn authorize_cheer_practice_attendance(
+        &self,
+        cheer_practice_period: &DbCheerPracticeAttendance,
         conn: &mut PgConnection,
         action: ActionType,
     ) -> impl Future<Output = Result<()>> {

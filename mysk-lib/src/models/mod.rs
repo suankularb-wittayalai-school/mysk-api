@@ -1,4 +1,5 @@
 pub mod certificate;
+pub mod cheer_practice_attendance;
 pub mod cheer_practice_period;
 pub mod classroom;
 pub mod club;
