@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT classroom_id FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 ORDER BY classroom_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classroom_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "00e7a3eb52118709e7ad2c1912eb7e1735e02429002352eec86659c4e9ca37ff"
+}

@@ -54,7 +54,7 @@ async fn main() -> AnyhowResult<()> {
     tracing::warn!("Running on DEBUG, not optimised for production");
 
     let pool = PgPoolOptions::new()
-        .max_connections(15)
+        .max_connections(50)
         .connect_with(
             config
                 .database_url

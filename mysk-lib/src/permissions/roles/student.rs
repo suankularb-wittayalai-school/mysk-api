@@ -1,6 +1,7 @@
 use crate::{
     models::{
-        classroom::db::DbClassroom, club::db::DbClub, contact::db::DbContact,
+        cheer_practice_period::db::DbCheerPracticePeriod, classroom::db::DbClassroom,
+        club::db::DbClub, contact::db::DbContact,
         online_teaching_reports::db::DbOnlineTeachingReports, student::db::DbStudent,
         subject::db::DbSubject, teacher::db::DbTeacher,
     },
@@ -29,7 +30,6 @@ impl Authorizable for StudentRole {
         authorize_read_only(action, &self.source)
     }
 
-    #[allow(clippy::too_many_lines)]
     async fn authorize_contact(
         &self,
         contact: &DbContact,
@@ -115,11 +115,16 @@ impl Authorizable for StudentRole {
             let self_classroom = DbStudent::get_student_classroom(&mut *conn, self.id, None)
                 .await?
                 .ok_or(deny(&self.source).unwrap_err())?;
-            let student_classroom = DbStudent::get_student_classroom(conn, student.id, None)
+            let student_classroom = DbStudent::get_student_classroom(&mut *conn, student.id, None)
                 .await?
                 .ok_or(deny(&self.source).unwrap_err())?;
 
-            return if self_classroom.id == student_classroom.id {
+            return if (self_classroom.id == student_classroom.id)
+                || DbCheerPracticePeriod::get_cheer_staffs(conn)
+                    .await?
+                    .binary_search(&self.id)
+                    .is_ok()
+            {
                 Ok(())
             } else {
                 deny(&self.source)
