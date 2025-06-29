@@ -1,3 +1,3 @@
-mod default;
-mod detailed;
-mod id_only;
+pub mod default;
+pub mod detailed;
+pub mod id_only;
