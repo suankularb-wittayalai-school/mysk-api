@@ -9,7 +9,7 @@ use actix_web::{
     web::{Data, JsonConfig},
 };
 use anyhow::{Context as _, Result as AnyhowResult};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use mysk_lib::{common::config::Config, prelude::*};
 use parking_lot::Mutex;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};

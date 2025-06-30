@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use chrono::{DateTime, Utc};
-use rand::{RngCore, rngs::OsRng};
+use rand::{TryRngCore as _, rngs::OsRng};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::{PgConnection, prelude::FromRow, query};
@@ -26,7 +26,7 @@ pub struct PrefixedApiKey {
 
 fn generate_api_key(length: usize) -> String {
     let mut key = [0u8; 64];
-    OsRng.fill_bytes(&mut key);
+    OsRng.try_fill_bytes(&mut key).unwrap();
     let key = &key[..length];
     let bytes = key.to_vec();
 

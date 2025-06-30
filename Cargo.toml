@@ -13,24 +13,40 @@ edition = "2024"
 
 [workspace.dependencies]
 actix-cors = "0.7.1"
-actix-web = "4.11.0"
+actix-web = { version = "4.11.0", default-features = false, features = [
+  "cookies",
+  "http2",
+  "macros",
+  "unicode",
+] }
 anyhow = "1.0.98"
-bs58 = "0.5.1"
-chrono = { version = "0.4.41", features = ["serde"] }
+bs58 = { version = "0.5.1", features = ["smallvec"] }
+chrono = { version = "0.4.41", default-features = false, features = [
+  "now",
+  "serde",
+] }
 darling = "0.20.11"
-dotenv = "0.15.0"
-futures = "0.3.31"
-jsonwebtoken = "9.3.1"
-log = "0.4.27"
+dotenvy = "0.15.7"
+futures = { version = "0.3.31", default-features = false, features = ["std"] }
+jsonwebtoken = { version = "9.3.1", default-features = false }
 parking_lot = "0.12.4"
 quote = "1.0.40"
-rand = "0.8.5"
-reqwest = { version = "0.12.20", features = ["json"] }
+rand = { version = "0.9.1", default-features = false, features = [
+  "os_rng",
+  "std",
+] }
+reqwest = { version = "0.12.20", default-features = false, features = [
+  "charset",
+  "http2",
+  "json",
+  "native-tls",
+  "system-proxy",
+] }
 serde = "1.0.219"
 serde_json = "1.0.140"
-serde_qs = "0.13.0"
+serde_qs = "0.15.0"
 sha2 = "0.10.9"
-sqlx = { version = "0.8.6", features = [
+sqlx = { version = "0.8.6", default-features = false, features = [
   "chrono",
   "json",
   "macros",
@@ -38,7 +54,7 @@ sqlx = { version = "0.8.6", features = [
   "runtime-tokio-native-tls",
   "uuid",
 ] }
-syn = { version = "2.0.104", features = ["parsing"] }
+syn = "2.0.104"
 tokio = { version = "1.45.1", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

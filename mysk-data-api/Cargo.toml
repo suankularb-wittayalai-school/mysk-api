@@ -10,7 +10,7 @@ actix-web.workspace = true
 anyhow.workspace = true
 bs58.workspace = true
 chrono.workspace = true
-dotenv.workspace = true
+dotenvy.workspace = true
 futures.workspace = true
 jsonwebtoken.workspace = true
 mysk-lib = { path = "../mysk-lib" }
@@ -26,4 +26,4 @@ tracing-subscriber.workspace = true
 uuid.workspace = true
 
 [build-dependencies]
-chrono.workspace = true
+chrono = { workspace = true, features = ["clock"] }

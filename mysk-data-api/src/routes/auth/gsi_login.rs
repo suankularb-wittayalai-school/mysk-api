@@ -31,7 +31,7 @@ pub struct GoogleTokenResponse<'a> {
 
 #[allow(clippy::cast_possible_wrap)]
 #[post("/oauth/gsi")]
-async fn gsi_handler(
+pub async fn gsi_handler(
     data: Data<AppState>,
     Json(query): Json<OAuthRequest>,
 ) -> Result<impl Responder> {
