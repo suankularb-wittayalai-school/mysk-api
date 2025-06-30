@@ -8,7 +8,7 @@ use mysk_lib::{
 };
 
 #[get("/previously-enrolled")]
-async fn get_previously_enrolled(
+pub async fn get_previously_enrolled(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedInStudent(student_id): LoggedInStudent,

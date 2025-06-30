@@ -9,7 +9,7 @@ use actix_web::{
     web::{Data, JsonConfig},
 };
 use anyhow::{Context as _, Result as AnyhowResult};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use mysk_lib::{common::config::Config, prelude::*};
 use parking_lot::Mutex;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
@@ -54,7 +54,7 @@ async fn main() -> AnyhowResult<()> {
     tracing::warn!("Running on DEBUG, not optimised for production");
 
     let pool = PgPoolOptions::new()
-        .max_connections(15)
+        .max_connections(50)
         .connect_with(
             config
                 .database_url

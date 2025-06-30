@@ -1,5 +1,5 @@
 use crate::{common::config::Config, prelude::*};
-use rand::{RngCore, rngs::OsRng};
+use rand::{TryRngCore as _, rngs::OsRng};
 use reqwest::{
     Client,
     header::{CONTENT_LENGTH, HeaderValue},
@@ -97,7 +97,7 @@ struct GoogleOAuthInitQueryParams<'a> {
 
 pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> Result<(String, String)> {
     let mut state = [0u8; 32];
-    OsRng.fill_bytes(&mut state);
+    OsRng.try_fill_bytes(&mut state).unwrap();
     let state = format!("{:x}", Sha256::new().chain_update(state).finalize());
     let query_params = GoogleOAuthInitQueryParams {
         client_id: client_id.to_string(),

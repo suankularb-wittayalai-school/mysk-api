@@ -3,6 +3,6 @@ use actix_web::{HttpResponse, Responder, get};
 use mysk_lib::{common::response::ResponseType, prelude::*};
 
 #[get("/user")]
-async fn get_user(_: ApiKeyHeader, LoggedIn(user): LoggedIn) -> Result<impl Responder> {
+pub async fn get_user(_: ApiKeyHeader, LoggedIn(user): LoggedIn) -> Result<impl Responder> {
     Ok(HttpResponse::Ok().json(ResponseType::new(user, None)))
 }

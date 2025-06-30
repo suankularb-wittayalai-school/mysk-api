@@ -16,7 +16,7 @@ struct ClubStatistics {
 }
 
 #[get("/statistics")]
-async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<impl Responder> {
+pub async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Result<impl Responder> {
     let mut conn = data.db.acquire().await?;
 
     let current_year = get_current_academic_year(None);

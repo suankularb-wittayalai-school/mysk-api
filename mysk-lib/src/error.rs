@@ -137,6 +137,7 @@ impl From<SqlxError> for Error {
 }
 
 impl From<serde_qs::Error> for Error {
+    #[cfg_attr(not(debug_assertions), allow(unused_variables))]
     fn from(value: serde_qs::Error) -> Self {
         #[cfg(debug_assertions)]
         return Error::InternalServerError(
@@ -153,6 +154,7 @@ impl From<serde_qs::Error> for Error {
 }
 
 impl From<reqwest::Error> for Error {
+    #[cfg_attr(not(debug_assertions), allow(unused_variables))]
     fn from(value: reqwest::Error) -> Self {
         #[cfg(debug_assertions)]
         return Error::InternalServerError(value.to_string(), "reqwest".to_string());
@@ -166,6 +168,7 @@ impl From<reqwest::Error> for Error {
 }
 
 impl From<jsonwebtoken::errors::Error> for Error {
+    #[cfg_attr(not(debug_assertions), allow(unused_variables))]
     fn from(value: jsonwebtoken::errors::Error) -> Self {
         #[cfg(debug_assertions)]
         return Error::InternalServerError(value.to_string(), "jsonwebtoken".to_string());
