@@ -8,7 +8,10 @@ use crate::models::enums::CheerPracticeAttendanceType;
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
 #[from_query(query = "
-    SELECT id, created_at, date, start_time, duration, delay FROM cheer_practice_attendances
+    SELECT
+        id, created_at, practice_period_id, student_id, checker_id, presence, presence_at_end,
+        absence_reason
+    FROM cheer_practice_attendances
 ")]
 pub struct DbCheerPracticeAttendance {
     pub id: Uuid,
