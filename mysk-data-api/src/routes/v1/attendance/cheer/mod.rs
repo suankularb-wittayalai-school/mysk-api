@@ -1,9 +1,7 @@
-use actix_web::web::ServiceConfig;
+use actix_web::web::{ServiceConfig, scope};
 
-pub mod query_practice_period;
-pub mod query_practice_period_details;
+pub mod periods;
 
 pub fn config(cfg: &mut ServiceConfig) {
-    cfg.service(query_practice_period::query_practice_period)
-        .service(query_practice_period_details::query_practice_period_details);
+    cfg.service(scope("/periods").configure(periods::config));
 }
