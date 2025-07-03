@@ -55,7 +55,8 @@ impl FetchVariant for DetailedSubject {
         .await?;
 
         let teacher_ids = DbSubject::get_subject_teachers(&mut conn, relation.id, None).await?;
-        let co_teacher_ids = DbSubject::get_subject_co_teachers(&mut conn, relation.id, None).await?;
+        let co_teacher_ids =
+            DbSubject::get_subject_co_teachers(&mut conn, relation.id, None).await?;
         let classroom_ids = DbSubject::get_subject_classrooms(&mut conn, relation.id, None).await?;
 
         let description = match (relation.description_th, relation.description_en) {

@@ -4,10 +4,7 @@ use actix_web::{
     web::{Data, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     models::elective_subject::ElectiveSubject,
     permissions::{Authorizer, roles::AdminRole},
     prelude::*,

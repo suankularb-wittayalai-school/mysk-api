@@ -1,4 +1,5 @@
 use crate::models::{
+    model::Model,
     subject::{
         db::DbSubject,
         fetch_levels::{
@@ -6,11 +7,9 @@ use crate::models::{
             id_only::IdOnlySubject,
         },
     },
-    model::Model,
 };
 
 pub mod db;
 pub mod fetch_levels;
 
-pub type Subject =
-    Model<DbSubject, IdOnlySubject, CompactSubject, DefaultSubject, DetailedSubject>;
+pub type Subject = Model<DbSubject, IdOnlySubject, CompactSubject, DefaultSubject, DetailedSubject>;

@@ -8,10 +8,4 @@ pub mod db;
 pub mod fetch_levels;
 pub mod request;
 
-pub type Contact = Model<
-    DbContact,
-    IdOnlyContact,
-    IdOnlyContact,
-    DefaultContact,
-    DefaultContact,
->;
+pub type Contact = Model<DbContact, IdOnlyContact, IdOnlyContact, DefaultContact, DefaultContact>;

@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Json, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::{ElectiveSubject, db::DbElectiveSubject},
