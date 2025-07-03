@@ -1,3 +1,4 @@
+//TODO: Refactor this file to use the new cheer practice period model instead of the club model
 use crate::{
     AppState,
     extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
@@ -15,7 +16,7 @@ use mysk_lib::{
 use uuid::Uuid;
 
 #[get("/{id}")]
-pub async fn query_club_details(
+pub async fn query_practice_period_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
