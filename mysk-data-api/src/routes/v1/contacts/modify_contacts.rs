@@ -7,11 +7,7 @@ use actix_web::{
     web::{Data, Json, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-        string::FlexibleMultiLangString,
-    },
+    common::{requests::RequestType, response::ResponseType, string::FlexibleMultiLangString},
     models::{
         contact::{Contact, db::DbContact},
         enums::ContactType,

@@ -8,11 +8,7 @@ use actix_web::{
 };
 use chrono::NaiveDate;
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-        string::FlexibleMultiLangString,
-    },
+    common::{requests::RequestType, response::ResponseType, string::FlexibleMultiLangString},
     helpers::date::get_current_academic_year,
     models::{
         enums::ShirtSize,

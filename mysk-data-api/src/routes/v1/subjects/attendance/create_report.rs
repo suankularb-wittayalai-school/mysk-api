@@ -8,10 +8,7 @@ use actix_web::{
 };
 use chrono::NaiveDate;
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     helpers::date::get_current_date,
     models::{
         classroom::db::DbClassroom, online_teaching_reports::OnlineTeachingReports,
