@@ -1,4 +1,5 @@
 use crate::models::{
+    model::Model,
     teacher::{
         db::DbTeacher,
         fetch_levels::{
@@ -6,7 +7,6 @@ use crate::models::{
             id_only::IdOnlyTeacher,
         },
     },
-    model::Model,
 };
 
 pub mod db;

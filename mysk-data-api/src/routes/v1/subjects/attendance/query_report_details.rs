@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     models::online_teaching_reports::OnlineTeachingReports,
     permissions::Authorizer,
     prelude::*,

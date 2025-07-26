@@ -8,11 +8,7 @@ use actix_web::{
 };
 use chrono::NaiveDate;
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-        string::FlexibleMultiLangString,
-    },
+    common::{requests::RequestType, response::ResponseType, string::FlexibleMultiLangString},
     models::{
         enums::ShirtSize,
         student::{Student, db::DbStudent},
