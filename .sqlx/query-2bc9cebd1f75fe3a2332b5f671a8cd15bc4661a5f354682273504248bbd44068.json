@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.classroom_id, COUNT(a.student_id) FROM cheer_practice_attendances AS a JOIN classroom_students AS c ON c.student_id = a.student_id WHERE a.practice_period_id = $1 AND c.classroom_id = ANY($2) GROUP BY c.classroom_id ORDER BY c.classroom_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classroom_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "2bc9cebd1f75fe3a2332b5f671a8cd15bc4661a5f354682273504248bbd44068"
+}

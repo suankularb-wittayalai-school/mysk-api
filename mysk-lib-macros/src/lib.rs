@@ -72,10 +72,10 @@ pub fn impl_fetch_variant_from(input: TokenStream) -> TokenStream {
 /// ```
 ///
 /// - `relation_ident`: The identifier (or name) of the relation as used throughout the codebase.
-///  One example of usage is the `permissions` module.
+///   One example of usage is the `permissions` module.
 /// - `IdOnlyStruct`: The target struct (fetch variant) containing one field named `id`.
 /// - `RelationStruct`: The struct (base relation) that the fetch variant is derived from which must
-///  implement [`GetById`].
+///   implement [`GetById`].
 #[proc_macro]
 pub fn impl_id_only_variant_from(input: TokenStream) -> TokenStream {
     fetch_variant::make_from_id_only(input)

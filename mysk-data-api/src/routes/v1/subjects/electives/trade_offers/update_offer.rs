@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Json, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     helpers::date::{get_current_academic_year, get_current_semester},
     models::{
         elective_subject::db::DbElectiveSubject,
@@ -32,7 +29,7 @@ struct UpdatableElectiveOffer {
 
 #[allow(clippy::too_many_lines)]
 #[put("/{id}")]
-async fn update_trade_offer(
+pub async fn update_trade_offer(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,

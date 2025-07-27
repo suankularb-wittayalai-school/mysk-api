@@ -8,10 +8,7 @@ use actix_web::{
 };
 use chrono::NaiveDate;
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     models::{
         online_teaching_reports::{OnlineTeachingReports, db::DbOnlineTeachingReports},
         traits::GetById as _,

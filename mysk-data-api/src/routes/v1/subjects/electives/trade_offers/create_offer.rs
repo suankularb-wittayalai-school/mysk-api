@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Json},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     models::{
         elective_subject::db::DbElectiveSubject, elective_trade_offer::ElectiveTradeOffer,
         enums::SubmissionStatus, traits::GetById,
@@ -29,7 +26,7 @@ struct ElectiveTradeOfferRequest {
 
 #[allow(clippy::too_many_lines)]
 #[post("")]
-async fn create_trade_offer(
+pub async fn create_trade_offer(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,

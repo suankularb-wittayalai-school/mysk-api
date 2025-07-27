@@ -57,8 +57,7 @@ where
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Vec<Self>> {
-        let mut conn = pool.acquire().await?;
-        let variants = R::get_by_ids(&mut conn, ids).await?;
+        let variants = R::get_by_ids(&mut *(pool.acquire().await?), ids).await?;
         let futures = variants
             .into_iter()
             .map(|variant| {

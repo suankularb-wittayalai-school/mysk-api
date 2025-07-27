@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Json},
 };
 use mysk_lib::{
-    common::{
-        requests::RequestType,
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     helpers::date::get_current_academic_year,
     models::{certificate::db::DbCertificate, enums::SubmissionStatus},
     prelude::*,
@@ -24,7 +21,7 @@ struct ModifyInvitationRequest {
 }
 
 #[put("")]
-async fn modify_invitation(
+pub async fn modify_invitation(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedInStudent(student_id): LoggedInStudent,
