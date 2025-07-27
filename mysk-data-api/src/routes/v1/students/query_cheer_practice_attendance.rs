@@ -2,24 +2,27 @@ use crate::{
     AppState,
     extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
+
 use actix_web::{
     HttpResponse, Responder, get,
     web::{Data, Path},
 };
+
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
-    models::cheer_practice_period::CheerPracticePeriod,
+    models::cheer_practice_attendance::{CheerPracticeAttendance, db::DbCheerPracticeAttendance},
     permissions::Authorizer,
     prelude::*,
 };
+
 use uuid::Uuid;
 
-#[get("/{id}")]
-pub async fn query_practice_period_details(
+#[get("/{id}/attendance/cheer")]
+pub async fn query_cheer_practice_attendance(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
-    practice_period_id: Path<Uuid>,
+    id: Path<Uuid>,
     RequestType {
         fetch_level,
         descendant_fetch_level,
@@ -28,24 +31,25 @@ pub async fn query_practice_period_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
-    let practice_period_id = practice_period_id.into_inner();
+    let student_id = id.into_inner();
     let authorizer = Authorizer::new(
         &mut conn,
         &user,
-        format!("/attendance/cheer/periods/{practice_period_id}"),
+        format!("/students/{student_id}/attendance/cheer"),
     )
     .await?;
 
-    let practice_period = CheerPracticePeriod::get_by_id(
+    let ids = DbCheerPracticeAttendance::get_by_student_id(&mut conn, student_id).await?;
+    let cheer_practice_attendances = CheerPracticeAttendance::get_by_ids(
         pool,
-        practice_period_id,
+        &ids,
         fetch_level,
         descendant_fetch_level,
         &authorizer,
     )
     .await?;
 
-    let response = ResponseType::new(practice_period, None);
+    let response = ResponseType::new(cheer_practice_attendances, None);
 
     Ok(HttpResponse::Ok().json(response))
 }
