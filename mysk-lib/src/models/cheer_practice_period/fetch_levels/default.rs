@@ -10,7 +10,6 @@ use crate::{
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -20,8 +19,13 @@ pub struct DefaultCheerPracticePeriod {
     pub start_time: i64,
     pub duration: i64,
     pub delay: Option<i64>,
-    pub classrooms: Vec<Classroom>,
-    pub attendance_count: HashMap<Uuid, i64>,
+    pub classrooms: Vec<ClassroomWAttendanceCount>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClassroomWAttendanceCount {
+    pub classroom: Classroom,
+    pub count: i64,
 }
 
 impl FetchVariant for DefaultCheerPracticePeriod {
@@ -36,6 +40,9 @@ impl FetchVariant for DefaultCheerPracticePeriod {
         let classroom_ids =
             DbCheerPracticePeriod::get_classroom_ids(&mut *(pool.acquire().await?), relation.id)
                 .await?;
+        let attendance_count =
+            DbCheerPracticePeriod::get_attendance_count_by_class(pool, relation.id, &classroom_ids)
+                .await?;
         let classrooms = Classroom::get_by_ids(
             pool,
             &classroom_ids,
@@ -43,10 +50,11 @@ impl FetchVariant for DefaultCheerPracticePeriod {
             FetchLevel::IdOnly,
             authorizer,
         )
-        .await?;
-        let attendance_count =
-            DbCheerPracticePeriod::get_attendance_count_by_class(pool, relation.id, &classroom_ids)
-                .await?;
+        .await?
+        .into_iter()
+        .zip(attendance_count)
+        .map(|(classroom, (_, count))| ClassroomWAttendanceCount { classroom, count })
+        .collect();
 
         Ok(Self {
             id: relation.id,
@@ -55,7 +63,6 @@ impl FetchVariant for DefaultCheerPracticePeriod {
             duration: relation.duration,
             delay: relation.delay,
             classrooms,
-            attendance_count,
         })
     }
 }

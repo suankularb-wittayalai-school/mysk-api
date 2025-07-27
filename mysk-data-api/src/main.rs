@@ -14,7 +14,7 @@ use mysk_lib::{common::config::Config, prelude::*};
 use parking_lot::Mutex;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::{collections::HashSet, env};
+use std::{collections::HashSet, env, time::Duration};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 mod extractors;
@@ -54,7 +54,8 @@ async fn main() -> AnyhowResult<()> {
     tracing::warn!("Running on DEBUG, not optimised for production");
 
     let pool = PgPoolOptions::new()
-        .max_connections(50)
+        .max_connections(200)
+        .max_lifetime(Duration::from_secs(1))
         .connect_with(
             config
                 .database_url

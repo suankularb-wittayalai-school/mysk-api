@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{PgConnection, prelude::FromRow, query};
+use sqlx::{PgConnection, prelude::FromRow, query_scalar};
 use uuid::Uuid;
 
 use crate::{models::enums::CheerPracticeAttendanceType, prelude::*};
@@ -26,13 +26,35 @@ pub struct DbCheerPracticeAttendance {
 
 impl DbCheerPracticeAttendance {
     pub async fn get_by_student_id(conn: &mut PgConnection, student_id: Uuid) -> Result<Vec<Uuid>> {
-        let res = query!(
+        let res = query_scalar!(
             "SELECT id FROM cheer_practice_attendances WHERE student_id = $1",
-            student_id
+            student_id,
         )
         .fetch_all(conn)
         .await?;
 
-        Ok(res.into_iter().map(|r| r.id).collect())
+        Ok(res)
+    }
+
+    pub async fn get_by_classroom_id(
+        conn: &mut PgConnection,
+        practice_period_id: Uuid,
+        classroom_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
+        let res = query_scalar!(
+            "\
+            SELECT a.id \
+            FROM cheer_practice_attendances AS a \
+                JOIN classroom_students AS c ON c.student_id = a.student_id \
+            WHERE a.practice_period_id = $1 AND c.classroom_id = $2 \
+            ORDER BY c.student_id\
+            ",
+            practice_period_id,
+            classroom_id,
+        )
+        .fetch_all(conn)
+        .await?;
+
+        Ok(res)
     }
 }

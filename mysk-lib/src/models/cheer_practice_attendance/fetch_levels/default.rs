@@ -3,7 +3,7 @@ use crate::{
     models::{
         cheer_practice_attendance::db::DbCheerPracticeAttendance,
         cheer_practice_period::CheerPracticePeriod, enums::CheerPracticeAttendanceType,
-        traits::FetchVariant,
+        student::Student, traits::FetchVariant,
     },
     permissions::Authorizer,
     prelude::*,
@@ -15,6 +15,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DefaultCheerPracticeAttendance {
     pub id: Uuid,
+    pub student: Student,
     pub practice_period: CheerPracticePeriod,
     pub presence: CheerPracticeAttendanceType,
     pub presence_at_end: Option<CheerPracticeAttendanceType>,
@@ -30,6 +31,15 @@ impl FetchVariant for DefaultCheerPracticeAttendance {
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Self> {
+        let student = Student::get_by_id(
+            pool,
+            relation.student_id,
+            descendant_fetch_level,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
+
         let practice_period = CheerPracticePeriod::get_by_id(
             pool,
             relation.practice_period_id,
@@ -41,6 +51,7 @@ impl FetchVariant for DefaultCheerPracticeAttendance {
 
         Ok(Self {
             id: relation.id,
+            student,
             practice_period,
             presence: relation.presence,
             presence_at_end: relation.presence_at_end,

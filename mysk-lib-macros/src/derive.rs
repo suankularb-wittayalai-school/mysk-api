@@ -33,15 +33,17 @@ pub(crate) fn expand_from_query(input: TokenStream) -> TokenStream {
     let DeriveInput { ident, .. } = input;
 
     let query_one = if let Some(ref relation) = relation {
-        quote! { concat!(#query, " WHERE ", #relation, ".id = $1") }
+        quote! { concat!(#query, " WHERE ", #relation, ".id = $1 ORDER BY ", #relation, ".id") }
     } else {
-        quote! { concat!(#query, " WHERE id = $1") }
+        quote! { concat!(#query, " WHERE id = $1 ORDER BY id") }
     };
 
     let query_many = if let Some(ref relation) = relation {
-        quote! { concat!(#query, " WHERE ", #relation, ".id = ANY($1)") }
+        quote! {
+            concat!(#query, " WHERE ", #relation, ".id = ANY($1) ORDER BY ", #relation, ".id")
+        }
     } else {
-        quote! { concat!(#query, " WHERE id = ANY($1)") }
+        quote! { concat!(#query, " WHERE id = ANY($1) ORDER BY id") }
     };
 
     let expanded = quote! {
