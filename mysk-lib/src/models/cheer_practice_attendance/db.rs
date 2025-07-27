@@ -25,6 +25,25 @@ pub struct DbCheerPracticeAttendance {
 }
 
 impl DbCheerPracticeAttendance {
+    pub async fn get_by_period_id_and_student_id(
+        conn: &mut PgConnection,
+        practice_period_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Uuid> {
+        let res = query_scalar!(
+            "\
+            SELECT id FROM cheer_practice_attendances \
+            WHERE practice_period_id = $1 AND student_id = $2\
+            ",
+            practice_period_id,
+            student_id,
+        )
+        .fetch_one(conn)
+        .await?;
+
+        Ok(res)
+    }
+
     pub async fn get_by_student_id(conn: &mut PgConnection, student_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query_scalar!(
             "SELECT id FROM cheer_practice_attendances WHERE student_id = $1",

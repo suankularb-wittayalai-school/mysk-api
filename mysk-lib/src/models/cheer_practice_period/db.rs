@@ -53,7 +53,9 @@ impl DbCheerPracticePeriod {
     ) -> Result<Vec<(Uuid, i64)>> {
         let res = query!(
             "\
-            SELECT c.classroom_id, COUNT(a.student_id) \
+            SELECT \
+                c.classroom_id,\
+                COUNT(a.student_id) FILTER(WHERE a.presence = 'present' OR a.presence = 'late')\
             FROM cheer_practice_attendances AS a \
                 JOIN classroom_students AS c ON c.student_id = a.student_id \
             WHERE a.practice_period_id = $1 AND c.classroom_id = ANY($2) \
@@ -63,7 +65,7 @@ impl DbCheerPracticePeriod {
             classroom_ids,
         )
         .fetch(pool)
-        .map_ok(|record| (record.classroom_id, record.count.unwrap()))
+        .map_ok(|record| (record.classroom_id, record.count.unwrap_or(0)))
         .try_collect()
         .await?;
 
