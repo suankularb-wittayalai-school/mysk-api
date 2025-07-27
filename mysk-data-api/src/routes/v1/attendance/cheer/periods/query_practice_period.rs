@@ -9,7 +9,7 @@ use mysk_lib::{
         response::{MetadataType, ResponseType},
     },
     models::cheer_practice_period::{
-        Practice_period,
+        CheerPracticePeriod,
         request::{queryable::QueryableCheerPracticePeriod, sortable::SortableCheerPracticePeriod},
     },
     permissions::Authorizer,
@@ -32,9 +32,10 @@ pub async fn query_practice_period(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
-    let authorizer = Authorizer::new(&mut conn, &user, "/attendance/cheer/periods".to_string()).await?;
+    let authorizer =
+        Authorizer::new(&mut conn, &user, "/attendance/cheer/periods".to_string()).await?;
 
-    let (practice_periods, pagination) = Practice_period::query(
+    let (practice_periods, pagination) = CheerPracticePeriod::query(
         pool,
         fetch_level,
         descendant_fetch_level,
@@ -45,5 +46,6 @@ pub async fn query_practice_period(
     )
     .await?;
     let response = ResponseType::new(practice_periods, Some(MetadataType::new(Some(pagination))));
+
     Ok(HttpResponse::Ok().json(response))
 }

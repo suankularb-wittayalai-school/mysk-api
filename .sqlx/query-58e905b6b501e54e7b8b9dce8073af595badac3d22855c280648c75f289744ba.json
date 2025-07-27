@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.id FROM cheer_practice_attendances AS a JOIN classroom_students AS c ON c.student_id = a.student_id WHERE a.practice_period_id = $1 AND c.classroom_id = $2 ORDER BY c.student_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "58e905b6b501e54e7b8b9dce8073af595badac3d22855c280648c75f289744ba"
+}
