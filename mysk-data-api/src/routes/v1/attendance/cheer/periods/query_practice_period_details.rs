@@ -29,7 +29,12 @@ pub async fn query_practice_period_details(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let practice_period_id = practice_period_id.into_inner();
-    let authorizer = Authorizer::new(&mut conn, &user, format!("/attendance/cheer/periods/{practice_period_id}")).await?;
+    let authorizer = Authorizer::new(
+        &mut conn,
+        &user,
+        format!("/attendance/cheer/periods/{practice_period_id}"),
+    )
+    .await?;
 
     let practice_period = CheerPracticePeriod::get_by_id(
         pool,
@@ -39,7 +44,7 @@ pub async fn query_practice_period_details(
         &authorizer,
     )
     .await?;
-    
+
     let response = ResponseType::new(practice_period, None);
 
     Ok(HttpResponse::Ok().json(response))
