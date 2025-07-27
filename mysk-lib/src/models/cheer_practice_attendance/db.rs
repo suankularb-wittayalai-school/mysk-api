@@ -1,8 +1,7 @@
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::prelude::FromRow;
-use sqlx::{PgConnection, query};
+use sqlx::{PgConnection, prelude::FromRow, query};
 use uuid::Uuid;
 
 use crate::{models::enums::CheerPracticeAttendanceType, prelude::*};
