@@ -1,13 +1,13 @@
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::prelude::FromRow;
 use sqlx::{PgConnection, query};
 use uuid::Uuid;
 
 use crate::{models::enums::CheerPracticeAttendanceType, prelude::*};
 
-#[derive(Clone, Debug, Deserialize, Serialize, FromRow, GetById)]
+#[derive(Clone, Debug, Deserialize, FromRow, GetById)]
 #[from_query(query = "
     SELECT
         id, created_at, practice_period_id, student_id, checker_id, presence, presence_at_end,
