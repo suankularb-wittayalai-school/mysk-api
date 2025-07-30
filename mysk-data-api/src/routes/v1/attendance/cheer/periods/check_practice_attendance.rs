@@ -28,6 +28,7 @@ struct CheckPracticeAttendanceRequest {
     absence_reason: Option<String>,
 }
 
+#[allow(clippy::too_many_lines)]
 #[post("/{id}/check")]
 pub async fn check_practice_attendance(
     data: Data<AppState>,
@@ -62,6 +63,19 @@ pub async fn check_practice_attendance(
     {
         return Err(Error::InvalidRequest(
             "Absence reason was specified for a presence type that forbids a reason".to_string(),
+            format!("/attendance/cheer/periods/{practice_period_id}/check"),
+        ));
+    }
+
+    // `presence_on_end` can only be Present or Deserted
+    if !request_data.is_start
+        && !matches!(
+            request_data.presence,
+            CheerPracticeAttendanceType::Present | CheerPracticeAttendanceType::Deserted
+        )
+    {
+        return Err(Error::InvalidRequest(
+            "Invalid presence type for the current attendance-taking phase".to_string(),
             format!("/attendance/cheer/periods/{practice_period_id}/check"),
         ));
     }
