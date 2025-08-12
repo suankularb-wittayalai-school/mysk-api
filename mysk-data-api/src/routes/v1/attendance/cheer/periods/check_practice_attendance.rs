@@ -67,7 +67,7 @@ pub async fn check_practice_attendance(
         ));
     }
 
-    // `presence_on_end` can only be Present or Deserted
+    // `presence_at_end` can only be Present or Deserted
     if !request_data.is_start
         && !matches!(
             request_data.presence,
@@ -114,13 +114,20 @@ pub async fn check_practice_attendance(
     }
 
     let practice_attendance_id = if request_data.is_start {
+        let presence_at_end = match request_data.presence {
+            CheerPracticeAttendanceType::AbsentWithoutLeave
+            | CheerPracticeAttendanceType::AbsentWithLeave
+            | CheerPracticeAttendanceType::Deserted => Some(request_data.presence),
+            _ => None,
+        };
+
         query_scalar!(
             "\
             INSERT INTO cheer_practice_attendances\
-                (practice_period_id, student_id, checker_id, presence, absence_reason)\
-                VALUES ($1, $2, $3, $4, $5)\
-            ON CONFLICT(practice_period_id, student_id) \
-                DO UPDATE SET checker_id = $3, presence = $4, absence_reason = $5 \
+                (practice_period_id, student_id, checker_id, presence, absence_reason, presence_at_end)\
+                VALUES ($1, $2, $3, $4, $5, $6)\
+            ON CONFLICT(practice_period_id, student_id)\
+                DO UPDATE SET checker_id = $3, presence = $4, absence_reason = $5, presence_at_end = COALESCE($6, cheer_practice_attendances.presence_at_end)\
             RETURNING id\
             ",
             practice_period_id,
@@ -128,6 +135,7 @@ pub async fn check_practice_attendance(
             checker_id,
             request_data.presence as CheerPracticeAttendanceType,
             request_data.absence_reason,
+            presence_at_end as Option<CheerPracticeAttendanceType>
         )
         .fetch_one(&mut *transaction)
         .await?
