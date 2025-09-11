@@ -52,15 +52,16 @@ impl DbCheerPracticePeriod {
         classroom_ids: &[Uuid],
     ) -> Result<Vec<(Uuid, i64)>> {
         let res = query!(
-            "\
-            SELECT \
-                c.classroom_id,\
-                COUNT(a.student_id) FILTER(WHERE a.presence = 'present' OR a.presence = 'late')\
-            FROM cheer_practice_attendances AS a \
-                JOIN classroom_students AS c ON c.student_id = a.student_id \
-            WHERE a.practice_period_id = $1 AND c.classroom_id = ANY($2) \
-            GROUP BY c.classroom_id ORDER BY c.classroom_id\
-            ",
+            r#"
+            SELECT
+                cs.classroom_id,
+                COUNT(cpa.student_id) FILTER ( WHERE cpa.presence IN ('present', 'late') )
+            FROM classroom_students cs
+                JOIN cheer_practice_period_classrooms cpc on cpc.classroom_id = cs.classroom_id
+                LEFT JOIN cheer_practice_attendances cpa on cpa.student_id = cs.student_id and cpa.practice_period_id = cpc.practice_period_id
+            WHERE cpc.practice_period_id = $1 AND cs.classroom_id = ANY($2)
+            GROUP BY cs.classroom_id ORDER BY cs.classroom_id
+            "#,
             practice_period_id,
             classroom_ids,
         )
