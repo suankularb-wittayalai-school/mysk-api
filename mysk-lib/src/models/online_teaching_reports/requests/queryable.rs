@@ -34,8 +34,7 @@ impl Queryable for QueryableOnlineTeachingReports {
         })
         .push_if_some(self.as_teacher_id, |mut f, as_teacher_id| {
             f.push_sql("teacher_id = ")
-                .push_param(QueryParam::Uuid(as_teacher_id))
-                .push_sql(")");
+                .push_param(QueryParam::Uuid(as_teacher_id));
 
             f
         });
