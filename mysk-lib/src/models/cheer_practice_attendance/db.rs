@@ -55,6 +55,20 @@ impl DbCheerPracticeAttendance {
         Ok(res)
     }
 
+    pub async fn get_by_student_ids(
+        conn: &mut PgConnection,
+        student_ids: Vec<Uuid>,
+    ) -> Result<Vec<Uuid>> {
+        let res = query_scalar!(
+            "SELECT id FROM cheer_practice_attendances WHERE student_id = ANY($1)",
+            &student_ids,
+        )
+        .fetch_all(conn)
+        .await?;
+
+        Ok(res)
+    }
+
     pub async fn get_by_classroom_id(
         conn: &mut PgConnection,
         practice_period_id: Uuid,

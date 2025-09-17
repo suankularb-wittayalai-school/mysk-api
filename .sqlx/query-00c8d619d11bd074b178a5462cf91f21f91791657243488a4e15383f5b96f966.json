@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT FROM classroom_students AS cs JOIN cheer_practice_period_classrooms AS c ON c.classroom_id = cs.classroom_id WHERE cs.student_id = $1 AND c.practice_period_id = $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "00c8d619d11bd074b178a5462cf91f21f91791657243488a4e15383f5b96f966"
+}
