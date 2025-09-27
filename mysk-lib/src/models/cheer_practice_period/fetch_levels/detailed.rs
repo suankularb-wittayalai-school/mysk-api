@@ -28,7 +28,6 @@ pub struct DetailedCheerPracticePeriod {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClassroomWCheerAttendance {
     pub classroom: Classroom,
-    pub count: i64,
     pub attendances: Vec<CheerPracticeAttendance>,
 }
 
@@ -43,9 +42,6 @@ impl FetchVariant for DetailedCheerPracticePeriod {
     ) -> Result<Self> {
         let classroom_ids =
             DbCheerPracticePeriod::get_classroom_ids(&mut *(pool.acquire().await?), relation.id)
-                .await?;
-        let attendance_count =
-            DbCheerPracticePeriod::get_attendance_count_by_class(pool, relation.id, &classroom_ids)
                 .await?;
         let futures = classroom_ids.iter().map(
             async |classroom_id| -> Result<Vec<CheerPracticeAttendance>> {
@@ -79,15 +75,11 @@ impl FetchVariant for DetailedCheerPracticePeriod {
         )
         .await?
         .into_iter()
-        .zip(attendance_count)
         .zip(attendances)
-        .map(
-            |((classroom, (_, count)), attendances)| ClassroomWCheerAttendance {
-                classroom,
-                count,
-                attendances,
-            },
-        )
+        .map(|(classroom, attendances)| ClassroomWCheerAttendance {
+            classroom,
+            attendances,
+        })
         .collect();
 
         Ok(Self {

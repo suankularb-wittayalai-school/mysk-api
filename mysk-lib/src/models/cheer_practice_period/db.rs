@@ -10,10 +10,9 @@ use crate::{
     query::Queryable as _,
 };
 use chrono::{DateTime, NaiveDate, Utc};
-use futures::stream::TryStreamExt as _;
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{FromRow, PgConnection, PgPool, Postgres, QueryBuilder, query, query_scalar};
+use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query_scalar};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
@@ -41,33 +40,6 @@ impl DbCheerPracticePeriod {
             id,
         )
         .fetch_all(conn)
-        .await?;
-
-        Ok(res)
-    }
-
-    pub async fn get_attendance_count_by_class(
-        pool: &PgPool,
-        practice_period_id: Uuid,
-        classroom_ids: &[Uuid],
-    ) -> Result<Vec<(Uuid, i64)>> {
-        let res = query!(
-            r#"
-            SELECT
-                cs.classroom_id,
-                COUNT(cpa.student_id) FILTER ( WHERE cpa.presence IN ('present', 'late') )
-            FROM classroom_students cs
-                JOIN cheer_practice_period_classrooms cpc on cpc.classroom_id = cs.classroom_id
-                LEFT JOIN cheer_practice_attendances cpa on cpa.student_id = cs.student_id and cpa.practice_period_id = cpc.practice_period_id
-            WHERE cpc.practice_period_id = $1 AND cs.classroom_id = ANY($2)
-            GROUP BY cs.classroom_id ORDER BY cs.classroom_id
-            "#,
-            practice_period_id,
-            classroom_ids,
-        )
-        .fetch(pool)
-        .map_ok(|record| (record.classroom_id, record.count.unwrap_or(0)))
-        .try_collect()
         .await?;
 
         Ok(res)

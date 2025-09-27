@@ -19,13 +19,7 @@ pub struct DefaultCheerPracticePeriod {
     pub start_time: i64,
     pub duration: i64,
     pub delay: Option<i64>,
-    pub classrooms: Vec<ClassroomWAttendanceCount>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ClassroomWAttendanceCount {
-    pub classroom: Classroom,
-    pub count: i64,
+    pub classrooms: Vec<Classroom>,
 }
 
 impl FetchVariant for DefaultCheerPracticePeriod {
@@ -40,9 +34,6 @@ impl FetchVariant for DefaultCheerPracticePeriod {
         let classroom_ids =
             DbCheerPracticePeriod::get_classroom_ids(&mut *(pool.acquire().await?), relation.id)
                 .await?;
-        let attendance_count =
-            DbCheerPracticePeriod::get_attendance_count_by_class(pool, relation.id, &classroom_ids)
-                .await?;
         let classrooms = Classroom::get_by_ids(
             pool,
             &classroom_ids,
@@ -50,11 +41,7 @@ impl FetchVariant for DefaultCheerPracticePeriod {
             FetchLevel::IdOnly,
             authorizer,
         )
-        .await?
-        .into_iter()
-        .zip(attendance_count)
-        .map(|(classroom, (_, count))| ClassroomWAttendanceCount { classroom, count })
-        .collect();
+        .await?;
 
         Ok(Self {
             id: relation.id,
