@@ -9,14 +9,14 @@ use actix_web::{
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
     models::{
-        cheer_practice_attendance::{CheerPracticeAttendance, db::DbCheerPracticeAttendance},
-        cheer_practice_period::db::DbCheerPracticePeriod,
-        classroom::db::DbClassroom,
+        cheer_practice_attendance::CheerPracticeAttendance,
+        cheer_practice_period::db::DbCheerPracticePeriod, classroom::db::DbClassroom,
     },
     permissions::Authorizer,
     prelude::*,
 };
 
+use sqlx::query_scalar;
 use uuid::Uuid;
 
 #[get("/{period_id}/{classroom_id}")]
@@ -53,8 +53,12 @@ pub async fn query_classroom_cheer_practice_attendance(
     }
 
     let classroom_members = DbClassroom::get_classroom_students(&mut conn, classroom_id).await?;
-    let attendance_ids =
-        DbCheerPracticeAttendance::get_by_student_ids(&mut conn, classroom_members).await?;
+    let attendance_ids = query_scalar!(
+        "SELECT id FROM cheer_practice_attendances WHERE practice_period_id = $1 AND student_id = ANY($2)",
+        practice_period_id,
+        &classroom_members[..]
+    ).fetch_all(&mut *conn)
+    .await?;
 
     let attendances = CheerPracticeAttendance::get_by_ids(
         pool,
