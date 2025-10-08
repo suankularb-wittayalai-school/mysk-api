@@ -17,7 +17,7 @@ use mysk_lib::{
 };
 
 #[get("")]
-pub async fn query_practice_period(
+pub async fn query_practice_periods(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
