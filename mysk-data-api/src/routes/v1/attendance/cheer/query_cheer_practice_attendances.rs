@@ -49,7 +49,7 @@ pub async fn query_cheer_practice_attendances(
             {
                 let is_valid = query_scalar!(
                     "SELECT EXISTS(SELECT 1 FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 AND classroom_id = $2)", 
-                    practice_period_id, 
+                    practice_period_id,
                     classroom_id
                 )
                 .fetch_one(&mut *conn)
@@ -58,7 +58,8 @@ pub async fn query_cheer_practice_attendances(
 
                 if !is_valid {
                     return Err(Error::InvalidRequest(
-                        "Requested classroom is not a part of the current cheer practice period".to_string(),
+                        "Requested classroom is not a part of the current cheer practice period"
+                            .to_string(),
                         format!("/attendance/cheer/{practice_period_id}/{classroom_id}"),
                     ));
                 }
