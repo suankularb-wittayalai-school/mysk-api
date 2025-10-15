@@ -1,18 +1,32 @@
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{PgConnection, prelude::FromRow, query_scalar};
+use sqlx::{PgConnection, Postgres, QueryBuilder, prelude::FromRow, query_scalar};
 use uuid::Uuid;
 
-use crate::{models::enums::CheerPracticeAttendanceType, prelude::*};
+use crate::{
+    common::requests::FilterConfig,
+    models::{
+        cheer_practice_attendance::request::{
+            queryable::QueryableCheerPracticeAttendance, sortable::SortableCheerPracticeAttendance,
+        },
+        enums::CheerPracticeAttendanceType,
+        traits::QueryRelation,
+    },
+    prelude::*,
+    query::Queryable as _,
+};
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
-#[from_query(query = "
+#[from_query(
+    query = "
     SELECT
         id, created_at, practice_period_id, student_id, checker_id, presence, presence_at_end,
         absence_reason
     FROM cheer_practice_attendances
-")]
+",
+    count_query = "SELECT COUNT(id) FROM cheer_practice_attendances"
+)]
 pub struct DbCheerPracticeAttendance {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
@@ -75,5 +89,22 @@ impl DbCheerPracticeAttendance {
         .await?;
 
         Ok(res)
+    }
+}
+
+impl QueryRelation for DbCheerPracticeAttendance {
+    type Q = QueryableCheerPracticeAttendance;
+    type S = SortableCheerPracticeAttendance;
+
+    fn build_shared_query(
+        query_builder: &mut QueryBuilder<'_, Postgres>,
+        filter: Option<FilterConfig<Self::Q>>,
+    ) {
+        if let Some(filter) = filter {
+            if let Some(data) = filter.data {
+                data.to_where_clause()
+                    .append_into_query_builder(query_builder);
+            }
+        }
     }
 }

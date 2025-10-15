@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                cs.classroom_id,\n                COUNT(cpa.student_id) FILTER ( WHERE cpa.presence IN ('present', 'late') )\n            FROM classroom_students cs\n                JOIN cheer_practice_period_classrooms cpc on cpc.classroom_id = cs.classroom_id\n                LEFT JOIN cheer_practice_attendances cpa on cpa.student_id = cs.student_id and cpa.practice_period_id = cpc.practice_period_id\n            WHERE cpc.practice_period_id = $1 AND cs.classroom_id = ANY($2)\n            GROUP BY cs.classroom_id ORDER BY cs.classroom_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "classroom_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "81548e97df0cab90d0258bc8975e152df6d5cc0f1cddef3c3c9919f00d800a11"
+}

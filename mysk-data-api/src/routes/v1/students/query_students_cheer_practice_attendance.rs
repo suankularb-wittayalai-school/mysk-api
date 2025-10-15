@@ -18,7 +18,7 @@ use mysk_lib::{
 use uuid::Uuid;
 
 #[get("/{id}/attendance/cheer")]
-pub async fn query_cheer_practice_attendance(
+pub async fn query_students_cheer_practice_attendances(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,

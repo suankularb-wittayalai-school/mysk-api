@@ -17,7 +17,7 @@ use mysk_lib::{
 };
 
 #[get("")]
-pub async fn query_practice_period(
+pub async fn query_practice_periods(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
@@ -26,7 +26,6 @@ pub async fn query_practice_period(
         filter,
         sort,
         fetch_level,
-        descendant_fetch_level,
         ..
     }: RequestType<EmptyRequestData, QueryableCheerPracticePeriod, SortableCheerPracticePeriod>,
 ) -> Result<impl Responder> {
@@ -35,22 +34,10 @@ pub async fn query_practice_period(
     let authorizer =
         Authorizer::new(&mut conn, &user, "/attendance/cheer/periods".to_string()).await?;
 
-    // TODO: Remove this later
-    if !matches!(
-        descendant_fetch_level,
-        FetchLevel::IdOnly | FetchLevel::Compact
-    ) {
-        return Err(Error::InvalidRequest(
-            "Requested descendant_fetch_level is too resource intensive. Use `IdOnly` or `Compact` instead."
-                .to_string(),
-            "/attendance/cheer/periods".to_string()
-        ));
-    }
-
     let (practice_periods, pagination) = CheerPracticePeriod::query(
         pool,
         fetch_level,
-        descendant_fetch_level,
+        FetchLevel::IdOnly,
         filter,
         sort,
         pagination,

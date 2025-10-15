@@ -10,6 +10,7 @@ use crate::models::{
 
 pub mod db;
 pub mod fetch_levels;
+pub mod request;
 
 pub type CheerPracticeAttendance = Model<
     DbCheerPracticeAttendance,
