@@ -40,8 +40,9 @@ pub async fn query_cheer_practice_attendances(
     let mut conn = data.db.acquire().await?;
     let authorizer = Authorizer::new(&mut conn, &user, "/attendance/cheer".to_string()).await?;
 
-    // WARN: Using `practice_period_id` and `classroom_id` filters separately or none at all may result in
-    // unstable behaviour and/or crashes
+    // TODO: Using `practice_period_id` and `classroom_id` filters separately or none at all may
+    // overload the FetchVariant's `.from_relation` logic, causing unstable behaviour and/or pool
+    // crashes
     if let Some(ref f) = filter {
         if let Some(fd) = &f.data {
             if let (Some(practice_period_id), Some(classroom_id)) =
