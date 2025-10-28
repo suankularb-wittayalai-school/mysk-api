@@ -33,7 +33,7 @@ pub struct DbCheerPracticeAttendance {
     pub practice_period_id: Uuid,
     pub student_id: Uuid,
     pub checker_id: Option<Uuid>,
-    pub presence: CheerPracticeAttendanceType,
+    pub presence: Option<CheerPracticeAttendanceType>,
     pub presence_at_end: Option<CheerPracticeAttendanceType>,
     pub absence_reason: Option<String>,
 }
