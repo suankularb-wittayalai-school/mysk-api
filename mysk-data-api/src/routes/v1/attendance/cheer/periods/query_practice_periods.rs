@@ -30,9 +30,12 @@ pub async fn query_practice_periods(
     }: RequestType<EmptyRequestData, QueryableCheerPracticePeriod, SortableCheerPracticePeriod>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
-    let authorizer =
-        Authorizer::new(&mut conn, &user, "/attendance/cheer/periods".to_string()).await?;
+    let authorizer = Authorizer::new(
+        &mut *(data.db.acquire().await?),
+        &user,
+        "/attendance/cheer/periods".to_string(),
+    )
+    .await?;
 
     let (practice_periods, pagination) = CheerPracticePeriod::query(
         pool,

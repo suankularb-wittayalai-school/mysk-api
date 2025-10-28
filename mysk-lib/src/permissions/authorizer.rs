@@ -174,7 +174,7 @@ pub trait Authorizable {
     ) -> impl Future<Output = Result<()>>;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Authorizer {
     Admin(AdminRole),
     Management(ManagementRole),

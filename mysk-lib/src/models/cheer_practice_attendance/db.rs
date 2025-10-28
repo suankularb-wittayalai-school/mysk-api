@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{PgConnection, Postgres, QueryBuilder, prelude::FromRow, query_scalar};
+use sqlx::{PgConnection, PgPool, Postgres, QueryBuilder, prelude::FromRow, query_scalar};
 use uuid::Uuid;
 
 use crate::{
@@ -33,7 +33,7 @@ pub struct DbCheerPracticeAttendance {
     pub practice_period_id: Uuid,
     pub student_id: Uuid,
     pub checker_id: Option<Uuid>,
-    pub presence: CheerPracticeAttendanceType,
+    pub presence: Option<CheerPracticeAttendanceType>,
     pub presence_at_end: Option<CheerPracticeAttendanceType>,
     pub absence_reason: Option<String>,
 }
@@ -70,7 +70,7 @@ impl DbCheerPracticeAttendance {
     }
 
     pub async fn get_by_classroom_id(
-        conn: &mut PgConnection,
+        pool: &PgPool,
         practice_period_id: Uuid,
         classroom_id: Uuid,
     ) -> Result<Vec<Uuid>> {
@@ -85,7 +85,7 @@ impl DbCheerPracticeAttendance {
             practice_period_id,
             classroom_id,
         )
-        .fetch_all(conn)
+        .fetch_all(pool)
         .await?;
 
         Ok(res)

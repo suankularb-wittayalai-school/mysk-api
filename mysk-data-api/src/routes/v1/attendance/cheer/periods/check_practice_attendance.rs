@@ -29,7 +29,7 @@ use uuid::Uuid;
 struct CheckPracticeAttendanceRequest {
     is_start: bool,
     student_id: Uuid,
-    presence: CheerPracticeAttendanceType,
+    presence: Option<CheerPracticeAttendanceType>,
     absence_reason: Option<String>,
 }
 
@@ -122,17 +122,33 @@ pub async fn check_practice_attendance(
         }
     }
 
-    // Check if `absence_reason` matches with the correct `presence` enum
-    if !matches!(
-        request_data.presence,
-        CheerPracticeAttendanceType::AbsentWithLeave
-            | CheerPracticeAttendanceType::AbsentWithoutLeave
-    ) && request_data.absence_reason.is_some()
-    {
-        return Err(Error::InvalidRequest(
-            "Absence reason was specified for a presence type that forbids a reason".to_string(),
-            format!("/attendance/cheer/periods/{practice_period_id}/check"),
-        ));
+    if let Some(presence) = request_data.presence {
+        // Check if `absence_reason` matches with the correct `presence` enum
+        if !matches!(
+            presence,
+            CheerPracticeAttendanceType::AbsentWithLeave
+                | CheerPracticeAttendanceType::AbsentWithoutLeave
+        ) && request_data.absence_reason.is_some()
+        {
+            return Err(Error::InvalidRequest(
+                "Absence reason was specified for a presence type that forbids a reason"
+                    .to_string(),
+                format!("/attendance/cheer/periods/{practice_period_id}/check"),
+            ));
+        }
+
+        // `presence_at_end` can only be Present or Deserted
+        if !request_data.is_start
+            && !matches!(
+                presence,
+                CheerPracticeAttendanceType::Present | CheerPracticeAttendanceType::Deserted
+            )
+        {
+            return Err(Error::InvalidRequest(
+                "Invalid presence type for the current attendance-taking phase".to_string(),
+                format!("/attendance/cheer/periods/{practice_period_id}/check"),
+            ));
+        }
     }
 
     let is_blacklisted = query_scalar!(
@@ -140,25 +156,13 @@ pub async fn check_practice_attendance(
             SELECT FROM cheer_practice_blacklisted_students WHERE student_id = $1
         )",
         request_data.student_id
-    ).fetch_one(&mut *transaction)
+    )
+    .fetch_one(&mut *transaction)
     .await?
     .unwrap_or(false);
     if is_blacklisted {
         return Err(Error::InvalidRequest(
             "Student is exempt from participating in cheer practice".to_string(),
-            format!("/attendance/cheer/periods/{practice_period_id}/check")
-        ))
-    }
-
-    // `presence_at_end` can only be Present or Deserted
-    if !request_data.is_start
-        && !matches!(
-            request_data.presence,
-            CheerPracticeAttendanceType::Present | CheerPracticeAttendanceType::Deserted
-        )
-    {
-        return Err(Error::InvalidRequest(
-            "Invalid presence type for the current attendance-taking phase".to_string(),
             format!("/attendance/cheer/periods/{practice_period_id}/check"),
         ));
     }
@@ -186,12 +190,12 @@ pub async fn check_practice_attendance(
     }
 
     let practice_attendance_id = if request_data.is_start {
-        let presence_at_end = match request_data.presence {
+        let presence_at_end = request_data.presence.and_then(|presence| match presence {
             CheerPracticeAttendanceType::AbsentWithoutLeave
             | CheerPracticeAttendanceType::AbsentWithLeave
-            | CheerPracticeAttendanceType::Deserted => Some(request_data.presence),
+            | CheerPracticeAttendanceType::Deserted => Some(presence),
             _ => None,
-        };
+        });
 
         query_scalar!(
             "\
@@ -199,13 +203,13 @@ pub async fn check_practice_attendance(
                 (practice_period_id, student_id, checker_id, presence, absence_reason, presence_at_end)\
                 VALUES ($1, $2, $3, $4, $5, $6)\
             ON CONFLICT(practice_period_id, student_id)\
-                DO UPDATE SET checker_id = $3, presence = $4, absence_reason = $5, presence_at_end = COALESCE($6, cheer_practice_attendances.presence_at_end)\
+                DO UPDATE SET checker_id = $3, presence = $4, absence_reason = $5, presence_at_end = $6 \
             RETURNING id\
             ",
             practice_period_id,
             request_data.student_id,
             user.id,
-            request_data.presence as CheerPracticeAttendanceType,
+            request_data.presence as Option<CheerPracticeAttendanceType>,
             request_data.absence_reason,
             presence_at_end as Option<CheerPracticeAttendanceType>
         )
@@ -226,7 +230,7 @@ pub async fn check_practice_attendance(
             WHERE id = $4\
             ",
             user.id,
-            request_data.presence as CheerPracticeAttendanceType,
+            request_data.presence as Option<CheerPracticeAttendanceType>,
             request_data.absence_reason,
             practice_attendance_id,
         )

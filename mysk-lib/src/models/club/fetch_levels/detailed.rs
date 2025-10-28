@@ -39,6 +39,7 @@ impl FetchVariant for DetailedClub {
         let staff_ids = DbClub::get_club_staffs(&mut conn, relation.id).await?;
         let member_ids = DbClub::get_club_members(&mut conn, relation.id).await?;
         let contact_ids = DbClub::get_club_contacts(&mut conn, relation.id).await?;
+        drop(conn);
 
         Ok(Self {
             id: relation.id,

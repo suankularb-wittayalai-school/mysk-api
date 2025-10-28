@@ -59,6 +59,7 @@ impl FetchVariant for DetailedTeacher {
             Some(person_id) => Some(Person::get_by_id(&mut conn, person_id).await?),
             None => None,
         };
+        drop(conn);
 
         Ok(Self {
             id: relation.id,

@@ -17,7 +17,7 @@ pub struct DefaultCheerPracticeAttendance {
     pub id: Uuid,
     pub student: Student,
     pub practice_period: CheerPracticePeriod,
-    pub presence: CheerPracticeAttendanceType,
+    pub presence: Option<CheerPracticeAttendanceType>,
     pub presence_at_end: Option<CheerPracticeAttendanceType>,
     pub absence_reason: Option<String>,
 }

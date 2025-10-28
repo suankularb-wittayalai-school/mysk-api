@@ -15,7 +15,7 @@ use sqlx::{
 use std::fmt::Display;
 
 /// Get data from relations by its' ID via a base query.
-pub trait GetById: for<'r> FromRow<'r, PgRow> + Sized {
+pub trait GetById: for<'r> FromRow<'r, PgRow> + Send + Sized + 'static {
     /// The base query of the relation.
     const BASE_QUERY: &'static str;
 
@@ -33,13 +33,13 @@ pub trait GetById: for<'r> FromRow<'r, PgRow> + Sized {
 
     /// Get multiple rows of the relation by IDs.
     fn get_by_ids(
-        conn: &mut PgConnection,
+        pool: &PgPool,
         ids: &[Self::Id],
     ) -> impl Future<Output = Result<Vec<Self>, SqlxError>>;
 }
 
 /// A fetch variant is a data model that can be derived from a base relation.
-pub trait FetchVariant: Sized {
+pub trait FetchVariant: Send + Sized + 'static {
     /// The base relation for this fetch variant.
     type Relation: GetById;
 
@@ -49,7 +49,8 @@ pub trait FetchVariant: Sized {
         relation: Self::Relation,
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
-    ) -> impl Future<Output = Result<Self>>;
+    ) -> impl Future<Output = Result<Self>> + Send;
+    // ) -> Pin<Box<dyn Future<Output = Result<Self>> + Send>>;
 }
 
 /// Query data using complex conditions and predicates from relations.
@@ -70,7 +71,7 @@ pub trait QueryRelation: for<'r> FromRow<'r, PgRow> + GetById + Send + Unpin {
     /// Queries the database with optional filters, sorting, and pagination. If pagination is not
     /// provided, a default configuration is used.
     fn query(
-        conn: &mut PgConnection,
+        pool: &PgPool,
         filter: Option<FilterConfig<Self::Q>>,
         sort: Option<SortingConfig<Self::S>>,
         pagination: Option<PaginationConfig>,
@@ -91,7 +92,7 @@ pub trait QueryRelation: for<'r> FromRow<'r, PgRow> + GetById + Send + Unpin {
             let count = u32::try_from(
                 count_query
                     .build()
-                    .fetch_one(&mut *conn)
+                    .fetch_one(pool)
                     .await?
                     .get::<i64, _>("count"),
             )
@@ -103,7 +104,7 @@ pub trait QueryRelation: for<'r> FromRow<'r, PgRow> + GetById + Send + Unpin {
             })?;
 
             Ok((
-                query.build_query_as::<Self>().fetch_all(conn).await?,
+                query.build_query_as::<Self>().fetch_all(pool).await?,
                 PaginationType::new(pagination.p, pagination.size.unwrap_or(50), count),
             ))
         }
