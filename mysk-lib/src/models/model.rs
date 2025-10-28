@@ -7,10 +7,9 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use futures::future;
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::PgPool;
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 /// Data model used for every user-facing API response. A data model for a relation can exist as one
 /// of four variants.
@@ -57,20 +56,30 @@ where
         descendant_fetch_level: FetchLevel,
         authorizer: &Authorizer,
     ) -> Result<Vec<Self>> {
-        let variants = R::get_by_ids(&mut *(pool.acquire().await?), ids).await?;
+        let shared_authorizer = Arc::new(authorizer.clone());
+        let variants = R::get_by_ids(pool, ids).await?;
         let futures = variants
             .into_iter()
             .map(|variant| {
-                Self::from_variant(
-                    pool,
-                    variant,
-                    fetch_level,
-                    descendant_fetch_level,
-                    authorizer,
-                )
+                let shared_pool = pool.clone();
+                let shared_authorizer = Arc::clone(&shared_authorizer);
+
+                tokio::spawn(async move {
+                    Self::from_variant(
+                        &shared_pool,
+                        variant,
+                        fetch_level,
+                        descendant_fetch_level,
+                        &shared_authorizer,
+                    )
+                    .await
+                })
             })
             .collect::<Vec<_>>();
-        let result = future::try_join_all(futures).await?;
+        let mut result = Vec::with_capacity(futures.len());
+        for future in futures {
+            result.push(future.await??);
+        }
 
         Ok(result)
     }
@@ -151,15 +160,30 @@ where
         pagination: Option<PaginationConfig>,
         authorizer: &Authorizer,
     ) -> Result<(Vec<Self>, PaginationType)> {
-        let mut conn = pool.acquire().await?;
-        let (models, pagination) = R::query(&mut conn, filter, sort, pagination).await?;
-        let futures = models
+        let shared_authorizer = Arc::new(authorizer.clone());
+        let (variants, pagination) = R::query(pool, filter, sort, pagination).await?;
+        let futures = variants
             .into_iter()
-            .map(|model| {
-                Self::from_variant(pool, model, fetch_level, descendant_fetch_level, authorizer)
+            .map(|variant| {
+                let shared_pool = pool.clone();
+                let shared_authorizer = Arc::clone(&shared_authorizer);
+
+                tokio::spawn(async move {
+                    Self::from_variant(
+                        &shared_pool,
+                        variant,
+                        fetch_level,
+                        descendant_fetch_level,
+                        &shared_authorizer,
+                    )
+                    .await
+                })
             })
             .collect::<Vec<_>>();
-        let result = future::try_join_all(futures).await?;
+        let mut result = Vec::with_capacity(futures.len());
+        for future in futures {
+            result.push(future.await??);
+        }
 
         Ok((result, pagination))
     }

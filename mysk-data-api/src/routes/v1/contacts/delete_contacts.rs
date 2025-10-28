@@ -33,7 +33,7 @@ pub async fn delete_contacts(
     let authorizer = Authorizer::new(&mut conn, &user, "/contacts".to_string()).await?;
 
     // Check if the contacts exists
-    let db_contacts = DbContact::get_by_ids(&mut conn, &contact_ids).await?;
+    let db_contacts = DbContact::get_by_ids(pool, &contact_ids).await?;
 
     let futures = db_contacts
         .iter()

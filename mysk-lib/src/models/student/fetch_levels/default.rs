@@ -43,6 +43,8 @@ impl FetchVariant for DefaultStudent {
             Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
             None => None,
         };
+        let person = Person::get_by_id(&mut conn, relation.person_id).await?;
+        drop(conn);
 
         Ok(Self {
             id: relation.id,
@@ -70,7 +72,7 @@ impl FetchVariant for DefaultStudent {
             },
             class_no: classroom.map(|classroom| classroom.class_no),
             user,
-            person: Person::get_by_id(&mut conn, relation.person_id).await?,
+            person,
         })
     }
 }

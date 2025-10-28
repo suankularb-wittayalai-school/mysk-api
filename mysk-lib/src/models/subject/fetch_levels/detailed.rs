@@ -58,6 +58,7 @@ impl FetchVariant for DetailedSubject {
         let co_teacher_ids =
             DbSubject::get_subject_co_teachers(&mut conn, relation.id, None).await?;
         let classroom_ids = DbSubject::get_subject_classrooms(&mut conn, relation.id, None).await?;
+        drop(conn);
 
         let description = match (relation.description_th, relation.description_en) {
             (Some(description_th), Some(description_en)) => Some(FlexibleMultiLangString {

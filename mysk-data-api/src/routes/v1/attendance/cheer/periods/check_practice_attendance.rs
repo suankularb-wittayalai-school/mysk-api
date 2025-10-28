@@ -140,14 +140,15 @@ pub async fn check_practice_attendance(
             SELECT FROM cheer_practice_blacklisted_students WHERE student_id = $1
         )",
         request_data.student_id
-    ).fetch_one(&mut *transaction)
+    )
+    .fetch_one(&mut *transaction)
     .await?
     .unwrap_or(false);
     if is_blacklisted {
         return Err(Error::InvalidRequest(
             "Student is exempt from participating in cheer practice".to_string(),
-            format!("/attendance/cheer/periods/{practice_period_id}/check")
-        ))
+            format!("/attendance/cheer/periods/{practice_period_id}/check"),
+        ));
     }
 
     // `presence_at_end` can only be Present or Deserted

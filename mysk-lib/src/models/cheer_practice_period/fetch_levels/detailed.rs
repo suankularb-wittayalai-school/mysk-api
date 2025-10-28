@@ -46,7 +46,7 @@ impl FetchVariant for DetailedCheerPracticePeriod {
         let futures = classroom_ids.iter().map(
             async |classroom_id| -> Result<Vec<CheerPracticeAttendance>> {
                 let attendance_ids = DbCheerPracticeAttendance::get_by_classroom_id(
-                    &mut *(pool.acquire().await?),
+                    pool,
                     relation.id,
                     *classroom_id,
                 )

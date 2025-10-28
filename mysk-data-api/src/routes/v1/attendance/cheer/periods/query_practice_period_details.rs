@@ -7,10 +7,7 @@ use actix_web::{
     web::{Data, Path},
 };
 use mysk_lib::{
-    common::{
-        requests::{FetchLevel, RequestType},
-        response::ResponseType,
-    },
+    common::{requests::RequestType, response::ResponseType},
     models::cheer_practice_period::CheerPracticePeriod,
     permissions::Authorizer,
     prelude::*,
@@ -38,18 +35,6 @@ pub async fn query_practice_period_details(
         format!("/attendance/cheer/periods/{practice_period_id}"),
     )
     .await?;
-
-    // TODO: Remove this later
-    if !matches!(
-        descendant_fetch_level,
-        FetchLevel::IdOnly | FetchLevel::Compact
-    ) {
-        return Err(Error::InvalidRequest(
-            "Requested descendant_fetch_level is too resource intensive. Use `IdOnly` or `Compact` instead."
-                .to_string(),
-            format!("/attendance/cheer/periods/{practice_period_id}"),
-        ));
-    }
 
     let practice_period = CheerPracticePeriod::get_by_id(
         pool,

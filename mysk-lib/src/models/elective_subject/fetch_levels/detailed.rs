@@ -84,6 +84,8 @@ impl FetchVariant for DetailedElectiveSubject {
             }),
             (None, None) => None,
         };
+        let requirements = DbSubject::get_requirements(&mut conn, relation.id).await?;
+        drop(conn);
 
         Ok(Self {
             id: relation.id,
@@ -136,7 +138,7 @@ impl FetchVariant for DetailedElectiveSubject {
             )
             .await?,
             session_code: relation.session_code,
-            requirements: DbSubject::get_requirements(&mut conn, relation.id).await?,
+            requirements,
             randomized_students: Student::get_by_ids(
                 pool,
                 &randomized_students_ids,

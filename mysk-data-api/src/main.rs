@@ -14,7 +14,7 @@ use mysk_lib::{common::config::Config, prelude::*};
 use parking_lot::Mutex;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::{collections::HashSet, env, time::Duration};
+use std::{collections::HashSet, env};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 mod extractors;
@@ -32,7 +32,7 @@ async fn main() -> AnyhowResult<()> {
     tracing_subscriber::registry()
         .with(tracing_subscriber::EnvFilter::builder().parse(
             #[cfg(debug_assertions)]
-            "mysk_data_api=debug,mysk_lib=debug,actix_web=info,sqlx=trace",
+            "mysk_data_api=trace,mysk_lib=trace,actix_web=info,sqlx=trace",
             #[cfg(not(debug_assertions))]
             "mysk_data_api=info,mysk_lib=info,actix_web=warn,sqlx=warn",
         )?)
@@ -54,8 +54,8 @@ async fn main() -> AnyhowResult<()> {
     tracing::warn!("Running on DEBUG, not optimised for production");
 
     let pool = PgPoolOptions::new()
-        .max_connections(100)
-        .max_lifetime(Duration::from_secs(1))
+        .max_connections(50)
+        .test_before_acquire(false)
         .connect_with(
             config
                 .database_url

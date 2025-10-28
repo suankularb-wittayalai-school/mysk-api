@@ -66,12 +66,12 @@ pub(crate) fn expand_from_query(input: TokenStream) -> TokenStream {
             }
 
             async fn get_by_ids(
-                conn: &mut ::sqlx::PgConnection,
+                pool: &::sqlx::PgPool,
                 id: &[Self::Id],
             ) -> ::std::result::Result<Vec<Self>, sqlx::Error> {
                 ::sqlx::query_as::<_, #ident>(#query_many)
                     .bind(id)
-                    .fetch_all(&mut *conn)
+                    .fetch_all(pool)
                     .await
             }
         }

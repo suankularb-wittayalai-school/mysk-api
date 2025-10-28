@@ -74,6 +74,8 @@ impl FetchVariant for DefaultElectiveSubject {
             }),
             (None, None) => None,
         };
+        let requirements = DbSubject::get_requirements(&mut conn, relation.subject_id).await?;
+        drop(conn);
 
         Ok(Self {
             id: relation.id,
@@ -109,7 +111,7 @@ impl FetchVariant for DefaultElectiveSubject {
             cap_size: relation.cap_size,
             room: relation.room,
             session_code: relation.session_code,
-            requirements: DbSubject::get_requirements(&mut conn, relation.subject_id).await?,
+            requirements,
         })
     }
 }
