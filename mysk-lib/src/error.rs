@@ -121,11 +121,11 @@ impl From<SqlxError> for Error {
                 Error::EntityNotFound("Entity not found".to_string(), "SQLx".to_string())
             }
             SqlxError::Io(e) => {
-                tracing::error!("====== ERR ====== {:?}", e);
+                tracing::error!("SQLX I/O error: {:?}", e);
                 Error::ServiceUnavailable("Service unavailable".to_string(), "SQLx".to_string())
             }
             SqlxError::Tls(_) | SqlxError::PoolTimedOut | SqlxError::PoolClosed => {
-                tracing::error!("We've hit a wall...");
+                tracing::error!("We've hit a wall... the pool timed out again!");
                 Error::ServiceUnavailable("Service unavailable".to_string(), "SQLx".to_string())
             }
             #[cfg(debug_assertions)]
