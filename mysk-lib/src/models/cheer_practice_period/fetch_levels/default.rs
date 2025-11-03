@@ -1,9 +1,6 @@
 use crate::{
     common::requests::FetchLevel,
-    models::{
-        cheer_practice_period::db::DbCheerPracticePeriod, classroom::Classroom,
-        traits::FetchVariant,
-    },
+    models::{cheer_practice_period::db::DbCheerPracticePeriod, traits::FetchVariant},
     permissions::Authorizer,
     prelude::*,
 };
@@ -19,7 +16,7 @@ pub struct DefaultCheerPracticePeriod {
     pub start_time: i64,
     pub duration: i64,
     pub delay: Option<i64>,
-    pub classrooms: Vec<Classroom>,
+    pub classrooms: Vec<Uuid>,
 }
 
 impl FetchVariant for DefaultCheerPracticePeriod {
@@ -28,20 +25,13 @@ impl FetchVariant for DefaultCheerPracticePeriod {
     async fn from_relation(
         pool: &PgPool,
         relation: Self::Relation,
-        descendant_fetch_level: FetchLevel,
-        authorizer: &Authorizer,
+        _descendant_fetch_level: FetchLevel,
+        _authorizer: &Authorizer,
     ) -> Result<Self> {
+        // NOTE: classroom_ids can be returned directly because query_practice_periods forces an IdOnly descendant
         let classroom_ids =
             DbCheerPracticePeriod::get_classroom_ids(&mut *(pool.acquire().await?), relation.id)
                 .await?;
-        let classrooms = Classroom::get_by_ids(
-            pool,
-            &classroom_ids,
-            descendant_fetch_level,
-            FetchLevel::IdOnly,
-            authorizer,
-        )
-        .await?;
 
         Ok(Self {
             id: relation.id,
@@ -49,7 +39,7 @@ impl FetchVariant for DefaultCheerPracticePeriod {
             start_time: relation.start_time,
             duration: relation.duration,
             delay: relation.delay,
-            classrooms,
+            classrooms: classroom_ids,
         })
     }
 }
