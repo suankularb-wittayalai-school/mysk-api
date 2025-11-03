@@ -1,7 +1,4 @@
-use crate::{
-    AppState,
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
-};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
@@ -12,7 +9,7 @@ use mysk_lib::{
         CheerPracticePeriod,
         request::{queryable::QueryableCheerPracticePeriod, sortable::SortableCheerPracticePeriod},
     },
-    permissions::Authorizer,
+    permissions::{Authorizer, roles::AdminRole},
     prelude::*,
 };
 
@@ -20,7 +17,7 @@ use mysk_lib::{
 pub async fn query_practice_periods(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    LoggedIn(user): LoggedIn,
+    // LoggedIn(user): LoggedIn,
     RequestType {
         pagination,
         filter,
@@ -30,12 +27,13 @@ pub async fn query_practice_periods(
     }: RequestType<EmptyRequestData, QueryableCheerPracticePeriod, SortableCheerPracticePeriod>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let authorizer = Authorizer::new(
-        &mut *(data.db.acquire().await?),
-        &user,
-        "/attendance/cheer/periods".to_string(),
-    )
-    .await?;
+    let authorizer = Authorizer::Admin(AdminRole);
+    // let authorizer = Authorizer::new(
+    //     &mut *(data.db.acquire().await?),
+    //     &user,
+    //     "/attendance/cheer/periods".to_string(),
+    // )
+    // .await?;
 
     let (practice_periods, pagination) = CheerPracticePeriod::query(
         pool,

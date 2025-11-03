@@ -1,7 +1,4 @@
-use crate::{
-    AppState,
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
-};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{
     HttpResponse, Responder, get,
     web::{Data, Path},
@@ -9,7 +6,7 @@ use actix_web::{
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
     models::cheer_practice_period::CheerPracticePeriod,
-    permissions::Authorizer,
+    permissions::{Authorizer, roles::AdminRole},
     prelude::*,
 };
 use uuid::Uuid;
@@ -18,7 +15,7 @@ use uuid::Uuid;
 pub async fn query_practice_period_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    LoggedIn(user): LoggedIn,
+    // LoggedIn(user): LoggedIn,
     practice_period_id: Path<Uuid>,
     RequestType {
         fetch_level,
@@ -27,14 +24,15 @@ pub async fn query_practice_period_details(
     }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
     let practice_period_id = practice_period_id.into_inner();
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        format!("/attendance/cheer/periods/{practice_period_id}"),
-    )
-    .await?;
+    let authorizer = Authorizer::Admin(AdminRole);
+
+    // let authorizer = Authorizer::new(
+    //     &mut conn,
+    //     &user,
+    //     format!("/attendance/cheer/periods/{practice_period_id}"),
+    // )
+    // .await?;
 
     let practice_period = CheerPracticePeriod::get_by_id(
         pool,
