@@ -4,7 +4,7 @@ use crate::{
     permissions::Authorizer,
     prelude::*,
 };
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveTime};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -13,8 +13,8 @@ use uuid::Uuid;
 pub struct DefaultCheerPracticePeriod {
     pub id: Uuid,
     pub date: NaiveDate,
-    pub start_time: i64,
-    pub duration: i64,
+    pub start_time: NaiveTime,
+    pub end_time: NaiveTime,
     pub delay: Option<i64>,
     pub classrooms: Vec<Uuid>,
 }
@@ -37,7 +37,7 @@ impl FetchVariant for DefaultCheerPracticePeriod {
             id: relation.id,
             date: relation.date,
             start_time: relation.start_time,
-            duration: relation.duration,
+            end_time: relation.end_time,
             delay: relation.delay,
             classrooms: classroom_ids,
         })

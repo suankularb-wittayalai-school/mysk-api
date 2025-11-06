@@ -9,7 +9,7 @@ use crate::{
     prelude::*,
     query::Queryable as _,
 };
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query_scalar};
@@ -17,15 +17,15 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
 #[from_query(
-    query = "SELECT id, created_at, date, start_time, duration, delay FROM cheer_practice_periods",
+    query = "SELECT id, created_at, date, start_time, end_time, delay FROM cheer_practice_periods",
     count_query = "SELECT COUNT(id) FROM cheer_practice_periods"
 )]
 pub struct DbCheerPracticePeriod {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
     pub date: NaiveDate,
-    pub start_time: i64,
-    pub duration: i64,
+    pub start_time: NaiveTime,
+    pub end_time: NaiveTime,
     pub delay: Option<i64>,
 }
 
