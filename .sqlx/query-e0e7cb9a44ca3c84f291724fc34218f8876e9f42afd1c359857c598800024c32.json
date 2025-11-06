@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n                    SELECT FROM classroom_students cs\n                    JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id\n                    WHERE cs.student_id = $1\n                    AND ca.teacher_id = $2\n                )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e0e7cb9a44ca3c84f291724fc34218f8876e9f42afd1c359857c598800024c32"
+}
