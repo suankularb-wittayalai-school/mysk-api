@@ -21,11 +21,10 @@ use crate::{
 #[from_query(
     query = "
     SELECT
-        id, created_at, practice_period_id, student_id, checker_id, presence, presence_at_end,
-        absence_reason
-    FROM cheer_practice_attendances
+        id, created_at, practice_period_id, student_id, checker_id, presence, presence_at_end, absence_reason, disabled
+    FROM cheer_practice_attendances_with_detail_view
 ",
-    count_query = "SELECT COUNT(id) FROM cheer_practice_attendances"
+    count_query = "SELECT COUNT(id) FROM cheer_practice_attendances_with_detail_view"
 )]
 pub struct DbCheerPracticeAttendance {
     pub id: Uuid,
@@ -36,6 +35,7 @@ pub struct DbCheerPracticeAttendance {
     pub presence: Option<CheerPracticeAttendanceType>,
     pub presence_at_end: Option<CheerPracticeAttendanceType>,
     pub absence_reason: Option<String>,
+    pub disabled: bool,
 }
 
 impl DbCheerPracticeAttendance {

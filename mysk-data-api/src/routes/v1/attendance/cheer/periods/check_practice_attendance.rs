@@ -22,7 +22,7 @@ use mysk_lib::{
     prelude::*,
 };
 use serde::Deserialize;
-use sqlx::{query, query_scalar};
+use sqlx::query_scalar;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -151,29 +151,12 @@ pub async fn check_practice_attendance(
         }
     }
 
-    let is_blacklisted = query_scalar!(
-        "SELECT EXISTS (
-            SELECT FROM cheer_practice_blacklisted_students WHERE student_id = $1
-        )",
-        request_data.student_id
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .unwrap_or(false);
-    if is_blacklisted {
-        return Err(Error::InvalidRequest(
-            "Student is exempt from participating in cheer practice".to_string(),
-            format!("/attendance/cheer/periods/{practice_period_id}/check"),
-        ));
-    }
-
     // Check if student is valid for period and classroom
     let is_student_id_valid = query_scalar!(
         "\
         SELECT EXISTS (\
-            SELECT FROM classroom_students AS cs \
-                JOIN cheer_practice_period_classrooms AS c ON c.classroom_id = cs.classroom_id \
-            WHERE cs.student_id = $1 AND c.practice_period_id = $2\
+            SELECT FROM cheer_practice_attendances_with_detail_view AS cpa \
+            WHERE cpa.student_id = $1 AND cpa.practice_period_id = $2 AND cpa.disabled = FALSE \
         )\
         ",
         request_data.student_id,

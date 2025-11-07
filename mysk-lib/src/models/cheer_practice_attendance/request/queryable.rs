@@ -10,6 +10,7 @@ pub struct QueryableCheerPracticeAttendance {
     pub ids: Option<Vec<Uuid>>,
     pub practice_period_id: Option<Uuid>,
     pub classroom_id: Option<Uuid>,
+    pub disabled: Option<bool>,
 }
 
 impl Queryable for QueryableCheerPracticeAttendance {
@@ -36,6 +37,12 @@ impl Queryable for QueryableCheerPracticeAttendance {
             )
             .push_param(QueryParam::Uuid(classroom_id))
             .push_sql(" ORDER BY classroom_id)");
+
+            f
+        })
+        .push_if_some(self.disabled, |mut f, disabled| {
+            f.push_sql("disabled = ")
+                .push_param(QueryParam::Bool(disabled));
 
             f
         });
