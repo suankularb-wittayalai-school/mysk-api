@@ -9,7 +9,7 @@ use actix_web::{
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
     models::{
-        cheer_practice_attendance::{CheerPracticeAttendance, db::DbCheerPracticeAttendance},
+        cheer_practice_attendance::CheerPracticeAttendance,
         cheer_practice_period::db::DbCheerPracticePeriod,
         enums::{
             CheerPracticeAttendanceType,
@@ -189,13 +189,20 @@ pub async fn check_practice_attendance(
         ));
     }
 
-    let practice_attendance_id = if request_data.is_start {
-        let presence_at_end = request_data.presence.and_then(|presence| match presence {
-            CheerPracticeAttendanceType::AbsentWithoutLeave
-            | CheerPracticeAttendanceType::AbsentWithLeave
-            | CheerPracticeAttendanceType::Deserted => Some(presence),
-            _ => None,
-        });
+    let practice_attendance_id = {
+        let (presence, presence_at_end) = if request_data.is_start {
+            (
+                request_data.presence,
+                match request_data.presence {
+                    Some(CheerPracticeAttendanceType::AbsentWithLeave)
+                    | Some(CheerPracticeAttendanceType::AbsentWithoutLeave)
+                    | Some(CheerPracticeAttendanceType::Deserted) => request_data.presence,
+                    _ => None,
+                },
+            )
+        } else {
+            (None, request_data.presence)
+        };
 
         query_scalar!(
             "\
@@ -209,35 +216,12 @@ pub async fn check_practice_attendance(
             practice_period_id,
             request_data.student_id,
             user.id,
-            request_data.presence as Option<CheerPracticeAttendanceType>,
+            presence as Option<CheerPracticeAttendanceType>,
             request_data.absence_reason,
             presence_at_end as Option<CheerPracticeAttendanceType>
         )
         .fetch_one(&mut *transaction)
         .await?
-    } else {
-        let practice_attendance_id = DbCheerPracticeAttendance::get_by_period_id_and_student_id(
-            &mut transaction,
-            practice_period_id,
-            request_data.student_id,
-        )
-        .await?;
-
-        query!(
-            "\
-            UPDATE cheer_practice_attendances \
-            SET checker_id = $1, presence_at_end = $2, absence_reason = $3 \
-            WHERE id = $4\
-            ",
-            user.id,
-            request_data.presence as Option<CheerPracticeAttendanceType>,
-            request_data.absence_reason,
-            practice_attendance_id,
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        practice_attendance_id
     };
 
     transaction.commit().await?;
