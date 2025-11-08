@@ -53,6 +53,16 @@ impl DbCheerPracticePeriod {
 
         Ok(res)
     }
+
+    pub async fn in_jaturamitr_period(conn: &mut PgConnection) -> Result<bool> {
+        let res =
+            query_scalar!("SELECT (CURRENT_DATE IN ('2025-11-14', '2025-11-15', '2025-11-22'))")
+                .fetch_one(conn)
+                .await?
+                .unwrap_or(false);
+
+        Ok(res)
+    }
 }
 
 impl QueryRelation for DbCheerPracticePeriod {

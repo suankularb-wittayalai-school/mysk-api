@@ -94,23 +94,28 @@ pub async fn check_practice_attendance(
                 ))?;
 
             // Advisors can only take attendance of their own advisory classroom, unless that teacher is in `cheer_practice_teachers`
-            // TODO: Don't check this condition on Jaturamitr day
-            let is_classroom_valid = query_scalar!(
-                "SELECT EXISTS (
-                    SELECT FROM classroom_students cs
-                    JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id
-                    WHERE cs.student_id = $1
-                    AND ca.teacher_id = $2
-                )
-                OR EXISTS (
-                    SELECT FROM cheer_practice_teachers WHERE teacher_id = $2
-                )",
-                request_data.student_id,
-                t_checker_id
-            )
-            .fetch_one(&mut *transaction)
-            .await?
-            .unwrap_or(false);
+            let is_classroom_valid =
+                if !DbCheerPracticePeriod::in_jaturamitr_period(&mut transaction).await? {
+                    query_scalar!(
+                        "SELECT EXISTS (
+                        SELECT FROM classroom_students cs
+                        JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id
+                        WHERE cs.student_id = $1
+                        AND ca.teacher_id = $2
+                    )
+                    OR EXISTS (
+                        SELECT FROM cheer_practice_teachers WHERE teacher_id = $2
+                    )",
+                        request_data.student_id,
+                        t_checker_id
+                    )
+                    .fetch_one(&mut *transaction)
+                    .await?
+                    .unwrap_or(false)
+                } else {
+                    true
+                };
+
             if !is_classroom_valid {
                 return Err(Error::InvalidPermission(
                     "Teacher is not the advisor of this classroom".to_string(),
