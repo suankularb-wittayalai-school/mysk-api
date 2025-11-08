@@ -35,11 +35,11 @@ impl QueryRelation for DbContact {
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<QueryableContact>>,
     ) {
-        if let Some(filter) = filter {
-            if let Some(data) = filter.data {
-                data.to_where_clause()
-                    .append_into_query_builder(query_builder);
-            }
+        if let Some(filter) = filter
+            && let Some(data) = filter.data
+        {
+            data.to_where_clause()
+                .append_into_query_builder(query_builder);
         }
     }
 }

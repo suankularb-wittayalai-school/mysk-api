@@ -43,12 +43,12 @@ pub async fn query_cheer_practice_attendances(
     // TODO: Using `practice_period_id` and `classroom_id` filters separately or none at all may
     // overload the FetchVariant's `.from_relation` logic, causing unstable behaviour and/or pool
     // crashes
-    if let Some(ref f) = filter {
-        if let Some(fd) = &f.data {
-            if let (Some(practice_period_id), Some(classroom_id)) =
-                (fd.practice_period_id, fd.classroom_id)
-            {
-                let is_valid = query_scalar!(
+    if let Some(ref f) = filter
+        && let Some(fd) = &f.data
+        && let (Some(practice_period_id), Some(classroom_id)) =
+            (fd.practice_period_id, fd.classroom_id)
+    {
+        let is_valid = query_scalar!(
                     "SELECT EXISTS(SELECT 1 FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 AND classroom_id = $2)", 
                     practice_period_id,
                     classroom_id
@@ -57,14 +57,12 @@ pub async fn query_cheer_practice_attendances(
                 .await?
                 .unwrap_or(false);
 
-                if !is_valid {
-                    return Err(Error::InvalidRequest(
-                        "Requested classroom is not a part of the current cheer practice period"
-                            .to_string(),
-                        format!("/attendance/cheer/{practice_period_id}/{classroom_id}"),
-                    ));
-                }
-            }
+        if !is_valid {
+            return Err(Error::InvalidRequest(
+                "Requested classroom is not a part of the current cheer practice period"
+                    .to_string(),
+                format!("/attendance/cheer/{practice_period_id}/{classroom_id}"),
+            ));
         }
     }
 

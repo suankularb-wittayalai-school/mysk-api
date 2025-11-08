@@ -95,7 +95,9 @@ pub async fn check_practice_attendance(
 
             // Advisors can only take attendance of their own advisory classroom, unless that teacher is in `cheer_practice_teachers`
             let is_classroom_valid =
-                if !DbCheerPracticePeriod::in_jaturamitr_period(&mut transaction).await? {
+                if DbCheerPracticePeriod::in_jaturamitr_period(&mut transaction).await? {
+                    true
+                } else {
                     query_scalar!(
                         "SELECT EXISTS (
                         SELECT FROM classroom_students cs
@@ -112,8 +114,6 @@ pub async fn check_practice_attendance(
                     .fetch_one(&mut *transaction)
                     .await?
                     .unwrap_or(false)
-                } else {
-                    true
                 };
 
             if !is_classroom_valid {
@@ -186,9 +186,11 @@ pub async fn check_practice_attendance(
             (
                 request_data.presence,
                 match request_data.presence {
-                    Some(CheerPracticeAttendanceType::AbsentWithLeave)
-                    | Some(CheerPracticeAttendanceType::AbsentWithoutLeave)
-                    | Some(CheerPracticeAttendanceType::Deserted) => request_data.presence,
+                    Some(
+                        CheerPracticeAttendanceType::AbsentWithLeave
+                        | CheerPracticeAttendanceType::AbsentWithoutLeave
+                        | CheerPracticeAttendanceType::Deserted,
+                    ) => request_data.presence,
                     _ => None,
                 },
             )
