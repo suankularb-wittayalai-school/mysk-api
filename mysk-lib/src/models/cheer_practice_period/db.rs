@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
 #[from_query(
-    query = "SELECT id, created_at, date, start_time, end_time, delay FROM cheer_practice_periods",
+    query = "SELECT id, created_at, date, start_time, end_time, delay, note FROM cheer_practice_periods",
     count_query = "SELECT COUNT(id) FROM cheer_practice_periods"
 )]
 pub struct DbCheerPracticePeriod {
@@ -27,6 +27,7 @@ pub struct DbCheerPracticePeriod {
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
     pub delay: Option<i64>,
+    pub note: Option<String>,
 }
 
 impl DbCheerPracticePeriod {
