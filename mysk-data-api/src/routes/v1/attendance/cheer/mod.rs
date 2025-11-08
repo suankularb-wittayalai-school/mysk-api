@@ -7,5 +7,5 @@ pub mod query_cheer_practice_attendances;
 pub fn config(cfg: &mut ServiceConfig) {
     cfg.service(scope("/periods").configure(periods::config))
         .service(query_cheer_practice_attendances::query_cheer_practice_attendances)
-        .service(in_jaturamitr_period::in_jaturamtir_period);
+        .service(in_jaturamitr_period::in_jaturamitr_period);
 }

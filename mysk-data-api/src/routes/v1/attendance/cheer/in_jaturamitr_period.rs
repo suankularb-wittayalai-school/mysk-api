@@ -9,7 +9,7 @@ use mysk_lib::{
 };
 
 #[get("/in-jaturamitr-period")]
-pub async fn in_jaturamtir_period(
+pub async fn in_jaturamitr_period(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(_): LoggedIn,
