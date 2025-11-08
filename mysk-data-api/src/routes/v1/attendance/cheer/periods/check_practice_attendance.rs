@@ -8,6 +8,7 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
+    helpers::date::is_today_jaturamitr,
     models::{
         cheer_practice_attendance::CheerPracticeAttendance,
         cheer_practice_period::db::DbCheerPracticePeriod,
@@ -94,12 +95,11 @@ pub async fn check_practice_attendance(
                 ))?;
 
             // Advisors can only take attendance of their own advisory classroom, unless that teacher is in `cheer_practice_teachers`
-            let is_classroom_valid =
-                if DbCheerPracticePeriod::in_jaturamitr_period(&mut transaction).await? {
-                    true
-                } else {
-                    query_scalar!(
-                        "SELECT EXISTS (
+            let is_classroom_valid = if is_today_jaturamitr() {
+                true
+            } else {
+                query_scalar!(
+                    "SELECT EXISTS (
                         SELECT FROM classroom_students cs
                         JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id
                         WHERE cs.student_id = $1
@@ -108,13 +108,13 @@ pub async fn check_practice_attendance(
                     OR EXISTS (
                         SELECT FROM cheer_practice_teachers WHERE teacher_id = $2
                     )",
-                        request_data.student_id,
-                        t_checker_id
-                    )
-                    .fetch_one(&mut *transaction)
-                    .await?
-                    .unwrap_or(false)
-                };
+                    request_data.student_id,
+                    t_checker_id
+                )
+                .fetch_one(&mut *transaction)
+                .await?
+                .unwrap_or(false)
+            };
 
             if !is_classroom_valid {
                 return Err(Error::InvalidPermission(

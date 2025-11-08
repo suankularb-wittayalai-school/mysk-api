@@ -128,10 +128,10 @@ impl DbTeacher {
         .await?;
 
         let mut result = Vec::with_capacity(as_teacher.len() + as_co_teacher.len());
-        for record in as_teacher.into_iter() {
+        for record in as_teacher {
             result.push(record.subject_id);
         }
-        for record in as_co_teacher.into_iter() {
+        for record in as_co_teacher {
             result.push(record.subject_id);
         }
 
