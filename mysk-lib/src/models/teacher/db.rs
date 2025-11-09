@@ -128,12 +128,12 @@ impl DbTeacher {
         .await?;
 
         let mut result = Vec::with_capacity(as_teacher.len() + as_co_teacher.len());
-        as_teacher
-            .into_iter()
-            .for_each(|record| result.push(record.subject_id));
-        as_co_teacher
-            .into_iter()
-            .for_each(|record| result.push(record.subject_id));
+        for record in as_teacher {
+            result.push(record.subject_id);
+        }
+        for record in as_co_teacher {
+            result.push(record.subject_id);
+        }
 
         Ok(result)
     }
@@ -147,11 +147,11 @@ impl QueryRelation for DbTeacher {
         query_builder: &mut QueryBuilder<'_, Postgres>,
         filter: Option<FilterConfig<Self::Q>>,
     ) {
-        if let Some(filter) = filter {
-            if let Some(data) = filter.data {
-                data.to_where_clause()
-                    .append_into_query_builder(query_builder);
-            }
+        if let Some(filter) = filter
+            && let Some(data) = filter.data
+        {
+            data.to_where_clause()
+                .append_into_query_builder(query_builder);
         }
     }
 }

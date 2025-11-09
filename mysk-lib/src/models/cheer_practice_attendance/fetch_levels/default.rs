@@ -20,6 +20,7 @@ pub struct DefaultCheerPracticeAttendance {
     pub presence: Option<CheerPracticeAttendanceType>,
     pub presence_at_end: Option<CheerPracticeAttendanceType>,
     pub absence_reason: Option<String>,
+    pub disabled: bool,
 }
 
 impl FetchVariant for DefaultCheerPracticeAttendance {
@@ -56,6 +57,7 @@ impl FetchVariant for DefaultCheerPracticeAttendance {
             presence: relation.presence,
             presence_at_end: relation.presence_at_end,
             absence_reason: relation.absence_reason,
+            disabled: relation.disabled,
         })
     }
 }

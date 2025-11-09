@@ -8,8 +8,9 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
+    helpers::date::is_today_jaturamitr,
     models::{
-        cheer_practice_attendance::{CheerPracticeAttendance, db::DbCheerPracticeAttendance},
+        cheer_practice_attendance::CheerPracticeAttendance,
         cheer_practice_period::db::DbCheerPracticePeriod,
         enums::{
             CheerPracticeAttendanceType,
@@ -22,7 +23,7 @@ use mysk_lib::{
     prelude::*,
 };
 use serde::Deserialize;
-use sqlx::{query, query_scalar};
+use sqlx::query_scalar;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -93,20 +94,28 @@ pub async fn check_practice_attendance(
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ))?;
 
-            // Advisors can only take attendance of their own advisory classroom
-            let is_classroom_valid = query_scalar!(
-                "SELECT EXISTS (
-                    SELECT FROM classroom_students cs
-                    JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id
-                    WHERE cs.student_id = $1
-                    AND ca.teacher_id = $2
-                )",
-                request_data.student_id,
-                t_checker_id
-            )
-            .fetch_one(&mut *transaction)
-            .await?
-            .unwrap_or(false);
+            // Advisors can only take attendance of their own advisory classroom, unless that teacher is in `cheer_practice_teachers`
+            let is_classroom_valid = if is_today_jaturamitr() {
+                true
+            } else {
+                query_scalar!(
+                    "SELECT EXISTS (
+                        SELECT FROM classroom_students cs
+                        JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id
+                        WHERE cs.student_id = $1
+                        AND ca.teacher_id = $2
+                    )
+                    OR EXISTS (
+                        SELECT FROM cheer_practice_teachers WHERE teacher_id = $2
+                    )",
+                    request_data.student_id,
+                    t_checker_id
+                )
+                .fetch_one(&mut *transaction)
+                .await?
+                .unwrap_or(false)
+            };
+
             if !is_classroom_valid {
                 return Err(Error::InvalidPermission(
                     "Teacher is not the advisor of this classroom".to_string(),
@@ -151,29 +160,12 @@ pub async fn check_practice_attendance(
         }
     }
 
-    let is_blacklisted = query_scalar!(
-        "SELECT EXISTS (
-            SELECT FROM cheer_practice_blacklisted_students WHERE student_id = $1
-        )",
-        request_data.student_id
-    )
-    .fetch_one(&mut *transaction)
-    .await?
-    .unwrap_or(false);
-    if is_blacklisted {
-        return Err(Error::InvalidRequest(
-            "Student is exempt from participating in cheer practice".to_string(),
-            format!("/attendance/cheer/periods/{practice_period_id}/check"),
-        ));
-    }
-
     // Check if student is valid for period and classroom
     let is_student_id_valid = query_scalar!(
         "\
         SELECT EXISTS (\
-            SELECT FROM classroom_students AS cs \
-                JOIN cheer_practice_period_classrooms AS c ON c.classroom_id = cs.classroom_id \
-            WHERE cs.student_id = $1 AND c.practice_period_id = $2\
+            SELECT FROM cheer_practice_attendances_with_detail_view AS cpa \
+            WHERE cpa.student_id = $1 AND cpa.practice_period_id = $2 AND cpa.disabled = FALSE \
         )\
         ",
         request_data.student_id,
@@ -189,13 +181,22 @@ pub async fn check_practice_attendance(
         ));
     }
 
-    let practice_attendance_id = if request_data.is_start {
-        let presence_at_end = request_data.presence.and_then(|presence| match presence {
-            CheerPracticeAttendanceType::AbsentWithoutLeave
-            | CheerPracticeAttendanceType::AbsentWithLeave
-            | CheerPracticeAttendanceType::Deserted => Some(presence),
-            _ => None,
-        });
+    let practice_attendance_id = {
+        let (presence, presence_at_end) = if request_data.is_start {
+            (
+                request_data.presence,
+                match request_data.presence {
+                    Some(
+                        CheerPracticeAttendanceType::AbsentWithLeave
+                        | CheerPracticeAttendanceType::AbsentWithoutLeave
+                        | CheerPracticeAttendanceType::Deserted,
+                    ) => request_data.presence,
+                    _ => None,
+                },
+            )
+        } else {
+            (None, request_data.presence)
+        };
 
         query_scalar!(
             "\
@@ -209,35 +210,12 @@ pub async fn check_practice_attendance(
             practice_period_id,
             request_data.student_id,
             user.id,
-            request_data.presence as Option<CheerPracticeAttendanceType>,
+            presence as Option<CheerPracticeAttendanceType>,
             request_data.absence_reason,
             presence_at_end as Option<CheerPracticeAttendanceType>
         )
         .fetch_one(&mut *transaction)
         .await?
-    } else {
-        let practice_attendance_id = DbCheerPracticeAttendance::get_by_period_id_and_student_id(
-            &mut transaction,
-            practice_period_id,
-            request_data.student_id,
-        )
-        .await?;
-
-        query!(
-            "\
-            UPDATE cheer_practice_attendances \
-            SET checker_id = $1, presence_at_end = $2, absence_reason = $3 \
-            WHERE id = $4\
-            ",
-            user.id,
-            request_data.presence as Option<CheerPracticeAttendanceType>,
-            request_data.absence_reason,
-            practice_attendance_id,
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        practice_attendance_id
     };
 
     transaction.commit().await?;

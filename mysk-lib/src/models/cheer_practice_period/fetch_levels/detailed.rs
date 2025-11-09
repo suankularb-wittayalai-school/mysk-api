@@ -22,6 +22,7 @@ pub struct DetailedCheerPracticePeriod {
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
     pub delay: Option<i64>,
+    pub note: Option<String>,
     pub classrooms: Vec<ClassroomWCheerAttendance>,
 }
 
@@ -88,6 +89,7 @@ impl FetchVariant for DetailedCheerPracticePeriod {
             start_time: relation.start_time,
             end_time: relation.end_time,
             delay: relation.delay,
+            note: relation.note,
             classrooms,
         })
     }
