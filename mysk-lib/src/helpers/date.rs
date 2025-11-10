@@ -33,7 +33,7 @@ pub fn get_current_date() -> NaiveDate {
 pub fn is_today_jaturamitr() -> bool {
     let today = get_current_date();
     let jaturamitr_dates = HashSet::from([
-        NaiveDate::from_ymd_opt(2025, 11, 14).unwrap(),
+        NaiveDate::from_ymd_opt(2025, 11, 13).unwrap(),
         NaiveDate::from_ymd_opt(2025, 11, 15).unwrap(),
         NaiveDate::from_ymd_opt(2025, 11, 22).unwrap(),
     ]);

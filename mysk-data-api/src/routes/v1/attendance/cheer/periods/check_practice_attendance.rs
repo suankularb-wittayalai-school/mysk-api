@@ -92,28 +92,22 @@ pub async fn check_practice_attendance(
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ))?;
 
-            // Advisors can only take attendance of their own advisory classroom, unless that
-            // teacher is in `cheer_practice_teachers`
+            // Only teachers in `cheer_practice_teachers` can take attendance of any classroom
+            // unless that day is Jaturamitr day
             let is_teacher_allowed = query_scalar!(
                 "\
                 SELECT EXISTS (\
                     SELECT FROM cheer_practice_teachers WHERE teacher_id = $1\
-                ) OR EXISTS (\
-                    SELECT FROM classroom_students AS cs \
-                    JOIN classroom_advisors AS ca ON cs.classroom_id = ca.classroom_id \
-                    WHERE ca.teacher_id = $1 AND cs.student_id = $2\
-                )\
-                ",
-                t_checker_id,
-                request_data.student_id,
+                )",
+                t_checker_id
             )
             .fetch_one(&mut *transaction)
             .await?
             .unwrap_or(false);
 
-            if !is_today_jaturamitr() || !is_teacher_allowed {
+            if !is_today_jaturamitr() && !is_teacher_allowed {
                 return Err(Error::InvalidPermission(
-                    "Teacher is not the advisor of this classroom".to_string(),
+                    "Teacher is not allowed to take attendance on this period".to_string(),
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ));
             }
