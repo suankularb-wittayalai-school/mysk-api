@@ -68,10 +68,8 @@ pub async fn check_practice_attendance(
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ))?;
 
-            // Check if the checking student is a cheer staff
-            if !DbCheerPracticePeriod::get_cheer_staffs(&mut transaction)
+            if !DbCheerPracticePeriod::is_student_cheer_staff(&mut transaction, s_checker_id)
                 .await?
-                .contains(&s_checker_id)
             {
                 return Err(Error::InvalidPermission(
                     "Student must be a staff member to update attendances".to_string(),
@@ -94,29 +92,26 @@ pub async fn check_practice_attendance(
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ))?;
 
-            // Advisors can only take attendance of their own advisory classroom, unless that teacher is in `cheer_practice_teachers`
-            let is_classroom_valid = if is_today_jaturamitr() {
-                true
-            } else {
-                query_scalar!(
-                    "SELECT EXISTS (
-                        SELECT FROM classroom_students cs
-                        JOIN classroom_advisors ca ON cs.classroom_id = ca.classroom_id
-                        WHERE cs.student_id = $1
-                        AND ca.teacher_id = $2
-                    )
-                    OR EXISTS (
-                        SELECT FROM cheer_practice_teachers WHERE teacher_id = $2
-                    )",
-                    request_data.student_id,
-                    t_checker_id
-                )
-                .fetch_one(&mut *transaction)
-                .await?
-                .unwrap_or(false)
-            };
+            // Advisors can only take attendance of their own advisory classroom, unless that
+            // teacher is in `cheer_practice_teachers`
+            let is_teacher_allowed = query_scalar!(
+                "\
+                SELECT EXISTS (\
+                    SELECT FROM cheer_practice_teachers WHERE teacher_id = $1\
+                ) OR EXISTS (\
+                    SELECT FROM classroom_students AS cs \
+                    JOIN classroom_advisors AS ca ON cs.classroom_id = ca.classroom_id \
+                    WHERE ca.teacher_id = $1 AND cs.student_id = $2\
+                )\
+                ",
+                t_checker_id,
+                request_data.student_id,
+            )
+            .fetch_one(&mut *transaction)
+            .await?
+            .unwrap_or(false);
 
-            if !is_classroom_valid {
+            if !is_today_jaturamitr() || !is_teacher_allowed {
                 return Err(Error::InvalidPermission(
                     "Teacher is not the advisor of this classroom".to_string(),
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
@@ -146,7 +141,7 @@ pub async fn check_practice_attendance(
             ));
         }
 
-        // `presence_at_end` can only be Present or Deserted
+        // `presence_at_end` can only be either `present` or `deserted`
         if !request_data.is_start
             && !matches!(
                 presence,
@@ -181,42 +176,35 @@ pub async fn check_practice_attendance(
         ));
     }
 
-    let practice_attendance_id = {
-        let (presence, presence_at_end) = if request_data.is_start {
-            (
-                request_data.presence,
-                match request_data.presence {
-                    Some(
-                        CheerPracticeAttendanceType::AbsentWithLeave
-                        | CheerPracticeAttendanceType::AbsentWithoutLeave
-                        | CheerPracticeAttendanceType::Deserted,
-                    ) => request_data.presence,
-                    _ => None,
-                },
-            )
-        } else {
-            (None, request_data.presence)
-        };
+    let is_presence_unset = request_data.presence.is_none();
 
-        query_scalar!(
-            "\
-            INSERT INTO cheer_practice_attendances\
-                (practice_period_id, student_id, checker_id, presence, absence_reason, presence_at_end)\
-                VALUES ($1, $2, $3, $4, $5, $6)\
-            ON CONFLICT(practice_period_id, student_id)\
-                DO UPDATE SET checker_id = $3, presence = $4, absence_reason = $5, presence_at_end = $6 \
-            RETURNING id\
-            ",
-            practice_period_id,
-            request_data.student_id,
-            user.id,
-            presence as Option<CheerPracticeAttendanceType>,
-            request_data.absence_reason,
-            presence_at_end as Option<CheerPracticeAttendanceType>
-        )
-        .fetch_one(&mut *transaction)
-        .await?
-    };
+    // Upsert with coalescing if the presence given isn't null (not unset by the client)
+    let practice_attendance_id = query_scalar!(
+        "\
+        INSERT INTO cheer_practice_attendances AS cpa (\
+            practice_period_id, student_id, checker_id, presence, absence_reason\
+        ) VALUES ($1, $2, $3, $4, $5)\
+        ON CONFLICT(practice_period_id, student_id) DO UPDATE SET \
+            checker_id = $3,\
+            presence = CASE WHEN $7 THEN (\
+                CASE WHEN $6 THEN NULL ELSE COALESCE($4, cpa.presence) END)\
+                ELSE cpa.presence END,\
+            absence_reason = $5,\
+            presence_at_end = CASE WHEN (NOT $7) THEN (\
+                CASE WHEN $6 THEN NULL ELSE COALESCE($4, cpa.presence_at_end) END)\
+                ELSE cpa.presence_at_end END \
+        RETURNING id\
+        ",
+        practice_period_id,
+        request_data.student_id,
+        user.id,
+        request_data.presence as Option<CheerPracticeAttendanceType>,
+        request_data.absence_reason,
+        is_presence_unset,
+        request_data.is_start,
+    )
+    .fetch_one(&mut *transaction)
+    .await?;
 
     transaction.commit().await?;
 

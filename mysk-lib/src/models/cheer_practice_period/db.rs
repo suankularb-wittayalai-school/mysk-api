@@ -53,6 +53,18 @@ impl DbCheerPracticePeriod {
 
         Ok(res)
     }
+
+    pub async fn is_student_cheer_staff(conn: &mut PgConnection, student_id: Uuid) -> Result<bool> {
+        let res = query_scalar!(
+            "SELECT EXISTS (SELECT FROM cheer_practice_staffs WHERE student_id = $1)",
+            student_id,
+        )
+        .fetch_one(conn)
+        .await?
+        .unwrap_or(false);
+
+        Ok(res)
+    }
 }
 
 impl QueryRelation for DbCheerPracticePeriod {
