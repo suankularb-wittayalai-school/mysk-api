@@ -49,7 +49,7 @@ pub async fn query_cheer_practice_attendances(
             (fd.practice_period_id, fd.classroom_id)
     {
         let is_valid = query_scalar!(
-                    "SELECT EXISTS(SELECT 1 FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 AND classroom_id = $2)", 
+                    "SELECT EXISTS(SELECT 1 FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 AND classroom_id = $2)",
                     practice_period_id,
                     classroom_id
                 )
