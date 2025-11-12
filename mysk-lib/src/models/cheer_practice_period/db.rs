@@ -1,3 +1,5 @@
+use std::{collections::HashSet, str::FromStr};
+
 use crate::{
     common::requests::FilterConfig,
     models::{
@@ -64,6 +66,20 @@ impl DbCheerPracticePeriod {
         .unwrap_or(false);
 
         Ok(res)
+    }
+
+    pub fn in_jaturamitr_period(practice_period_id: Uuid) -> bool {
+        let jaturamitr_periods = HashSet::from([
+            Uuid::from_str("870658c9-231d-454b-af62-86c0c7827ada").expect("Invalid UUID"),
+            Uuid::from_str("a5b701d0-be27-4c52-a640-e23790457b61").expect("Invalid UUID"),
+            Uuid::from_str("0c18a3b9-3b7f-4c71-a380-1ad0c448e35a").expect("Invalid UUID"),
+        ]);
+
+        if !jaturamitr_periods.contains(&practice_period_id) {
+            false
+        } else {
+            true
+        }
     }
 }
 

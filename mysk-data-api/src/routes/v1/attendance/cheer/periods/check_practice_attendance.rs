@@ -8,7 +8,6 @@ use actix_web::{
 };
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
-    helpers::date::is_today_jaturamitr,
     models::{
         cheer_practice_attendance::CheerPracticeAttendance,
         cheer_practice_period::db::DbCheerPracticePeriod,
@@ -105,7 +104,9 @@ pub async fn check_practice_attendance(
             .await?
             .unwrap_or(false);
 
-            if !is_today_jaturamitr() && !is_teacher_allowed {
+            if !DbCheerPracticePeriod::in_jaturamitr_period(practice_period_id)
+                && !is_teacher_allowed
+            {
                 return Err(Error::InvalidPermission(
                     "Teacher is not allowed to take attendance on this period".to_string(),
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),

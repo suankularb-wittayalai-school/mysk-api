@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use chrono::{Datelike, FixedOffset, NaiveDate, Utc};
 
 pub fn get_current_academic_year(date: Option<NaiveDate>) -> i64 {
@@ -28,15 +26,4 @@ pub fn get_current_date() -> NaiveDate {
     Utc::now()
         .with_timezone(&FixedOffset::east_opt(7 * 3600).unwrap()) // UTC+7: Asia/Bangkok
         .date_naive()
-}
-
-pub fn is_today_jaturamitr() -> bool {
-    let today = get_current_date();
-    let jaturamitr_dates = HashSet::from([
-        NaiveDate::from_ymd_opt(2025, 11, 13).unwrap(),
-        NaiveDate::from_ymd_opt(2025, 11, 15).unwrap(),
-        NaiveDate::from_ymd_opt(2025, 11, 22).unwrap(),
-    ]);
-
-    jaturamitr_dates.contains(&today)
 }
