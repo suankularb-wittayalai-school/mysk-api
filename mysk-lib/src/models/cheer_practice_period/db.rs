@@ -1,6 +1,7 @@
 use std::{collections::HashSet, str::FromStr};
 
 use crate::{
+    cache::GlobalCache,
     common::requests::FilterConfig,
     models::{
         cheer_practice_period::request::{
@@ -56,16 +57,30 @@ impl DbCheerPracticePeriod {
         Ok(res)
     }
 
-    pub async fn is_student_cheer_staff(conn: &mut PgConnection, student_id: Uuid) -> Result<bool> {
-        let res = query_scalar!(
-            "SELECT EXISTS (SELECT FROM cheer_practice_staffs WHERE student_id = $1)",
-            student_id,
-        )
-        .fetch_one(conn)
-        .await?
-        .unwrap_or(false);
+    pub fn is_student_cheer_staff(cache: &GlobalCache, student_id: Uuid) -> bool {
+        let res = cache.contains_cheer_staff(student_id);
+        // let res = query_scalar!(
+        //     "SELECT EXISTS (SELECT FROM cheer_practice_staffs WHERE student_id = $1)",
+        //     student_id,
+        // )
+        // .fetch_one(conn)
+        // .await?
+        // .unwrap_or(false);
 
-        Ok(res)
+        res
+    }
+
+    pub fn is_teacher_cheer_staff(cache: &GlobalCache, teacher_id: Uuid) -> bool {
+        let res = cache.contains_cheer_teacher(teacher_id);
+        // let res = query_scalar!(
+        //     "SELECT EXISTS (SELECT FROM cheer_practice_teachers WHERE teacher_id = $1)",
+        //     teacher_id,
+        // )
+        // .fetch_one(conn)
+        // .await?
+        // .unwrap_or(false);
+
+        res
     }
 
     pub fn in_jaturamitr_period(practice_period_id: Uuid) -> bool {

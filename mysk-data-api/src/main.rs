@@ -10,11 +10,11 @@ use actix_web::{
 };
 use anyhow::{Context as _, Result as AnyhowResult};
 use dotenvy::dotenv;
-use mysk_lib::{common::config::Config, prelude::*};
+use mysk_lib::{cache::GlobalCache, common::config::Config, prelude::*};
 use parking_lot::Mutex;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::{collections::HashSet, env};
+use std::{collections::HashSet, env, sync::Arc};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 mod extractors;
@@ -25,6 +25,7 @@ pub struct AppState {
     db: PgPool,
     oauth_states: Mutex<HashSet<String>>,
     env: Config,
+    cache: Arc<GlobalCache>,
 }
 
 #[actix_web::main]
@@ -71,10 +72,14 @@ async fn main() -> AnyhowResult<()> {
     tracing::debug!("You can use this link to login with Google via OAuth:");
     tracing::debug!("{}/auth/oauth/init", config.root_uri);
 
+    let app_cache = GlobalCache::new().populate_cache(&pool).await?;
+    tracing::debug!("Built global cache successfully");
+
     let app_state = Data::new(AppState {
         db: pool.clone(),
         oauth_states: Mutex::new(HashSet::new()),
         env: config,
+        cache: Arc::clone(&app_cache),
     });
 
     HttpServer::new(move || {

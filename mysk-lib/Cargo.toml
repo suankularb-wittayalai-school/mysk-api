@@ -14,6 +14,7 @@ jsonwebtoken.workspace = true
 mysk-lib-macros = { path = "../mysk-lib-macros" }
 rand.workspace = true
 reqwest.workspace = true
+scc.workspace = true
 serde_json.workspace = true
 serde_qs.workspace = true
 serde.workspace = true

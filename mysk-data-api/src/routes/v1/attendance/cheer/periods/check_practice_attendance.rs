@@ -67,9 +67,7 @@ pub async fn check_practice_attendance(
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ))?;
 
-            if !DbCheerPracticePeriod::is_student_cheer_staff(&mut transaction, s_checker_id)
-                .await?
-            {
+            if !DbCheerPracticePeriod::is_student_cheer_staff(&data.cache, s_checker_id) {
                 return Err(Error::InvalidPermission(
                     "Student must be a staff member to update attendances".to_string(),
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
@@ -93,19 +91,8 @@ pub async fn check_practice_attendance(
 
             // Only teachers in `cheer_practice_teachers` can take attendance of any classroom
             // unless that day is Jaturamitr day
-            let is_teacher_allowed = query_scalar!(
-                "\
-                SELECT EXISTS (\
-                    SELECT FROM cheer_practice_teachers WHERE teacher_id = $1\
-                )",
-                t_checker_id
-            )
-            .fetch_one(&mut *transaction)
-            .await?
-            .unwrap_or(false);
-
             if !DbCheerPracticePeriod::in_jaturamitr_period(practice_period_id)
-                && !is_teacher_allowed
+                && !DbCheerPracticePeriod::is_teacher_cheer_staff(&data.cache, t_checker_id)
             {
                 return Err(Error::InvalidPermission(
                     "Teacher is not allowed to take attendance on this period".to_string(),
