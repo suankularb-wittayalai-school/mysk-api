@@ -1,19 +1,29 @@
 use crate::{
     models::{
-        certificate::db::DbCertificate, cheer_practice_attendance::db::DbCheerPracticeAttendance,
-        cheer_practice_period::db::DbCheerPracticePeriod, classroom::db::DbClassroom,
-        club::db::DbClub, club_request::db::DbClubRequest, contact::db::DbContact,
-        elective_subject::db::DbElectiveSubject, elective_trade_offer::db::DbElectiveTradeOffer,
-        enums::UserRole, online_teaching_reports::db::DbOnlineTeachingReports,
-        organization::db::DbOrganization, person::db::DbPerson, student::db::DbStudent,
-        subject::db::DbSubject, subject_group::db::DbSubjectGroup, teacher::db::DbTeacher,
-        user::User,
+        certificate::db::DbCertificate,
+        cheer_practice_attendance::db::DbCheerPracticeAttendance,
+        cheer_practice_period::db::DbCheerPracticePeriod,
+        classroom::db::DbClassroom,
+        club::db::DbClub,
+        club_request::db::DbClubRequest,
+        contact::db::DbContact,
+        elective_subject::db::DbElectiveSubject,
+        elective_trade_offer::db::DbElectiveTradeOffer,
+        enums::UserRole,
+        online_teaching_reports::db::DbOnlineTeachingReports,
+        organization::db::DbOrganization,
+        person::db::DbPerson,
+        student::db::DbStudent,
+        subject::db::DbSubject,
+        subject_group::db::DbSubjectGroup,
+        teacher::db::DbTeacher,
+        user::{User, UserMeta},
     },
     permissions::roles::{AdminRole, ManagementRole, StudentRole, TeacherRole},
     prelude::*,
 };
 use futures::future;
-use sqlx::{PgConnection, query};
+use sqlx::PgConnection;
 
 #[derive(Clone, Copy)]
 pub enum ActionType {
@@ -183,40 +193,19 @@ pub enum Authorizer {
 }
 
 impl Authorizer {
-    pub async fn new(conn: &mut PgConnection, user: &User, source: String) -> Result<Self> {
-        match user.role {
-            _ if user.is_admin => Ok(Self::Admin(AdminRole)),
-            UserRole::Student => Ok(Self::Student(StudentRole::new(
-                query!(
-                    "\
-                    SELECT s.id \
-                    FROM students AS s JOIN users AS u ON u.id = s.user_id \
-                    WHERE u.id = $1\
-                    ",
-                    user.id,
-                )
-                .fetch_one(conn)
-                .await?
-                .id,
-                user.id,
-                source,
-            ))),
-            UserRole::Teacher => Ok(Self::Teacher(TeacherRole::new(
-                query!(
-                    "\
-                    SELECT t.id \
-                    FROM teachers AS t JOIN users AS u ON u.id = t.user_id \
-                    WHERE u.id = $1\
-                    ",
-                    user.id,
-                )
-                .fetch_one(conn)
-                .await?
-                .id,
-                user.id,
-                source,
-            ))),
-            UserRole::Management => Ok(Self::Management(ManagementRole::new(user.id, source))),
+    pub fn new(user: &User, source: String) -> Self {
+        match user {
+            _ if user.is_admin => Self::Admin(AdminRole),
+            User {
+                role: UserRole::Student,
+                meta: Some(UserMeta::Student { student_id }),
+                ..
+            } => Self::Student(StudentRole::new(*student_id, user.id, source)),
+            User {
+                role: UserRole::Teacher,
+                meta: Some(UserMeta::Teacher { teacher_id }),
+                ..
+            } => Self::Teacher(TeacherRole::new(*teacher_id, user.id, source)),
             _ => unimplemented!(),
         }
     }

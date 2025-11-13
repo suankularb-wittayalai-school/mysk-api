@@ -51,12 +51,7 @@ pub async fn modify_report(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        format!("/subjects/attendance/{report_id}"),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, format!("/subjects/attendance/{report_id}"));
 
     // Check if class report exists
     let report_id = DbOnlineTeachingReports::get_by_id(&mut conn, report_id)

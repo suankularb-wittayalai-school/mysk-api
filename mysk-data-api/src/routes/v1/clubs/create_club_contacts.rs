@@ -42,8 +42,7 @@ pub async fn create_club_contacts(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
-    let authorizer =
-        Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/contacts")).await?;
+    let authorizer = Authorizer::new(&user, format!("/clubs/{club_id}/contacts"));
 
     let club = DbClub::get_by_id(&mut conn, club_id).await?;
 

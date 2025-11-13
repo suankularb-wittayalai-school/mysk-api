@@ -53,12 +53,7 @@ pub async fn update_club_requests(
     } else {
         request_data.status
     };
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        format!("/clubs/requests/{club_request_id}"),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, format!("/clubs/requests/{club_request_id}"));
 
     // Check if the club request exists
     let ClubRequest::Default(club_request, _) = ClubRequest::get_by_id(

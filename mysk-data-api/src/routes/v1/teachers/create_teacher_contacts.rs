@@ -44,8 +44,7 @@ pub async fn create_teacher_contacts(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let teacher_id = teacher_id.into_inner();
-    let authorizer =
-        Authorizer::new(&mut conn, &user, format!("/teachers/{teacher_id}/contacts")).await?;
+    let authorizer = Authorizer::new(&user, format!("/teachers/{teacher_id}/contacts"));
 
     // Check if client is teacher
     let teacher = DbTeacher::get_by_id(&mut conn, teacher_id).await?;

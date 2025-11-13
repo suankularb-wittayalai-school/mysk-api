@@ -32,12 +32,7 @@ pub async fn query_students_cheer_practice_attendances(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let student_id = id.into_inner();
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        format!("/students/{student_id}/attendance/cheer"),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, format!("/students/{student_id}/attendance/cheer"));
 
     let ids = DbCheerPracticeAttendance::get_by_student_id(&mut conn, student_id).await?;
     let cheer_practice_attendances = CheerPracticeAttendance::get_by_ids(

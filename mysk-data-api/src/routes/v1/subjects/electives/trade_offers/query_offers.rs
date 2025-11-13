@@ -31,13 +31,7 @@ pub async fn query_trade_offers(
     }: RequestType<EmptyRequestData, QueryableElectiveTradeOffer, SortableElectiveTradeOffer>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        "/subjects/electives/trade-offers".to_string(),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, "/subjects/electives/trade-offers".to_string());
 
     let (trade_offers, pagination) = ElectiveTradeOffer::query(
         pool,

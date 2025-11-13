@@ -55,11 +55,9 @@ pub async fn update_trade_offer(
     };
 
     let authorizer = Authorizer::new(
-        &mut transaction,
         &user,
         format!("/subjects/electives/trade-offers/{trade_offer_id}"),
-    )
-    .await?;
+    );
 
     // Checks if the student is "blacklisted" from enrolling in an elective
     if DbElectiveSubject::is_student_blacklisted(&mut transaction, client_student_id).await? {

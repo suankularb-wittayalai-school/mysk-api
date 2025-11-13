@@ -27,14 +27,11 @@ pub async fn query_report_details(
     }: RequestType<OnlineTeachingReports>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
     let online_teaching_report_id = online_teaching_report_id.into_inner();
     let authorizer = Authorizer::new(
-        &mut conn,
         &user,
         format!("/subjects/attendance/{online_teaching_report_id}"),
-    )
-    .await?;
+    );
 
     let report = OnlineTeachingReports::get_by_id(
         pool,

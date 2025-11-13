@@ -2,7 +2,7 @@ use crate::{models::enums::UserRole, prelude::*};
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, PgConnection, query};
+use sqlx::{FromRow, PgConnection, query, query_scalar};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById, Serialize)]
@@ -17,12 +17,12 @@ pub struct DbUser {
 }
 
 impl DbUser {
-    pub async fn get_by_email(conn: &mut PgConnection, email: &str) -> Result<Uuid> {
-        let res = query!("SELECT id FROM users WHERE email = $1", email)
+    pub async fn get_id_by_email(conn: &mut PgConnection, email: &str) -> Result<Uuid> {
+        let res = query_scalar!("SELECT id FROM users WHERE email = $1", email)
             .fetch_one(conn)
             .await?;
 
-        Ok(res.id)
+        Ok(res)
     }
 
     pub async fn get_user_permissions(

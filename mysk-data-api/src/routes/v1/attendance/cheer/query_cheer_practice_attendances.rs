@@ -38,7 +38,7 @@ pub async fn query_cheer_practice_attendances(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
-    let authorizer = Authorizer::new(&mut conn, &user, "/attendance/cheer".to_string()).await?;
+    let authorizer = Authorizer::new(&user, "/attendance/cheer".to_string());
 
     // TODO: Using `practice_period_id` and `classroom_id` filters separately or none at all may
     // overload the FetchVariant's `.from_relation` logic, causing unstable behaviour and/or pool

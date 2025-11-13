@@ -13,10 +13,9 @@ use mysk_lib::{
         cheer_practice_period::db::DbCheerPracticePeriod,
         enums::{
             CheerPracticeAttendanceType,
-            UserRole::{Student, Teacher},
+            UserRole::{self},
         },
-        student::db::DbStudent,
-        teacher::db::DbTeacher,
+        user::{User, UserMeta},
     },
     permissions::Authorizer,
     prelude::*,
@@ -52,21 +51,18 @@ pub async fn check_practice_attendance(
     let practice_period_id = practice_period_id.into_inner();
 
     let authorizer = Authorizer::new(
-        &mut transaction,
         &user,
         format!("/attendance/cheer/periods/{practice_period_id}/check"),
-    )
-    .await?;
+    );
 
-    match user.role {
-        Student => {
-            let s_checker_id = DbStudent::get_student_from_user_id(&mut transaction, user.id)
-                .await?
-                .ok_or(Error::InvalidPermission(
-                    "User is not a student".to_string(),
-                    format!("/attendance/cheer/periods/{practice_period_id}/check"),
-                ))?;
-
+    match user {
+        User {
+            role: UserRole::Student,
+            meta: Some(UserMeta::Student {
+                student_id: s_checker_id,
+            }),
+            ..
+        } => {
             if !DbCheerPracticePeriod::is_student_cheer_staff(&data.cache, s_checker_id) {
                 return Err(Error::InvalidPermission(
                     "Student must be a staff member to update attendances".to_string(),
@@ -75,20 +71,19 @@ pub async fn check_practice_attendance(
             }
 
             if s_checker_id == request_data.student_id {
-                return Err(Error::InternalServerError(
+                return Err(Error::InvalidPermission(
                     "Cheer staff cannot take their own cheer practice attendance".to_string(),
                     format!("/attendance/cheer/periods/{practice_period_id}/check"),
                 ));
             }
         }
-        Teacher => {
-            let t_checker_id = DbTeacher::get_teacher_from_user_id(&mut transaction, user.id)
-                .await?
-                .ok_or(Error::InvalidPermission(
-                    "User is not a teacher".to_string(),
-                    format!("/attendance/cheer/periods/{practice_period_id}/check"),
-                ))?;
-
+        User {
+            role: UserRole::Teacher,
+            meta: Some(UserMeta::Teacher {
+                teacher_id: t_checker_id,
+            }),
+            ..
+        } => {
             // Only teachers in `cheer_practice_teachers` can take attendance of any classroom
             // unless that day is Jaturamitr day
             if !DbCheerPracticePeriod::in_jaturamitr_period(practice_period_id)
@@ -102,7 +97,7 @@ pub async fn check_practice_attendance(
         }
         _ => {
             return Err(Error::InvalidPermission(
-                "Logged in UserRole not permitted to perform this action".to_string(),
+                "Insufficient permissions to perform this action".to_string(),
                 format!("/attendance/cheer/periods/{practice_period_id}/check"),
             ));
         }

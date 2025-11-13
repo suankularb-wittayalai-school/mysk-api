@@ -51,7 +51,7 @@ impl FetchVariant for DetailedTeacher {
         .await?;
 
         let user = match relation.user_id {
-            Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
+            Some(user_id) => Some(User::get_by_id(&mut conn, user_id, None).await?),
             None => None,
         };
 

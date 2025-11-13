@@ -41,12 +41,7 @@ pub async fn create_trade_offer(
     let pool = &data.db;
     let mut transaction = data.db.begin().await?;
     let other_student_id = request_data.receiver_id;
-    let authorizer = Authorizer::new(
-        &mut transaction,
-        &user,
-        "/subjects/electives/trade-offers".to_string(),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, "/subjects/electives/trade-offers".to_string());
 
     // Checks if the student is "blacklisted" from enrolling in an elective
     if DbElectiveSubject::is_student_blacklisted(&mut transaction, client_student_id).await? {

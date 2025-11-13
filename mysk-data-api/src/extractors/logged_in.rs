@@ -7,7 +7,6 @@ use futures::{
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use mysk_lib::{auth::oauth::TokenClaims, models::user::User, prelude::*};
 use serde::Serialize;
-use uuid::Uuid;
 
 /// Extractor to allow only clients that are logged in.
 #[derive(Serialize)]
@@ -73,14 +72,14 @@ impl FromRequest for LoggedIn {
             .boxed();
         };
 
-        let Ok(user_id) = Uuid::parse_str(&decoded_token.claims.sub) else {
-            return future::err(Error::EntityNotFound("User not found".to_string(), source))
-                .boxed();
-        };
-
         async move {
             Ok(LoggedIn(
-                User::get_by_id(&mut *(conn.await?), user_id).await?,
+                User::get_by_id(
+                    &mut *(conn.await?),
+                    decoded_token.claims.sub,
+                    decoded_token.claims.mta,
+                )
+                .await?,
             ))
         }
         .boxed()

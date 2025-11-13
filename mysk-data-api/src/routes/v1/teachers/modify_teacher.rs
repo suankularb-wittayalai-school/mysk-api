@@ -64,7 +64,7 @@ pub async fn modify_teacher(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let teacher_id = teacher_id.into_inner();
-    let authorizer = Authorizer::new(&mut conn, &user, format!("teachers/{teacher_id}")).await?;
+    let authorizer = Authorizer::new(&user, format!("teachers/{teacher_id}"));
 
     let db_teacher = DbTeacher::get_by_id(&mut conn, teacher_id).await?;
     let person_id = db_teacher

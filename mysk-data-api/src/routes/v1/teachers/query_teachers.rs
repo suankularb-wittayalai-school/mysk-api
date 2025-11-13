@@ -31,8 +31,7 @@ pub async fn query_teachers(
     }: RequestType<EmptyRequestData, QueryableTeacher, SortableTeacher>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
-    let authorizer = Authorizer::new(&mut conn, &user, "/teachers".to_string()).await?;
+    let authorizer = Authorizer::new(&user, "/teachers".to_string());
 
     let (teacher, pagination) = Teacher::query(
         pool,
