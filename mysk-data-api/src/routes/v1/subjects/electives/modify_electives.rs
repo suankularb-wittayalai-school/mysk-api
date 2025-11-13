@@ -37,11 +37,9 @@ pub async fn modify_elective_subject(
     let mut transaction = data.db.begin().await?;
     let elective_subject_session_id = elective_subject_session_id.into_inner();
     let authorizer = Authorizer::new(
-        &mut transaction,
         &user,
         format!("/subjects/electives/{elective_subject_session_id}/enroll"),
-    )
-    .await?;
+    );
 
     // Checks if the student is "blacklisted" from enrolling in an elective
     if DbElectiveSubject::is_student_blacklisted(&mut transaction, student_id).await? {

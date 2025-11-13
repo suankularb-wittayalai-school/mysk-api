@@ -46,12 +46,7 @@ pub async fn upload_report_image(
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let report_id = report_id.into_inner();
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        format!("/subjects/attendance/image/{report_id}"),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, format!("/subjects/attendance/image/{report_id}"));
 
     let class_report = DbOnlineTeachingReports::get_by_id(&mut conn, report_id).await?;
 

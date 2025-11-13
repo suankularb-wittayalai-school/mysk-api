@@ -1,8 +1,11 @@
-use crate::{AppState, extractors::logged_in::LoggedIn};
-use actix_web::{FromRequest, HttpRequest, dev::Payload, web::Data};
+use crate::extractors::logged_in::LoggedIn;
+use actix_web::{FromRequest, HttpRequest, dev::Payload};
 use futures::{FutureExt as _, future::LocalBoxFuture};
 use mysk_lib::{
-    models::{enums::UserRole, student::db::DbStudent},
+    models::{
+        enums::UserRole,
+        user::{User, UserMeta},
+    },
     prelude::*,
 };
 use serde::Serialize;
@@ -17,30 +20,22 @@ impl FromRequest for LoggedInStudent {
     type Future = LocalBoxFuture<'static, Result<Self>>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let app_state = req
-            .app_data::<Data<AppState>>()
-            .expect("Irrecoverable error, AppState is None");
-        let conn = app_state.db.acquire();
         let source = req.path().to_string();
         let user = LoggedIn::from_request(req, payload);
 
         async move {
             let user = user.await?.0;
-            if !matches!(user.role, UserRole::Student) {
-                return Err(Error::InvalidPermission(
+            match user {
+                User {
+                    role: UserRole::Student,
+                    meta: Some(UserMeta::Student { student_id }),
+                    ..
+                } => Ok(LoggedInStudent(student_id)),
+                _ => Err(Error::InvalidPermission(
                     "User is not a student".to_string(),
                     source,
-                ));
+                )),
             }
-
-            let student_id = DbStudent::get_student_from_user_id(&mut *(conn.await?), user.id)
-                .await?
-                .ok_or(Error::InvalidPermission(
-                    "User is not a student".to_string(),
-                    source,
-                ))?;
-
-            Ok(LoggedInStudent(student_id))
         }
         .boxed_local()
     }

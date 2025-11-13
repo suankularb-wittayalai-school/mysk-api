@@ -44,7 +44,7 @@ pub async fn add_club_members(
     let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let invitee_student_id = request_data.id;
-    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/add")).await?;
+    let authorizer = Authorizer::new(&user, format!("/clubs/{club_id}/add"));
     let current_year = get_current_academic_year(None);
 
     // Check if the invitee student exists

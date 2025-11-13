@@ -37,8 +37,7 @@ pub async fn query_reports(
     >,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
-    let authorizer = Authorizer::new(&mut conn, &user, "/subjects/attendance".to_string()).await?;
+    let authorizer = Authorizer::new(&user, "/subjects/attendance".to_string());
 
     let reports = OnlineTeachingReports::query(
         pool,

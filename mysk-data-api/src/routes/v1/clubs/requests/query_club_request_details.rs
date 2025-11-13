@@ -27,14 +27,8 @@ pub async fn query_club_request_details(
     }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
     let club_request_id = club_request_id.into_inner();
-    let authorizer = Authorizer::new(
-        &mut conn,
-        &user,
-        format!("/clubs/requests/{club_request_id}"),
-    )
-    .await?;
+    let authorizer = Authorizer::new(&user, format!("/clubs/requests/{club_request_id}"));
 
     let club_request = ClubRequest::get_by_id(
         pool,

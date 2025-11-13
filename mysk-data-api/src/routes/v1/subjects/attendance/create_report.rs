@@ -49,7 +49,7 @@ pub async fn create_report(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
-    let authorizer = Authorizer::new(&mut conn, &user, "/subjects/attendance".to_string()).await?;
+    let authorizer = Authorizer::new(&user, "/subjects/attendance".to_string());
 
     // Check if subject exists
     let subject_id = DbSubject::get_by_id(&mut conn, class_report.subject_id)

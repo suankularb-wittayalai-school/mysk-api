@@ -1,5 +1,3 @@
-use std::{collections::HashSet, str::FromStr};
-
 use crate::{
     cache::GlobalCache,
     common::requests::FilterConfig,
@@ -16,7 +14,16 @@ use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
 use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query_scalar};
-use uuid::Uuid;
+use std::{collections::HashSet, sync::LazyLock};
+use uuid::{Uuid, uuid};
+
+static JATURAMITR_PERIODS: LazyLock<HashSet<Uuid>> = LazyLock::new(|| {
+    HashSet::from([
+        uuid!("870658c9-231d-454b-af62-86c0c7827ada"),
+        uuid!("a5b701d0-be27-4c52-a640-e23790457b61"),
+        uuid!("0c18a3b9-3b7f-4c71-a380-1ad0c448e35a"),
+    ])
+});
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
 #[from_query(
@@ -58,43 +65,15 @@ impl DbCheerPracticePeriod {
     }
 
     pub fn is_student_cheer_staff(cache: &GlobalCache, student_id: Uuid) -> bool {
-        let res = cache.contains_cheer_staff(student_id);
-        // let res = query_scalar!(
-        //     "SELECT EXISTS (SELECT FROM cheer_practice_staffs WHERE student_id = $1)",
-        //     student_id,
-        // )
-        // .fetch_one(conn)
-        // .await?
-        // .unwrap_or(false);
-
-        res
+        cache.contains_cheer_staff(student_id)
     }
 
     pub fn is_teacher_cheer_staff(cache: &GlobalCache, teacher_id: Uuid) -> bool {
-        let res = cache.contains_cheer_teacher(teacher_id);
-        // let res = query_scalar!(
-        //     "SELECT EXISTS (SELECT FROM cheer_practice_teachers WHERE teacher_id = $1)",
-        //     teacher_id,
-        // )
-        // .fetch_one(conn)
-        // .await?
-        // .unwrap_or(false);
-
-        res
+        cache.contains_cheer_teacher(teacher_id)
     }
 
     pub fn in_jaturamitr_period(practice_period_id: Uuid) -> bool {
-        let jaturamitr_periods = HashSet::from([
-            Uuid::from_str("870658c9-231d-454b-af62-86c0c7827ada").expect("Invalid UUID"),
-            Uuid::from_str("a5b701d0-be27-4c52-a640-e23790457b61").expect("Invalid UUID"),
-            Uuid::from_str("0c18a3b9-3b7f-4c71-a380-1ad0c448e35a").expect("Invalid UUID"),
-        ]);
-
-        if !jaturamitr_periods.contains(&practice_period_id) {
-            false
-        } else {
-            true
-        }
+        JATURAMITR_PERIODS.contains(&practice_period_id)
     }
 }
 

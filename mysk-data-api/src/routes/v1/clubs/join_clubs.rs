@@ -36,7 +36,7 @@ pub async fn join_clubs(
     let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let current_year = get_current_academic_year(None);
-    let authorizer = Authorizer::new(&mut conn, &user, format!("/clubs/{club_id}/join")).await?;
+    let authorizer = Authorizer::new(&user, format!("/clubs/{club_id}/join"));
 
     // Check if club exists
     let Club::Detailed(club, _) = Club::get_by_id(

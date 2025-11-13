@@ -11,7 +11,7 @@ use mysk_lib::{
     auth::oauth::{GoogleUserResult, TokenClaims, verify_id_token},
     common::response::ResponseType,
     error::Error,
-    models::user::User,
+    models::user::{User, UserMeta},
     prelude::*,
 };
 use serde::{Deserialize, Serialize};
@@ -56,9 +56,7 @@ pub async fn gsi_handler(
     };
 
     let google_user = GoogleUserResult::from_token_payload(google_id_data);
-    let user_id = User::get_by_email(&mut *(data.db.acquire().await?), &google_user.email)
-        .await?
-        .id;
+    let user = User::get_by_email(&mut *(data.db.acquire().await?), &google_user.email).await?;
 
     let now = Utc::now();
     let iat = usize::try_from(now.timestamp())
@@ -66,7 +64,13 @@ pub async fn gsi_handler(
     let exp = usize::try_from((now + Duration::minutes(data.env.token_max_age as i64)).timestamp())
         .expect("Irrecoverable error, i64 is out of range for usize");
     let claims = TokenClaims {
-        sub: user_id.to_string(),
+        sub: user.id,
+        mta: match user.meta {
+            Some(UserMeta::Student { student_id: id } | UserMeta::Teacher { teacher_id: id }) => {
+                Some(id)
+            }
+            _ => None,
+        },
         exp,
         iat,
     };

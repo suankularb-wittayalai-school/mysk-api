@@ -7,10 +7,13 @@ use reqwest::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
-    pub sub: String,
+    pub sub: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mta: Option<Uuid>,
     pub iat: usize,
     pub exp: usize,
 }

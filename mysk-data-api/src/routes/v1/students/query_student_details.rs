@@ -27,9 +27,8 @@ pub async fn query_student_details(
     }: RequestType,
 ) -> Result<impl Responder> {
     let pool = &data.db;
-    let mut conn = data.db.acquire().await?;
     let student_id = id.into_inner();
-    let authorizer = Authorizer::new(&mut conn, &user, format!("/students/{student_id}")).await?;
+    let authorizer = Authorizer::new(&user, format!("/students/{student_id}"));
 
     let student = Student::get_by_id(
         pool,

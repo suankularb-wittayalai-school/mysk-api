@@ -30,17 +30,6 @@ pub struct DbStudent {
 }
 
 impl DbStudent {
-    pub async fn get_student_from_user_id(
-        conn: &mut PgConnection,
-        user_id: Uuid,
-    ) -> Result<Option<Uuid>> {
-        let res = query!("SELECT id FROM students WHERE user_id = $1", user_id)
-            .fetch_optional(conn)
-            .await?;
-
-        Ok(res.map(|r| r.id))
-    }
-
     pub async fn get_student_contacts(
         conn: &mut PgConnection,
         student_id: Uuid,

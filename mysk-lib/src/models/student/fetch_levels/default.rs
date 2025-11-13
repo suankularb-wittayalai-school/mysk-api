@@ -40,7 +40,7 @@ impl FetchVariant for DefaultStudent {
 
         let classroom = DbStudent::get_student_classroom(&mut conn, relation.id, None).await?;
         let user = match relation.user_id {
-            Some(user_id) => Some(User::get_by_id(&mut conn, user_id).await?),
+            Some(user_id) => Some(User::get_by_id(&mut conn, user_id, None).await?),
             None => None,
         };
         let person = Person::get_by_id(&mut conn, relation.person_id).await?;
