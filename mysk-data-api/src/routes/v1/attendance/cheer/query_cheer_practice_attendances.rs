@@ -49,13 +49,13 @@ pub async fn query_cheer_practice_attendances(
             (fd.practice_period_id, fd.classroom_id)
     {
         let is_valid = query_scalar!(
-                    "SELECT EXISTS(SELECT 1 FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 AND classroom_id = $2)",
-                    practice_period_id,
-                    classroom_id
-                )
-                .fetch_one(&mut *conn)
-                .await?
-                .unwrap_or(false);
+            "SELECT EXISTS(SELECT 1 FROM cheer_practice_period_classrooms WHERE practice_period_id = $1 AND classroom_id = $2)",
+            practice_period_id,
+            classroom_id
+        )
+        .fetch_one(&mut *conn)
+        .await?
+        .unwrap_or(false);
 
         if !is_valid {
             return Err(Error::InvalidRequest(
