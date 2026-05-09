@@ -54,7 +54,7 @@ impl Queryable for QueryableClub {
             f
         })
         .push_if_some(self.member_ids, |mut f, member_ids| {
-            f.push_sql("id (SELECT club_id FROM club_members WHERE student_id = ANY(")
+            f.push_sql("id IN (SELECT club_id FROM club_members WHERE student_id = ANY(")
                 .push_param(QueryParam::ArrayUuid(member_ids))
                 .push_sql(
                     "
