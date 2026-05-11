@@ -69,7 +69,8 @@ impl Queryable for QueryableClub {
             f.push_sql("id IN (SELECT club_id FROM club_staffs WHERE student_id = ANY(")
                 .push_param(QueryParam::ArrayUuid(staff_ids))
                 .push_sql(") AND year = ")
-                .push_param(QueryParam::Int(get_current_academic_year(None)));
+                .push_param(QueryParam::Int(get_current_academic_year(None)))
+                .push_sql(")");
 
             f
         });
