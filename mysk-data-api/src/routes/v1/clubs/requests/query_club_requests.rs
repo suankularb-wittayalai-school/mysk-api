@@ -5,7 +5,7 @@ use crate::{
 use actix_web::{HttpResponse, Responder, get, web::Data};
 use mysk_lib::{
     common::{
-        requests::RequestType,
+        requests::{EmptyRequestData, RequestType},
         response::{MetadataType, ResponseType},
     },
     models::club_request::{
@@ -28,7 +28,7 @@ pub async fn query_club_requests(
         fetch_level,
         descendant_fetch_level,
         ..
-    }: RequestType<ClubRequest, QueryableClubRequest, SortableClubRequest>,
+    }: RequestType<EmptyRequestData, QueryableClubRequest, SortableClubRequest>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let authorizer = Authorizer::new(&user, "/clubs/requests".to_string());
