@@ -27,7 +27,7 @@ pub async fn create_api_key(
 
     let response = ResponseType::new(
         CreateApiKeyResponse {
-            api_key: api_key.to_string(),
+            api_key: api_key.clone(),
         },
         None,
     );
