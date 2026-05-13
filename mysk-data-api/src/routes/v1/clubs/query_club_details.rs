@@ -1,7 +1,4 @@
-use crate::{
-    AppState,
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
-};
+use crate::{AppState, extractors::api_key::ApiKeyHeader};
 use actix_web::{
     HttpResponse, Responder, get,
     web::{Data, Path},
@@ -9,7 +6,7 @@ use actix_web::{
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
     models::club::Club,
-    permissions::Authorizer,
+    permissions::{Authorizer, roles::AdminRole},
     prelude::*,
 };
 use uuid::Uuid;
@@ -18,7 +15,6 @@ use uuid::Uuid;
 pub async fn query_club_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
-    LoggedIn(user): LoggedIn,
     club_id: Path<Uuid>,
     RequestType {
         fetch_level,
@@ -28,7 +24,7 @@ pub async fn query_club_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let club_id = club_id.into_inner();
-    let authorizer = Authorizer::new(&user, format!("/clubs/{club_id}"));
+    let authorizer = Authorizer::Admin(AdminRole);
 
     let club = Club::get_by_id(
         pool,

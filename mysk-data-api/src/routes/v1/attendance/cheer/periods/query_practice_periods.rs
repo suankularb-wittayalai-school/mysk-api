@@ -28,6 +28,7 @@ pub async fn query_practice_periods(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let authorizer = Authorizer::Admin(AdminRole);
+
     // let authorizer = Authorizer::new(
     //     &mut *(data.db.acquire().await?),
     //     &user,
