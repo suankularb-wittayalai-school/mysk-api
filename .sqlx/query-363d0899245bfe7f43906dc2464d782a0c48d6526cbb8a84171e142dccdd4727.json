@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO cheer_practice_attendances AS cpa (practice_period_id, student_id, checker_id, presence, absence_reason) VALUES ($1, $2, $3, $4, $5)ON CONFLICT(practice_period_id, student_id) DO UPDATE SET checker_id = $3,presence = CASE WHEN $7 THEN (CASE WHEN $6 THEN NULL ELSE COALESCE($4, cpa.presence) END)ELSE cpa.presence END,absence_reason = $5,presence_at_end = CASE WHEN (NOT $7) THEN (CASE WHEN $6 THEN NULL ELSE COALESCE($4, cpa.presence_at_end) END)ELSE cpa.presence_at_end END RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        {
+          "Custom": {
+            "name": "cheer_practice_attendance_type",
+            "kind": {
+              "Enum": [
+                "present",
+                "late",
+                "absent_with_leave",
+                "absent_without_leave",
+                "deserted"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "363d0899245bfe7f43906dc2464d782a0c48d6526cbb8a84171e142dccdd4727"
+}
