@@ -73,6 +73,26 @@ pub async fn join_clubs(
         ));
     }
 
+    // Check if student has exceeded their quota
+    if let Some(eligibility) = query!(
+        "\
+        SELECT club_count, max_clubs::BIGINT AS max_clubs FROM student_club_eligibility \
+        WHERE student_id = $1 AND year = $2\
+        ",
+        student_id,
+        current_year,
+    )
+    .fetch_optional(&mut *conn)
+    .await?
+    {
+        if eligibility.club_count >= eligibility.max_clubs {
+            return Err(Error::InvalidPermission(
+                "Student has reached the maximum number of clubs allowed".to_string(),
+                format!("/clubs/{club_id}/join"),
+            ));
+        }
+    }
+
     // Check if student has already requested to join the club
     if let Some(has_requested) = query!(
         "\
