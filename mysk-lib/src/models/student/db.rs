@@ -75,6 +75,28 @@ impl DbStudent {
             class_no: res.class_no,
         }))
     }
+
+    pub async fn get_student_club_quota(
+        conn: &mut PgConnection,
+        student_id: Uuid,
+        academic_year: Option<i64>,
+    ) -> Result<i64> {
+        let res = query!(
+            "\
+            SELECT max_clubs::BIGINT FROM student_club_eligibility \
+            WHERE student_id = $1 AND year = $2\
+            ",
+            student_id,
+            match academic_year {
+                Some(year) => year,
+                None => get_current_academic_year(None),
+            },
+        )
+        .fetch_optional(conn)
+        .await?;
+
+        Ok(res.and_then(|r| r.max_clubs).unwrap_or(2))
+    }
 }
 
 impl QueryRelation for DbStudent {
