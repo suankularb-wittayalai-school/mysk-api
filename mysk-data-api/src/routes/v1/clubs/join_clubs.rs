@@ -93,31 +93,6 @@ pub async fn join_clubs(
         }
     }
 
-    // Check if student has already requested to join the club
-    if let Some(has_requested) = query!(
-        "\
-        SELECT membership_status AS \"membership_status: SubmissionStatus\" FROM club_members \
-        WHERE club_id = $1 AND year = $2 and membership_status = $3 AND student_id = $4\
-        ",
-        club_id,
-        current_year,
-        SubmissionStatus::Pending as SubmissionStatus,
-        student_id,
-    )
-    .fetch_optional(&mut *conn)
-    .await?
-    {
-        match has_requested.membership_status {
-            SubmissionStatus::Pending => {
-                return Err(Error::InvalidPermission(
-                    "Student has already requested to join the club".to_string(),
-                    format!("/clubs/{club_id}/join"),
-                ));
-            }
-            _ => unreachable!(),
-        }
-    }
-
     let club_member_id = query!(
         "\
         INSERT INTO club_members (club_id, year, membership_status, student_id)\
@@ -125,7 +100,7 @@ pub async fn join_clubs(
         ",
         club_id,
         current_year,
-        SubmissionStatus::Pending as SubmissionStatus,
+        SubmissionStatus::Approved as SubmissionStatus,
         student_id,
     )
     .fetch_one(&mut *conn)
