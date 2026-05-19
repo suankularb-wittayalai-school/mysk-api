@@ -76,6 +76,8 @@ impl DbStudent {
         }))
     }
 
+    // Defaults to 2 if the student has no row in `student_club_eligibility`
+    // which only exists if the student has been added to `club_members`
     pub async fn get_student_club_quota(
         conn: &mut PgConnection,
         student_id: Uuid,
