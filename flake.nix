@@ -11,7 +11,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
       rust-overlay,
@@ -25,12 +24,13 @@
           inherit system overlays;
         };
 
+        rustTarget = pkgs.stdenv.hostPlatform.rust.rustcTarget;
         rustToolchain = pkgs.rust-bin.stable.latest.default.override {
           extensions = [
             "rust-src"
             "rust-analyzer"
           ];
-          targets = [ "x86_64-unknown-linux-gnu" ];
+          targets = [ rustTarget ];
         };
       in
       {
@@ -49,8 +49,8 @@
           ];
 
           shellHook = ''
-            echo "Welcome to the MySK API Rust development environment!"
-            export CARGO_BUILD_TARGET="x86_64-unknown-linux-gnu"
+            echo -e "Welcome to the \e[0;35mMy\e[0;36mSK\e[0m API Rust development environment!"
+            export CARGO_BUILD_TARGET="${rustTarget}"
           '';
         };
       }
