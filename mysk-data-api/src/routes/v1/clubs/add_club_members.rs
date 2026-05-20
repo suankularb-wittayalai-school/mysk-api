@@ -47,7 +47,7 @@ pub async fn add_club_members(
     let authorizer = Authorizer::new(&user, format!("/clubs/{club_id}/add"));
     let current_year = get_current_academic_year(None);
 
-    // Check if the invitee student exists
+    // Check if the invitee student exists and actually has a classroom (no OSKs!)
     match Student::get_by_id(
         pool,
         invitee_student_id,
@@ -105,8 +105,6 @@ pub async fn add_club_members(
         ));
     }
 
-    let mut insert_new_member: bool = true;
-
     // Check if the invitee student is already a club staff
     if club.staffs.iter().any(|staff| match staff {
         Student::IdOnly(staff, _) => staff.id == invitee_student_id,
@@ -118,61 +116,22 @@ pub async fn add_club_members(
         ));
     }
 
-    // Check if the invitee student is already a club member or a club request already exists
-    if let Some(club_request) = query!(
+    let club_member_id = query!(
         "\
-        SELECT membership_status AS \"membership_status: SubmissionStatus\" FROM club_members \
-        WHERE club_id = $1 AND year = $2 AND membership_status != $3 AND student_id = $4\
+        INSERT INTO club_members (club_id, year, membership_status, student_id) \
+        VALUES ($1, $2, $3, $4) \
+        ON CONFLICT (club_id, year, student_id) DO UPDATE \
+            SET membership_status = $3 \
+        RETURNING id\
         ",
         club.id,
         current_year,
-        SubmissionStatus::Declined as SubmissionStatus,
-        invitee_student_id,
+        SubmissionStatus::Approved as SubmissionStatus,
+        invitee_student_id
     )
-    .fetch_optional(&mut *conn)
+    .fetch_one(&mut *conn)
     .await?
-    {
-        match club_request.membership_status {
-            SubmissionStatus::Approved => {
-                return Err(Error::InvalidPermission(
-                    "Invitee student is already a member of the club".to_string(),
-                    format!("/clubs/{club_id}/add"),
-                ));
-            }
-            SubmissionStatus::Pending => insert_new_member = false,
-            SubmissionStatus::Declined => unreachable!(),
-        }
-    }
-
-    let club_member_id = if insert_new_member {
-        query!(
-            "\
-            INSERT INTO club_members (club_id, year, membership_status, student_id)\
-            VALUES ($1, $2, $3, $4) RETURNING id\
-            ",
-            club.id,
-            current_year,
-            SubmissionStatus::Approved as SubmissionStatus,
-            invitee_student_id,
-        )
-        .fetch_one(&mut *conn)
-        .await?
-        .id
-    } else {
-        query!(
-            "\
-            UPDATE club_members SET membership_status = $1 \
-            WHERE club_id = $2 AND year = $3 AND student_id = $4 RETURNING id\
-            ",
-            SubmissionStatus::Approved as SubmissionStatus,
-            club.id,
-            current_year,
-            invitee_student_id,
-        )
-        .fetch_one(&mut *conn)
-        .await?
-        .id
-    };
+    .id;
 
     let club_member = ClubRequest::get_by_id(
         pool,
