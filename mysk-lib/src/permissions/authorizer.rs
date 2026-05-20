@@ -215,6 +215,14 @@ impl Authorizer {
             _ => unimplemented!(),
         }
     }
+
+    pub async fn is_kornor(&self, conn: &mut PgConnection) -> Result<bool> {
+        match self {
+            Authorizer::Admin(_) => Ok(true), // admins have all permissions
+            Authorizer::Organization(org) => org.is_kornor(conn).await,
+            _ => Ok(false),
+        }
+    }
 }
 
 impl Authorizable for Authorizer {
