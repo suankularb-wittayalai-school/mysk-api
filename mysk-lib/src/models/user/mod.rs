@@ -14,6 +14,7 @@ pub mod db;
 pub enum UserMeta {
     Student { student_id: Uuid },
     Teacher { teacher_id: Uuid },
+    Organization { organization_id: Uuid },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -41,7 +42,7 @@ impl User {
                     "\
                     SELECT s.id \
                     FROM students AS s JOIN users AS u ON u.id = s.user_id \
-                    WHERE u.id = $1\
+                    WHERE u.id = $1 AND u.role = 'student'::user_role
                     ",
                     user.id,
                 )
@@ -56,7 +57,22 @@ impl User {
                     "\
                     SELECT t.id \
                     FROM teachers AS t JOIN users AS u ON u.id = t.user_id \
-                    WHERE u.id = $1\
+                    WHERE u.id = $1 AND u.role = 'teacher'::user_role
+                    ",
+                    user.id,
+                )
+                .fetch_one(conn)
+                .await?,
+            }),
+            UserRole::Organization if meta.is_some() => Some(UserMeta::Organization {
+                organization_id: meta.unwrap(),
+            }),
+            UserRole::Organization => Some(UserMeta::Organization {
+                organization_id: query_scalar!(
+                    "\
+                    SELECT o.id \
+                    FROM organizations AS o JOIN users AS u ON u.id = o.user_id \
+                    WHERE u.id = $1 AND u.role = 'organization'::user_role
                     ",
                     user.id,
                 )

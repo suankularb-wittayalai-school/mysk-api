@@ -19,7 +19,7 @@ use crate::{
         teacher::db::DbTeacher,
         user::{User, UserMeta},
     },
-    permissions::roles::{AdminRole, ManagementRole, StudentRole, TeacherRole},
+    permissions::roles::{AdminRole, ManagementRole, OrganizationRole, StudentRole, TeacherRole},
     prelude::*,
 };
 use futures::future;
@@ -190,6 +190,7 @@ pub enum Authorizer {
     Management(ManagementRole),
     Student(StudentRole),
     Teacher(TeacherRole),
+    Organization(OrganizationRole),
 }
 
 impl Authorizer {
@@ -206,7 +207,20 @@ impl Authorizer {
                 meta: Some(UserMeta::Teacher { teacher_id }),
                 ..
             } => Self::Teacher(TeacherRole::new(*teacher_id, user.id, source)),
+            User {
+                role: UserRole::Organization,
+                meta: Some(UserMeta::Organization { organization_id }),
+                ..
+            } => Self::Organization(OrganizationRole::new(*organization_id, user.id, source)),
             _ => unimplemented!(),
+        }
+    }
+
+    pub async fn is_kornor(&self, conn: &mut PgConnection) -> Result<bool> {
+        match self {
+            Authorizer::Admin(_) => Ok(true), // admins have all permissions
+            Authorizer::Organization(org) => org.is_kornor(conn).await,
+            _ => Ok(false),
         }
     }
 }
@@ -223,6 +237,7 @@ impl Authorizable for Authorizer {
             Self::Management(a) => a.authorize_classroom(classroom, conn, action).await,
             Self::Student(a) => a.authorize_classroom(classroom, conn, action).await,
             Self::Teacher(a) => a.authorize_classroom(classroom, conn, action).await,
+            Self::Organization(a) => a.authorize_classroom(classroom, conn, action).await,
         }
     }
 
@@ -237,6 +252,7 @@ impl Authorizable for Authorizer {
             Self::Management(a) => a.authorize_contact(contact, conn, action).await,
             Self::Student(a) => a.authorize_contact(contact, conn, action).await,
             Self::Teacher(a) => a.authorize_contact(contact, conn, action).await,
+            Self::Organization(a) => a.authorize_contact(contact, conn, action).await,
         }
     }
 
@@ -251,6 +267,7 @@ impl Authorizable for Authorizer {
             Self::Management(a) => a.authorize_student(student, conn, action).await,
             Self::Student(a) => a.authorize_student(student, conn, action).await,
             Self::Teacher(a) => a.authorize_student(student, conn, action).await,
+            Self::Organization(a) => a.authorize_student(student, conn, action).await,
         }
     }
 
@@ -265,6 +282,7 @@ impl Authorizable for Authorizer {
             Self::Management(a) => a.authorize_subject(subject, conn, action).await,
             Self::Student(a) => a.authorize_subject(subject, conn, action).await,
             Self::Teacher(a) => a.authorize_subject(subject, conn, action).await,
+            Self::Organization(a) => a.authorize_subject(subject, conn, action).await,
         }
     }
 
@@ -279,6 +297,7 @@ impl Authorizable for Authorizer {
             Self::Management(a) => a.authorize_teacher(teacher, conn, action).await,
             Self::Student(a) => a.authorize_teacher(teacher, conn, action).await,
             Self::Teacher(a) => a.authorize_teacher(teacher, conn, action).await,
+            Self::Organization(a) => a.authorize_teacher(teacher, conn, action).await,
         }
     }
 }
