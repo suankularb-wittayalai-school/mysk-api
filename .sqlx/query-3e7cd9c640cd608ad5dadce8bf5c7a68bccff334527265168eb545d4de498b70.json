@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT t.id FROM teachers AS t JOIN users AS u ON u.id = t.user_id WHERE u.id = $1",
+  "query": "SELECT t.id FROM teachers AS t JOIN users AS u ON u.id = t.user_id WHERE u.id = $1 AND u.role = 'teacher'::user_role\n                    ",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       false
     ]
   },
-  "hash": "876ce48fc69faa9ed90e27dbbcbd3801e4319a2759d34c6e5531fa36448d2e79"
+  "hash": "3e7cd9c640cd608ad5dadce8bf5c7a68bccff334527265168eb545d4de498b70"
 }

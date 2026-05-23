@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id FROM students AS s JOIN users AS u ON u.id = s.user_id WHERE u.id = $1 AND u.role = 'student'::user_role\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f9d43b3a065d69cb7362209af0fa24d1655fb0d3c80720bd63cb90e9bf5ebd85"
+}

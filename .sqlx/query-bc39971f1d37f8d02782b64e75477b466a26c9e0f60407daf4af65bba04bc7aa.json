@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO student_club_quotas (student_id, year, max_clubs)\n            VALUES ($1, $2, $3)\n            ON CONFLICT (student_id, year)\n            DO UPDATE SET max_clubs = EXCLUDED.max_clubs\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bc39971f1d37f8d02782b64e75477b466a26c9e0f60407daf4af65bba04bc7aa"
+}
