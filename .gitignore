@@ -10,3 +10,5 @@ Cargo.lock
 debug/
 target/
 .zed/
+
+.pre-commit-config.yaml
