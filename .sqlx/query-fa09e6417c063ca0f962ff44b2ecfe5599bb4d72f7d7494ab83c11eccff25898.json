@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS (SELECT FROM classroom_students AS cs JOIN cheer_practice_period_classrooms AS c ON c.classroom_id = cs.classroom_id WHERE cs.student_id = $1 AND c.practice_period_id = $2)",
+  "query": "SELECT EXISTS (SELECT FROM cheer_practice_attendances_with_detail_view AS cpa WHERE cpa.student_id = $1 AND cpa.practice_period_id = $2 AND cpa.disabled = FALSE )",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       null
     ]
   },
-  "hash": "00c8d619d11bd074b178a5462cf91f21f91791657243488a4e15383f5b96f966"
+  "hash": "fa09e6417c063ca0f962ff44b2ecfe5599bb4d72f7d7494ab83c11eccff25898"
 }

@@ -92,9 +92,13 @@ pub async fn google_oauth_handler(
     let claims = TokenClaims {
         sub: user.id,
         mta: match user.meta {
-            Some(UserMeta::Student { student_id: id } | UserMeta::Teacher { teacher_id: id }) => {
-                Some(id)
-            }
+            Some(
+                UserMeta::Student { student_id: id }
+                | UserMeta::Teacher { teacher_id: id }
+                | UserMeta::Organization {
+                    organization_id: id,
+                },
+            ) => Some(id),
             _ => None,
         },
         exp,

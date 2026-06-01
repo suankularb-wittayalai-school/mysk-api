@@ -9,6 +9,7 @@ use actix_web::{
 use chrono::NaiveDate;
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType, string::FlexibleMultiLangString},
+    helpers::date::get_current_academic_year,
     models::{
         enums::ShirtSize,
         student::{Student, db::DbStudent},
@@ -25,6 +26,7 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize)]
 struct UpdateStudentRequest {
     person: Option<UpdatePersonInfo>,
+    club_quota: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -61,6 +63,14 @@ pub async fn modify_student(
 
     let db_student = DbStudent::get_by_id(&mut conn, student_id).await?;
     let person_id = db_student.person_id;
+
+    // Only the kornor organization can update the club_quota
+    if update_data.club_quota.is_some() && !(authorizer.is_kornor(&mut conn).await?) {
+        return Err(Error::InvalidPermission(
+            "Insufficient permissions to perform this action".to_string(),
+            format!("students/{student_id}"),
+        ));
+    }
 
     authorizer
         .authorize_student(&db_student, &mut conn, ActionType::Update)
@@ -108,6 +118,24 @@ pub async fn modify_student(
             .await?;
 
         person_transaction.commit().await?;
+    }
+
+    // NOTE: Club-related updates
+    if let Some(quota) = update_data.club_quota {
+        let current_year = get_current_academic_year(None);
+        query!(
+            r#"
+            INSERT INTO student_club_quotas (student_id, year, max_clubs)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (student_id, year)
+            DO UPDATE SET max_clubs = EXCLUDED.max_clubs
+            "#,
+            student_id,
+            current_year,
+            quota
+        )
+        .execute(&mut *conn)
+        .await?;
     }
 
     let student = Student::get_by_id(

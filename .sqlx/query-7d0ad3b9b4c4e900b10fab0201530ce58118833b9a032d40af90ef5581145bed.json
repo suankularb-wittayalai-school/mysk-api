@@ -1,22 +1,20 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id FROM teachers WHERE user_id = $1",
+  "query": "SELECT teacher_id FROM cheer_practice_teachers",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
+        "name": "teacher_id",
         "type_info": "Uuid"
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false
     ]
   },
-  "hash": "105e79c73fa83353ddfd5e743df2d36765568bc2fb671dce97fc6026d8fc95a3"
+  "hash": "7d0ad3b9b4c4e900b10fab0201530ce58118833b9a032d40af90ef5581145bed"
 }

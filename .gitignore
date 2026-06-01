@@ -1,5 +1,6 @@
 .DS_Store
-.env
+.env*
+!.env.example
 *.pdb
 **/*.rs.bk
 Cargo.lock
@@ -9,3 +10,5 @@ Cargo.lock
 debug/
 target/
 .zed/
+
+.pre-commit-config.yaml

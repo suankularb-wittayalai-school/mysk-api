@@ -11,7 +11,7 @@ use mysk_lib::{
         requests::FetchLevel,
         response::{EmptyResponseData, ResponseType},
     },
-    models::{club_request::ClubRequest, enums::SubmissionStatus, student::Student},
+    models::{club_request::ClubRequest, student::Student},
     permissions::Authorizer,
     prelude::*,
 };
@@ -57,24 +57,9 @@ pub async fn delete_club_requests(
         ));
     }
 
-    // Returns early if the club request is not pending
-    if SubmissionStatus::Pending != club_request.membership_status {
-        return Err(Error::InvalidPermission(
-            format!(
-                "Club request has already been {}",
-                club_request.membership_status,
-            ),
-            format!("/clubs/requests/{club_request_id}"),
-        ));
-    }
-
-    query!(
-        "DELETE FROM club_members WHERE id = $1 AND membership_status = $2",
-        club_request_id,
-        SubmissionStatus::Pending as SubmissionStatus,
-    )
-    .execute(&mut *conn)
-    .await?;
+    query!("DELETE FROM club_members WHERE id = $1", club_request_id,)
+        .execute(&mut *conn)
+        .await?;
 
     let response = ResponseType::new(EmptyResponseData {}, None);
 
