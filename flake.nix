@@ -72,9 +72,13 @@
             settings.hooks = {
               clippy = {
                 enable = true;
-                settings.extraArgs = "--no-deps";
+                packageOverrides.cargo = rustToolchain.cargo;
+                packageOverrides.clippy = rustToolchain.clippy;
               };
-              rustfmt.enable = true;
+              rustfmt = {
+                enable = true;
+                packageOverrides.rustfmt = rustToolchain.rustfmt;
+              };
             };
           };
         };
