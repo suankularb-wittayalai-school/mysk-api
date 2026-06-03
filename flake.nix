@@ -72,6 +72,7 @@
             settings.hooks = {
               clippy = {
                 enable = true;
+                settings.extraArgs = "--no-deps";
                 packageOverrides.cargo = rustToolchain.cargo;
                 packageOverrides.clippy = rustToolchain.clippy;
               };
