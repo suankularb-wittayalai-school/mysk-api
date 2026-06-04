@@ -97,7 +97,7 @@ impl DbStudent {
         .fetch_optional(conn)
         .await?;
 
-        Ok(res.and_then(|r| r.max_clubs).unwrap_or(0))
+        Ok(res.and_then(|r| r.max_clubs).unwrap_or(1))
     }
 }
 
