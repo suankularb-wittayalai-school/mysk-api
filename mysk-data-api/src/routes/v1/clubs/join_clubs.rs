@@ -84,13 +84,12 @@ pub async fn join_clubs(
     )
     .fetch_optional(&mut *conn)
     .await?
+        && eligibility.club_count >= eligibility.max_clubs
     {
-        if eligibility.club_count >= eligibility.max_clubs {
-            return Err(Error::InvalidPermission(
-                "Student has reached the maximum number of clubs allowed".to_string(),
-                format!("/clubs/{club_id}/join"),
-            ));
-        }
+        return Err(Error::InvalidPermission(
+            "Student has reached the maximum number of clubs allowed".to_string(),
+            format!("/clubs/{club_id}/join"),
+        ));
     }
 
     let club_member_id = query!(
