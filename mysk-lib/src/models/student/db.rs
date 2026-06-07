@@ -76,8 +76,7 @@ impl DbStudent {
         }))
     }
 
-    // Defaults to 2 if the student has no row in `student_club_eligibility`
-    // which only exists if the student has been added to `club_members`
+    // unwrap-safe because `student_club_eligibility` populates all students with a default quota
     pub async fn get_student_club_quota(
         conn: &mut PgConnection,
         student_id: Uuid,
@@ -94,10 +93,12 @@ impl DbStudent {
                 None => get_current_academic_year(None),
             },
         )
-        .fetch_optional(conn)
-        .await?;
+        .fetch_one(conn)
+        .await?
+        .max_clubs
+        .unwrap();
 
-        Ok(res.and_then(|r| r.max_clubs).unwrap_or(1))
+        Ok(res)
     }
 }
 
