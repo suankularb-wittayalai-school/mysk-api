@@ -47,6 +47,9 @@ impl DbClub {
         Ok(res.into_iter().map(|r| r.contact_id).collect())
     }
 
+    // TODO: consider managing clubs per-year using clubs.year instead of club_members.year
+    // currently we can roughly derive the club's year from the club_members.year column of that
+    // club (we really shouldn't for very obvious reasons).
     pub async fn get_club_members(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
