@@ -14,6 +14,7 @@ pub struct QueryableClub {
     pub contact_ids: Option<Vec<Uuid>>,
     pub member_ids: Option<Vec<Uuid>>,
     pub staff_ids: Option<Vec<Uuid>>,
+    pub member_year: Option<i64>,
 }
 
 impl Queryable for QueryableClub {
@@ -70,6 +71,13 @@ impl Queryable for QueryableClub {
                 .push_param(QueryParam::ArrayUuid(staff_ids))
                 .push_sql(") AND year = ")
                 .push_param(QueryParam::Int(get_current_academic_year(None)))
+                .push_sql(")");
+
+            f
+        })
+        .push_if_some(self.member_year, |mut f, member_year| {
+            f.push_sql("id IN (SELECT club_id FROM club_members WHERE year = ")
+                .push_param(QueryParam::Int(member_year))
                 .push_sql(")");
 
             f
