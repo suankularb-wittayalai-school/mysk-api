@@ -3,15 +3,11 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SortableCheerPracticeAttendance {
+    #[default]
     Id,
     CreatedAt,
-}
-
-impl Default for SortableCheerPracticeAttendance {
-    fn default() -> Self {
-        Self::Id
-    }
 }
 
 impl Display for SortableCheerPracticeAttendance {

@@ -3,7 +3,9 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SortableElectiveSubject {
+    #[default]
     Id,
     CodeTh,
     CodeEn,
@@ -13,12 +15,6 @@ pub enum SortableElectiveSubject {
     CapSize,
     ClassSize,
     SessionCode,
-}
-
-impl Default for SortableElectiveSubject {
-    fn default() -> Self {
-        Self::Id
-    }
 }
 
 impl Display for SortableElectiveSubject {

@@ -3,16 +3,12 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SortableContact {
+    #[default]
     Id,
     Name,
     Type,
-}
-
-impl Default for SortableContact {
-    fn default() -> Self {
-        Self::Id
-    }
 }
 
 impl Display for SortableContact {
