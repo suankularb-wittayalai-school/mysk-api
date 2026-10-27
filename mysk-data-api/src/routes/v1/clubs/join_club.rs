@@ -20,7 +20,7 @@ use sqlx::query;
 use uuid::Uuid;
 
 #[post("/{id}/join")]
-pub async fn join_clubs(
+pub async fn join_club(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,

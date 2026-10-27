@@ -27,7 +27,7 @@ struct AddClubMemberRequest {
 
 #[allow(clippy::similar_names, clippy::too_many_lines)]
 #[post("/{id}/add")]
-pub async fn add_club_members(
+pub async fn add_club_member(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
