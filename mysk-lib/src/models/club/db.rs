@@ -87,7 +87,7 @@ impl QueryRelation for DbClub {
 
             if let Some(query) = filter.q {
                 let mut wc = SqlWhereClause::new();
-                wc.push_sql("name_th ILIKE ('%' || ")
+                wc.push_sql("(name_th ILIKE ('%' || ")
                     .push_param(QueryParam::String(query))
                     .push_sql(" || '%') OR name_en ILIKE ('%' || ")
                     .push_prev_param()
@@ -95,7 +95,7 @@ impl QueryRelation for DbClub {
                     .push_prev_param()
                     .push_sql(" || '%') OR description_en ILIKE ('%' || ")
                     .push_prev_param()
-                    .push_sql(" || '%')");
+                    .push_sql(" || '%'))");
 
                 wc.append_into_query_builder(query_builder);
             }
@@ -103,6 +103,8 @@ impl QueryRelation for DbClub {
             if let Some(data) = filter.data {
                 if query_is_none {
                     query_builder.push(" WHERE ");
+                } else {
+                    query_builder.push(" AND ");
                 }
 
                 data.to_where_clause()
