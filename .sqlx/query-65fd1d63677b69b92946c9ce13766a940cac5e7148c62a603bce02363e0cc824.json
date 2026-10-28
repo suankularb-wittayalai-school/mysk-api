@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT student_id FROM club_staffs WHERE club_id = $1 AND year = $2",
+  "query": "SELECT student_id FROM club_staffs WHERE club_id = $1",
   "describe": {
     "columns": [
       {
@@ -11,13 +11,12 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "2a77f22d432a5663074ea90e0cf35d46dd76797279152370237d47283215f500"
+  "hash": "65fd1d63677b69b92946c9ce13766a940cac5e7148c62a603bce02363e0cc824"
 }

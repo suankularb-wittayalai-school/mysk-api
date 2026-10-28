@@ -1,5 +1,4 @@
 use crate::{
-    helpers::date::get_current_academic_year,
     models::club::db::DbClub,
     query::{QueryParam, Queryable, SqlWhereClause},
 };
@@ -14,7 +13,7 @@ pub struct QueryableClub {
     pub contact_ids: Option<Vec<Uuid>>,
     pub member_ids: Option<Vec<Uuid>>,
     pub staff_ids: Option<Vec<Uuid>>,
-    pub member_year: Option<i64>,
+    pub year: Option<i64>,
 }
 
 impl Queryable for QueryableClub {
@@ -57,28 +56,19 @@ impl Queryable for QueryableClub {
         .push_if_some(self.member_ids, |mut f, member_ids| {
             f.push_sql("id IN (SELECT club_id FROM club_members WHERE student_id = ANY(")
                 .push_param(QueryParam::ArrayUuid(member_ids))
-                .push_sql(
-                    "
-                    ) AND membership_status = 'approved' AND year = get_current_academic_year(\
-                    CAST(NOW() as DATE)))
-                    ",
-                );
+                .push_sql(") AND membership_status = 'approved' )");
 
             f
         })
         .push_if_some(self.staff_ids, |mut f, staff_ids| {
             f.push_sql("id IN (SELECT club_id FROM club_staffs WHERE student_id = ANY(")
                 .push_param(QueryParam::ArrayUuid(staff_ids))
-                .push_sql(") AND year = ")
-                .push_param(QueryParam::Int(get_current_academic_year(None)))
-                .push_sql(")");
+                .push_sql("))");
 
             f
         })
-        .push_if_some(self.member_year, |mut f, member_year| {
-            f.push_sql("id IN (SELECT club_id FROM club_members WHERE year = ")
-                .push_param(QueryParam::Int(member_year))
-                .push_sql(")");
+        .push_if_some(self.year, |mut f, year| {
+            f.push_sql("year = ").push_param(QueryParam::Int(year));
 
             f
         });

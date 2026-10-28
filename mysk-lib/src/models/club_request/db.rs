@@ -15,14 +15,13 @@ use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, FromRow, GetById)]
 #[from_query(
-    query = "SELECT id, created_at, club_id, year, membership_status, student_id FROM club_members",
+    query = "SELECT id, created_at, club_id, membership_status, student_id FROM club_members",
     count_query = "SELECT COUNT(*) FROM club_members"
 )]
 pub struct DbClubRequest {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
     pub club_id: Uuid,
-    pub year: Option<i64>,
     pub membership_status: SubmissionStatus,
     pub student_id: Uuid,
 }

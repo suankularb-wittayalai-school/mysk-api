@@ -1,6 +1,5 @@
 use crate::{
     common::requests::FilterConfig,
-    helpers::date::get_current_academic_year,
     models::{
         club::request::{queryable::QueryableClub, sortable::SortableClub},
         enums::SubmissionStatus,
@@ -33,6 +32,7 @@ pub struct DbClub {
     pub name_en: Option<String>,
     pub name_th: String,
     pub staff_count: i64,
+    pub year: i64,
 }
 
 impl DbClub {
@@ -47,17 +47,13 @@ impl DbClub {
         Ok(res.into_iter().map(|r| r.contact_id).collect())
     }
 
-    // TODO: consider managing clubs per-year using clubs.year instead of club_members.year
-    // currently we can roughly derive the club's year from the club_members.year column of that
-    // club (we really shouldn't for very obvious reasons).
     pub async fn get_club_members(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
             "\
             SELECT student_id FROM club_members \
-            WHERE club_id = $1 AND year = $2 AND membership_status = $3\
+            WHERE club_id = $1 AND membership_status = $2\
             ",
             club_id,
-            get_current_academic_year(None),
             SubmissionStatus::Approved as SubmissionStatus,
         )
         .fetch_all(conn)
@@ -68,9 +64,8 @@ impl DbClub {
 
     pub async fn get_club_staffs(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            "SELECT student_id FROM club_staffs WHERE club_id = $1 AND year = $2",
+            "SELECT student_id FROM club_staffs WHERE club_id = $1",
             club_id,
-            get_current_academic_year(None),
         )
         .fetch_all(conn)
         .await?;

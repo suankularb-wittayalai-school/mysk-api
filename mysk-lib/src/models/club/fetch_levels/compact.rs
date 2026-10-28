@@ -14,6 +14,7 @@ pub struct CompactClub {
     pub logo_url: Option<String>,
     pub background_color: Option<String>,
     pub member_count: i64,
+    pub year: i64,
 }
 
 impl From<DbClub> for CompactClub {
@@ -39,6 +40,7 @@ impl From<DbClub> for CompactClub {
             logo_url: club.logo_url,
             background_color: club.background_color,
             member_count: club.member_count,
+            year: club.year,
         }
     }
 }
