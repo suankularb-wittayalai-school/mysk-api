@@ -79,7 +79,7 @@ impl QueryRelation for DbClub {
     type S = SortableClub;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableClub>>,
     ) {
         if let Some(filter) = filter {

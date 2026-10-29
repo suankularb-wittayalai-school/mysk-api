@@ -22,7 +22,7 @@ use serde::Deserialize;
 pub async fn oauth_initiator(data: Data<AppState>) -> Result<impl Responder> {
     let (redirect_url, state) = generate_oauth_init_url(
         &data.env.google_oauth_client_id,
-        format!("{}/auth/oauth/google", &data.env.root_uri).as_str(),
+        format!("{}/auth/oauth/google", data.env.root_uri).as_str(),
     )?;
 
     {
@@ -67,7 +67,7 @@ pub async fn google_oauth_handler(
         code,
         &data.env.google_oauth_client_id,
         &data.env.google_oauth_client_secret,
-        format!("{}/auth/oauth/google", &data.env.root_uri).as_str(),
+        format!("{}/auth/oauth/google", data.env.root_uri).as_str(),
     )
     .await?;
 

@@ -222,7 +222,7 @@ impl QueryRelation for DbElectiveSubject {
     type S = SortableElectiveSubject;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableElectiveSubject>>,
     ) {
         if let Some(filter) = filter {

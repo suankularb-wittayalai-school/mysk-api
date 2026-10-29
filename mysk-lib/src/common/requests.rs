@@ -37,7 +37,7 @@ impl<S: Display> SortingConfig<S> {
         Self { by, ascending }
     }
 
-    pub fn append_into_query_builder(&self, qb: &mut QueryBuilder<'_, Postgres>) {
+    pub fn append_into_query_builder(&self, qb: &mut QueryBuilder<Postgres>) {
         qb.push(" ORDER BY ")
             .push(
                 self.by
