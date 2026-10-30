@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(DISTINCT student_id) as count\n        FROM club_staffs\n        WHERE club_id IN (SELECT id FROM clubs WHERE year = $1)\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e517ef0470a4d1758530fa23e96838f0aec17802e1e66b3472f4937d922594c6"
+}

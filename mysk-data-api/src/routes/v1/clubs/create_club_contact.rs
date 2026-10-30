@@ -11,6 +11,7 @@ use mysk_lib::{
         requests::{FetchLevel, RequestType},
         response::ResponseType,
     },
+    helpers::date::get_current_academic_year,
     models::{club::db::DbClub, contact::Contact, enums::ContactType, traits::GetById as _},
     permissions::Authorizer,
     prelude::*,
@@ -43,8 +44,18 @@ pub async fn create_club_contact(
     let mut conn = data.db.acquire().await?;
     let club_id = club_id.into_inner();
     let authorizer = Authorizer::new(&user, format!("/clubs/{club_id}/contacts"));
+    let current_year = get_current_academic_year(None);
 
     let club = DbClub::get_by_id(&mut conn, club_id).await?;
+
+    // Club contacts are year-differentiated; only the current year's club can receive new
+    // contacts.
+    if club.year != current_year {
+        return Err(Error::InvalidPermission(
+            "Club does not belong to the current academic year".to_string(),
+            format!("/clubs/{club_id}/contacts"),
+        ));
+    }
 
     // Check if the student is a staff of the club
     let club_staffs = DbClub::get_club_staffs(&mut conn, club_id).await?;

@@ -51,6 +51,14 @@ pub async fn join_club(
         unreachable!("Club::get_by_id should always return a Detailed variant")
     };
 
+    // Check if the club's year matches the current academic year
+    if club.year != current_year {
+        return Err(Error::InvalidPermission(
+            "Club does not belong to the current academic year".to_string(),
+            format!("/clubs/{club_id}/join"),
+        ));
+    }
+
     // Check if the student is already a staff of the club
     if club.staffs.iter().any(|staff| match staff {
         Student::IdOnly(staff, _) => staff.id == student_id,
@@ -94,11 +102,10 @@ pub async fn join_club(
 
     let club_member_id = query!(
         "\
-        INSERT INTO club_members (club_id, year, membership_status, student_id)\
-        VALUES ($1, $2, $3, $4) RETURNING id\
+        INSERT INTO club_members (club_id, membership_status, student_id)\
+        VALUES ($1, $2, $3) RETURNING id\
         ",
         club_id,
-        current_year,
         SubmissionStatus::Approved as SubmissionStatus,
         student_id,
     )
