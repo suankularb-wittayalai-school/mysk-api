@@ -45,7 +45,7 @@ pub enum QueryParam {
 }
 
 impl QueryParam {
-    pub fn push_bind(self, qb: &mut QueryBuilder<'_, Postgres>) {
+    pub fn push_bind(self, qb: &mut QueryBuilder<Postgres>) {
         match self {
             QueryParam::Int(v) => qb.push_bind(v),
             QueryParam::Float(v) => qb.push_bind(v),

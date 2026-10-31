@@ -133,7 +133,7 @@ impl QueryRelation for DbTeacher {
     type S = SortableTeacher;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<Self::Q>>,
     ) {
         if let Some(filter) = filter

@@ -98,7 +98,7 @@ impl QueryRelation for DbCheerPracticeAttendance {
     type S = SortableCheerPracticeAttendance;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<Self::Q>>,
     ) {
         if let Some(filter) = filter

@@ -35,7 +35,7 @@ impl QueryRelation for DbElectiveTradeOffer {
     type S = SortableElectiveTradeOffer;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableElectiveTradeOffer>>,
     ) {
         if let Some(filter) = filter

@@ -64,7 +64,7 @@ pub trait QueryRelation: for<'r> FromRow<'r, PgRow> + GetById + Send + Unpin {
     /// Builds a shared query with applicable filters and sorting rules to be used for data fetching
     /// and count fetching.
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<Self::Q>>,
     );
 

@@ -1,6 +1,5 @@
 use crate::{
     common::requests::FilterConfig,
-    helpers::date::get_current_academic_year,
     models::{
         club::request::{queryable::QueryableClub, sortable::SortableClub},
         enums::SubmissionStatus,
@@ -33,6 +32,7 @@ pub struct DbClub {
     pub name_en: Option<String>,
     pub name_th: String,
     pub staff_count: i64,
+    pub year: i64,
 }
 
 impl DbClub {
@@ -51,10 +51,9 @@ impl DbClub {
         let res = query!(
             "\
             SELECT student_id FROM club_members \
-            WHERE club_id = $1 AND year = $2 AND membership_status = $3\
+            WHERE club_id = $1 AND membership_status = $2\
             ",
             club_id,
-            get_current_academic_year(None),
             SubmissionStatus::Approved as SubmissionStatus,
         )
         .fetch_all(conn)
@@ -65,9 +64,8 @@ impl DbClub {
 
     pub async fn get_club_staffs(conn: &mut PgConnection, club_id: Uuid) -> Result<Vec<Uuid>> {
         let res = query!(
-            "SELECT student_id FROM club_staffs WHERE club_id = $1 AND year = $2",
+            "SELECT student_id FROM club_staffs WHERE club_id = $1",
             club_id,
-            get_current_academic_year(None),
         )
         .fetch_all(conn)
         .await?;
@@ -81,7 +79,7 @@ impl QueryRelation for DbClub {
     type S = SortableClub;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableClub>>,
     ) {
         if let Some(filter) = filter {
@@ -89,7 +87,7 @@ impl QueryRelation for DbClub {
 
             if let Some(query) = filter.q {
                 let mut wc = SqlWhereClause::new();
-                wc.push_sql("name_th ILIKE ('%' || ")
+                wc.push_sql("(name_th ILIKE ('%' || ")
                     .push_param(QueryParam::String(query))
                     .push_sql(" || '%') OR name_en ILIKE ('%' || ")
                     .push_prev_param()
@@ -97,7 +95,7 @@ impl QueryRelation for DbClub {
                     .push_prev_param()
                     .push_sql(" || '%') OR description_en ILIKE ('%' || ")
                     .push_prev_param()
-                    .push_sql(" || '%')");
+                    .push_sql(" || '%'))");
 
                 wc.append_into_query_builder(query_builder);
             }
@@ -105,6 +103,8 @@ impl QueryRelation for DbClub {
             if let Some(data) = filter.data {
                 if query_is_none {
                     query_builder.push(" WHERE ");
+                } else {
+                    query_builder.push(" AND ");
                 }
 
                 data.to_where_clause()

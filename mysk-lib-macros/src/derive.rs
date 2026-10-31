@@ -3,6 +3,7 @@ use proc_macro::{self, TokenStream};
 use quote::{ToTokens, quote};
 use syn::{DeriveInput, TypePath, parse_macro_input};
 
+#[allow(clippy::needless_continue)]
 #[derive(FromDeriveInput, Default)]
 #[darling(default, attributes(from_query))]
 struct GetByIdOpts {

@@ -75,7 +75,7 @@ impl<'sql> SqlWhereClause<'sql> {
     /// Append elements in self into a `sqlx::QueryBuilder` that is ready to be built. \
     /// **Warning:** If a `QueryFragment::PreviousParam` was encountered before any
     /// `QueryFragment::Param`s, a panic will occur.
-    pub fn append_into_query_builder(self, qb: &mut QueryBuilder<'sql, Postgres>) {
+    pub fn append_into_query_builder(self, qb: &mut QueryBuilder<Postgres>) {
         let mut param_count = 0;
 
         self.0.into_iter().for_each(|section| match section {

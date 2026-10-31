@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT student_id FROM club_staffs WHERE club_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "student_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "club_staffs",
+            "name": "student_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "65fd1d63677b69b92946c9ce13766a940cac5e7148c62a603bce02363e0cc824"
+}

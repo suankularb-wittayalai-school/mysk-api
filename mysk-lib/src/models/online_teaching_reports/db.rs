@@ -41,7 +41,7 @@ impl QueryRelation for DbOnlineTeachingReports {
     type S = SortableOnlineTeachingReports;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableOnlineTeachingReports>>,
     ) {
         if let Some(filter) = filter

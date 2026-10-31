@@ -107,7 +107,7 @@ impl QueryRelation for DbStudent {
     type S = SortableStudent;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableStudent>>,
     ) {
         if let Some(filter) = filter

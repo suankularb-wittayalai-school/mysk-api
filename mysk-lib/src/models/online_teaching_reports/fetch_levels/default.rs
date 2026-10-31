@@ -45,11 +45,11 @@ impl FetchVariant for DefaultOnlineTeachingReports {
             )
             .await?;
 
-        let subject = if relation.subject_id.is_some() {
+        let subject = if let Some(subject_id) = relation.subject_id {
             Some(
                 Subject::get_by_id(
                     pool,
-                    relation.subject_id.unwrap(),
+                    subject_id,
                     descendant_fetch_level,
                     FetchLevel::IdOnly,
                     authorizer,
@@ -59,11 +59,12 @@ impl FetchVariant for DefaultOnlineTeachingReports {
         } else {
             None
         };
-        let classroom = if relation.classroom_id.is_some() {
+
+        let classroom = if let Some(clasroom_id) = relation.classroom_id {
             Some(
                 Classroom::get_by_id(
                     pool,
-                    relation.classroom_id.unwrap(),
+                    clasroom_id,
                     descendant_fetch_level,
                     FetchLevel::IdOnly,
                     authorizer,

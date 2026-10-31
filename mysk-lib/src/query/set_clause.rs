@@ -110,7 +110,7 @@ impl<'sql> SqlSetClause<'sql> {
         self
     }
 
-    pub fn into_query_builder(self, init: &'sql str) -> QueryBuilder<'sql, Postgres> {
+    pub fn into_query_builder(self, init: &'sql str) -> QueryBuilder<Postgres> {
         let mut qb = QueryBuilder::new(init);
         let mut param_count = 0;
 
