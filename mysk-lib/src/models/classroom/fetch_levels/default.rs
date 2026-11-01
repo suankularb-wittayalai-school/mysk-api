@@ -1,8 +1,7 @@
 use crate::{
     common::requests::FetchLevel,
     models::{
-        classroom::db::DbClassroom, contact::Contact, student::Student, teacher::Teacher,
-        traits::FetchVariant,
+        classroom::db::DbClassroom, contact::Contact, teacher::Teacher, traits::FetchVariant,
     },
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
@@ -15,9 +14,8 @@ use uuid::Uuid;
 pub struct DefaultClassroom {
     pub id: Uuid,
     pub number: i64,
-    pub room: Option<String>,
+    pub main_room: Option<String>,
     pub class_advisor: Vec<Teacher>,
-    pub students: Vec<Student>,
     pub contacts: Vec<Contact>,
     pub year: i64,
 }
@@ -36,7 +34,6 @@ impl FetchVariant for DefaultClassroom {
             .authorize_classroom(&relation, &mut conn, ActionType::ReadDefault)
             .await?;
 
-        let student_ids = DbClassroom::get_classroom_students(&mut conn, relation.id).await?;
         let contact_ids = DbClassroom::get_classroom_contacts(&mut conn, relation.id).await?;
         let class_advisor_ids =
             DbClassroom::get_classroom_advisors(&mut conn, relation.id, None).await?;
@@ -45,15 +42,7 @@ impl FetchVariant for DefaultClassroom {
         Ok(Self {
             id: relation.id,
             number: relation.number,
-            room: relation.main_room,
-            students: Student::get_by_ids(
-                pool,
-                &student_ids,
-                descendant_fetch_level,
-                FetchLevel::IdOnly,
-                authorizer,
-            )
-            .await?,
+            main_room: relation.main_room,
             contacts: Contact::get_by_ids(
                 pool,
                 &contact_ids,
