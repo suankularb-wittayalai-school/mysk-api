@@ -1,12 +1,24 @@
-use crate::{helpers::date::get_current_academic_year, prelude::*};
+use crate::{
+    common::requests::FilterConfig,
+    helpers::date::get_current_academic_year,
+    models::{
+        classroom::request::{queryable::QueryableClassroom, sortable::SortableClassroom},
+        traits::QueryRelation,
+    },
+    prelude::*,
+    query::Queryable as _,
+};
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::Deserialize;
-use sqlx::{FromRow, PgConnection, query};
+use sqlx::{FromRow, PgConnection, Postgres, QueryBuilder, query};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize, FromRow, GetById)]
-#[from_query(query = "SELECT id, created_at, number, year, main_room FROM classrooms")]
+#[from_query(
+    query = "SELECT id, created_at, number, year, main_room FROM classrooms",
+    count_query = "SELECT COUNT(*) FROM classrooms"
+)]
 pub struct DbClassroom {
     pub id: Uuid,
     pub created_at: Option<DateTime<Utc>>,
@@ -61,5 +73,22 @@ impl DbClassroom {
         .await?;
 
         Ok(res.into_iter().map(|contact| contact.contact_id).collect())
+    }
+}
+
+impl QueryRelation for DbClassroom {
+    type Q = QueryableClassroom;
+    type S = SortableClassroom;
+
+    fn build_shared_query(
+        query_builder: &mut QueryBuilder<Postgres>,
+        filter: Option<FilterConfig<Self::Q>>,
+    ) {
+        if let Some(filter) = filter
+            && let Some(data) = filter.data
+        {
+            data.to_where_clause()
+                .append_into_query_builder(query_builder);
+        }
     }
 }
