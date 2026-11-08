@@ -2,20 +2,17 @@ use crate::{
     common::requests::FilterConfig,
     helpers::date::get_current_academic_year,
     models::{
-        certificate::request::{
-            queryable::QueryableCertificate,
-            sortable::SortableCertificate,
-        },
+        certificate::request::{queryable::QueryableCertificate, sortable::SortableCertificate},
         enums::{CertificateType, SubmissionStatus},
         traits::QueryRelation,
     },
     prelude::*,
-    query::{building_blocks::Queryable, QueryParam, SqlWhereClause},
+    query::{QueryParam, SqlWhereClause, building_blocks::Queryable},
 };
 use chrono::{DateTime, Utc};
 use mysk_lib_macros::GetById;
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, query, PgConnection, Postgres, QueryBuilder};
+use sqlx::{PgConnection, Postgres, QueryBuilder, prelude::FromRow, query};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, GetById)]

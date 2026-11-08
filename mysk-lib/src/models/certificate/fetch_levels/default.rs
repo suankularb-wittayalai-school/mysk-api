@@ -1,8 +1,5 @@
 use crate::{
-    common::{
-        requests::FetchLevel,
-        string::FlexibleMultiLangString,
-    },
+    common::{requests::FetchLevel, string::FlexibleMultiLangString},
     models::{certificate::db::DbCertificate, traits::FetchVariant},
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
@@ -33,7 +30,11 @@ impl FetchVariant for DefaultCertificate {
         authorizer: &Authorizer,
     ) -> Result<Self> {
         authorizer
-            .authorize_certificate(&relation, &mut *(pool.acquire().await?), ActionType::ReadDefault)
+            .authorize_certificate(
+                &relation,
+                &mut *(pool.acquire().await?),
+                ActionType::ReadDefault,
+            )
             .await?;
 
         Ok(Self {

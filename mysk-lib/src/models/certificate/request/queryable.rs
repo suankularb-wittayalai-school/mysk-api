@@ -54,12 +54,15 @@ impl Queryable for QueryableCertificate {
 
             f
         })
-        .push_if_some(self.receiving_order_number, |mut f, receiving_order_number| {
-            f.push_sql("receiving_order_number = ")
-                .push_param(QueryParam::Int(receiving_order_number));
+        .push_if_some(
+            self.receiving_order_number,
+            |mut f, receiving_order_number| {
+                f.push_sql("receiving_order_number = ")
+                    .push_param(QueryParam::Int(receiving_order_number));
 
-            f
-        })
+                f
+            },
+        )
         .push_if_some(self.seat_code, |mut f, seat_code| {
             f.push_sql("seat_code = ")
                 .push_param(QueryParam::String(seat_code));
