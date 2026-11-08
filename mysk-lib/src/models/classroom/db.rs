@@ -1,6 +1,5 @@
 use crate::{
     common::requests::FilterConfig,
-    helpers::date::get_current_academic_year,
     models::{
         classroom::request::{queryable::QueryableClassroom, sortable::SortableClassroom},
         traits::QueryRelation,
@@ -31,15 +30,10 @@ impl DbClassroom {
     pub async fn get_classroom_advisors(
         conn: &mut PgConnection,
         classroom_id: Uuid,
-        year: Option<i64>,
     ) -> Result<Vec<Uuid>> {
         let res = query!(
-            "\
-            SELECT teacher_id FROM classroom_advisors JOIN classrooms AS c ON c.id = classroom_id \
-            WHERE classroom_id = $1 AND year = $2\
-            ",
+            "SELECT teacher_id FROM classroom_advisors WHERE classroom_id = $1",
             classroom_id,
-            year.unwrap_or_else(|| get_current_academic_year(None)),
         )
         .fetch_all(conn)
         .await?;
