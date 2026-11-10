@@ -1,4 +1,7 @@
-use crate::{AppState, extractors::api_key::ApiKeyHeader};
+use crate::{
+    AppState, 
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn}
+};
 use actix_web::{
     HttpResponse, Responder, get,
     web::{Data, Path},
@@ -6,7 +9,7 @@ use actix_web::{
 use mysk_lib::{
     common::{requests::RequestType, response::ResponseType},
     models::certificate::Certificate,
-    permissions::{Authorizer, roles::AdminRole},
+    permissions::Authorizer,
     prelude::*,
 };
 use uuid::Uuid;
@@ -15,6 +18,7 @@ use uuid::Uuid;
 pub async fn query_certificate_details(
     data: Data<AppState>,
     _: ApiKeyHeader,
+    LoggedIn(user): LoggedIn,
     certificate_id: Path<Uuid>,
     RequestType {
         fetch_level,
@@ -24,7 +28,7 @@ pub async fn query_certificate_details(
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let certificate_id = certificate_id.into_inner();
-    let authorizer = Authorizer::Admin(AdminRole);
+    let authorizer = Authorizer::new(&user, format!("/certificates/{certificate_id}"));
 
     let certificate = Certificate::get_by_id(
         pool,
