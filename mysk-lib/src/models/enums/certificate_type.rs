@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, SqlxType)]
 #[serde(rename_all = "snake_case")]
-#[sqlx(type_name = "submission_status", rename_all = "snake_case")]
+#[sqlx(type_name = "certificate_type", rename_all = "snake_case")]
 pub enum CertificateType {
     StudentOfTheYear,
     ExcellentStudent,
