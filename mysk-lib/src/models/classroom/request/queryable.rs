@@ -24,8 +24,7 @@ impl Queryable for QueryableClassroom {
             f
         })
         .push_if_some(self.year, |mut f, year| {
-            f.push_sql("year = ")
-                .push_param(QueryParam::Int(year));
+            f.push_sql("year = ").push_param(QueryParam::Int(year));
 
             f
         });

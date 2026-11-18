@@ -1,6 +1,6 @@
 use crate::{
-    AppState, 
-    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn}
+    AppState,
+    extractors::{api_key::ApiKeyHeader, logged_in::LoggedIn},
 };
 use actix_web::{
     HttpResponse, Responder, get,

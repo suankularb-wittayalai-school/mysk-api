@@ -35,8 +35,7 @@ impl FetchVariant for DefaultClassroom {
             .await?;
 
         let contact_ids = DbClassroom::get_classroom_contacts(&mut conn, relation.id).await?;
-        let class_advisor_ids =
-            DbClassroom::get_classroom_advisors(&mut conn, relation.id).await?;
+        let class_advisor_ids = DbClassroom::get_classroom_advisors(&mut conn, relation.id).await?;
         drop(conn);
 
         Ok(Self {
