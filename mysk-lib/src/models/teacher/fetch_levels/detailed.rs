@@ -41,15 +41,6 @@ impl FetchVariant for DetailedTeacher {
         let classroom_id = DbTeacher::get_teacher_advisor_at(&mut conn, relation.id, None).await?;
         let subject_ids = DbTeacher::get_subject_in_charge(&mut conn, relation.id, None).await?;
 
-        let subject_group = SubjectGroup::get_by_id(
-            pool,
-            relation.subject_group_id,
-            descendant_fetch_level,
-            FetchLevel::IdOnly,
-            authorizer,
-        )
-        .await?;
-
         let user = match relation.user_id {
             Some(user_id) => Some(User::get_by_id(&mut conn, user_id, None).await?),
             None => None,
@@ -60,6 +51,15 @@ impl FetchVariant for DetailedTeacher {
             None => None,
         };
         drop(conn);
+
+        let subject_group = SubjectGroup::get_by_id(
+            pool,
+            relation.subject_group_id,
+            descendant_fetch_level,
+            FetchLevel::IdOnly,
+            authorizer,
+        )
+        .await?;
 
         Ok(Self {
             id: relation.id,
