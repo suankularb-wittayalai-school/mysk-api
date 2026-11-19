@@ -19,7 +19,7 @@ use sqlx::query;
 use uuid::Uuid;
 
 #[delete("/{id}")]
-pub async fn delete_club_requests(
+pub async fn delete_club_request(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,

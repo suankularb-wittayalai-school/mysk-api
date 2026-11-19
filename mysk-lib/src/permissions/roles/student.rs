@@ -89,7 +89,7 @@ impl Authorizable for StudentRole {
     ) -> Result<()> {
         Err(Error::InvalidPermission(
             "Insufficient permissions to perform this action".to_string(),
-            self.source.to_string(),
+            self.source.clone(),
         ))
     }
 

@@ -88,13 +88,21 @@ async fn main() -> AnyhowResult<()> {
             .allowed_origin("http://localhost:8000")
             .allowed_origin("https://mysk.school")
             .allowed_methods(vec!["GET", "POST", "PATCH", "DELETE", "PUT"])
-            .allowed_headers(vec![
-                header::CONTENT_TYPE,
-                header::AUTHORIZATION,
-                header::ACCESS_CONTROL_ALLOW_ORIGIN,
-                header::ACCEPT,
-                header::HeaderName::from_lowercase(b"x-api-key").unwrap(),
-            ])
+            .allowed_headers({
+                #[allow(unused_mut)]
+                let mut headers = vec![
+                    header::CONTENT_TYPE,
+                    header::AUTHORIZATION,
+                    header::ACCESS_CONTROL_ALLOW_ORIGIN,
+                    header::ACCEPT,
+                    header::HeaderName::from_lowercase(b"x-api-key").unwrap(),
+                ];
+
+                #[cfg(debug_assertions)]
+                headers.push(header::HeaderName::from_lowercase(b"x-impersonate-user").unwrap());
+
+                headers
+            })
             .supports_credentials();
 
         App::new()

@@ -3,18 +3,13 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SortableClubRequest {
+    #[default]
     Id,
     ClubId,
     StudentId,
     MembershipStatus,
-    Year,
-}
-
-impl Default for SortableClubRequest {
-    fn default() -> Self {
-        Self::Id
-    }
 }
 
 impl Display for SortableClubRequest {
@@ -24,7 +19,6 @@ impl Display for SortableClubRequest {
             SortableClubRequest::ClubId => write!(f, "club_id"),
             SortableClubRequest::StudentId => write!(f, "student_id"),
             SortableClubRequest::MembershipStatus => write!(f, "membership_status"),
-            SortableClubRequest::Year => write!(f, "year"),
         }
     }
 }

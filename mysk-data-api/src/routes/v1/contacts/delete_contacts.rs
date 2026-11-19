@@ -16,8 +16,14 @@ use mysk_lib::{
     permissions::{ActionType, Authorizable as _, Authorizer},
     prelude::*,
 };
+use serde::Deserialize;
 use sqlx::query;
 use uuid::Uuid;
+
+#[derive(Deserialize)]
+struct DeleteContactsRequest {
+    contact_ids: Vec<Uuid>,
+}
 
 #[delete("")]
 pub async fn delete_contacts(
@@ -25,12 +31,13 @@ pub async fn delete_contacts(
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
     Json(RequestType {
-        data: contact_ids, ..
-    }): Json<RequestType<Vec<Uuid>>>,
+        data: request_data, ..
+    }): Json<RequestType<DeleteContactsRequest>>,
 ) -> Result<impl Responder> {
     let pool = &data.db;
     let mut conn = data.db.acquire().await?;
     let authorizer = Authorizer::new(&user, "/contacts".to_string());
+    let contact_ids = request_data.contact_ids;
 
     // Check if the contacts exists
     let db_contacts = DbContact::get_by_ids(pool, &contact_ids).await?;

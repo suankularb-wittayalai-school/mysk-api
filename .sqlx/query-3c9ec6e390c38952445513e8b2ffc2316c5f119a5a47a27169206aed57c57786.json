@@ -17,6 +17,12 @@
               ]
             }
           }
+        },
+        "origin": {
+          "Table": {
+            "table": "student_certificates",
+            "name": "rsvp_status"
+          }
         }
       }
     ],

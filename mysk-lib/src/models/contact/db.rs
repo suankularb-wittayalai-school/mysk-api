@@ -32,7 +32,7 @@ impl QueryRelation for DbContact {
     type S = SortableContact;
 
     fn build_shared_query(
-        query_builder: &mut QueryBuilder<'_, Postgres>,
+        query_builder: &mut QueryBuilder<Postgres>,
         filter: Option<FilterConfig<QueryableContact>>,
     ) {
         if let Some(filter) = filter

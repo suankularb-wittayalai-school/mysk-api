@@ -29,9 +29,9 @@ pub struct GoogleUserResult {
     pub id: String,
     pub email: String,
     pub verified_email: bool,
-    pub name: String,
-    pub given_name: String,
-    pub family_name: String,
+    pub name: Option<String>,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
 }
 
 impl GoogleUserResult {
@@ -59,13 +59,13 @@ pub struct TokenPayload {
     email_verified: bool,
     #[serde(rename = "exp")]
     _exp: usize,
-    given_name: String,
-    family_name: String,
+    given_name: Option<String>,
+    family_name: Option<String>,
     #[serde(rename = "iat")]
     _iat: usize,
     #[serde(rename = "iss")]
     _iss: String,
-    name: String,
+    name: Option<String>,
     sub: String,
 }
 
@@ -112,7 +112,7 @@ pub fn generate_oauth_init_url(client_id: &str, redirect_uri: &str) -> Result<(S
             "https://www.googleapis.com/auth/userinfo.profile",
         ]
         .join(" ")
-        .to_string(),
+        .clone(),
         access_type: "online".to_string(),
         state: &state,
         include_granted_scopes: true,
@@ -181,6 +181,7 @@ pub async fn verify_id_token(id_token: &str, env: &Config) -> Result<TokenPayloa
         .send()
         .await?
         .error_for_status()?;
+
     // if !public_keys_response.status().is_success() {
     //     return Err(Error::InternalServerError(
     //         "Failed to fetch public keys from googleapis".to_string(),

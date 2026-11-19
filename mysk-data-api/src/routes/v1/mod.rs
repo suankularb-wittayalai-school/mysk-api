@@ -2,6 +2,7 @@ use actix_web::web::{ServiceConfig, scope};
 
 pub mod attendance;
 pub mod certificates;
+pub mod classrooms;
 pub mod clubs;
 pub mod contacts;
 pub mod students;
@@ -11,6 +12,7 @@ pub mod teachers;
 pub fn config(cfg: &mut ServiceConfig) {
     cfg.service(scope("/attendance").configure(attendance::config))
         .service(scope("/certificates").configure(certificates::config))
+        .service(scope("/classrooms").configure(classrooms::config))
         .service(scope("/clubs").configure(clubs::config))
         .service(scope("/contacts").configure(contacts::config))
         .service(scope("/students").configure(students::config))

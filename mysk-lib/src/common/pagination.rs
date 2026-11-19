@@ -22,7 +22,7 @@ impl PaginationConfig {
         Self { p, size }
     }
 
-    pub fn append_into_query_builder(&self, qb: &mut QueryBuilder<'_, Postgres>) -> Result<()> {
+    pub fn append_into_query_builder(&self, qb: &mut QueryBuilder<Postgres>) -> Result<()> {
         if self.p == 0 {
             return Err(Error::InvalidRequest(
                 "Page number must be greater than zero".to_string(),
