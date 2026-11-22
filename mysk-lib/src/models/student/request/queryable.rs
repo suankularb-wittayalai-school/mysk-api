@@ -11,6 +11,7 @@ pub struct QueryableStudent {
     pub student_ids: Option<Vec<String>>,
     pub person_ids: Option<Vec<Uuid>>,
     pub user_ids: Option<Vec<Uuid>>,
+    pub classroom_id: Option<Uuid>,
 }
 
 impl Queryable for QueryableStudent {
@@ -43,6 +44,13 @@ impl Queryable for QueryableStudent {
             f.push_sql("user_id IN (SELECT id FROM users WHERE id = ANY(")
                 .push_param(QueryParam::ArrayUuid(user_ids))
                 .push_sql("))");
+
+            f
+        })
+        .push_if_some(self.classroom_id, |mut f, classroom_id| {
+            f.push_sql("id IN (SELECT student_id FROM classroom_students WHERE classroom_id = ")
+                .push_param(QueryParam::Uuid(classroom_id))
+                .push_sql(")");
 
             f
         });
