@@ -3,16 +3,12 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SortableCheerPracticePeriod {
+    #[default]
     Id,
     Date,
     StartTime,
-}
-
-impl Default for SortableCheerPracticePeriod {
-    fn default() -> Self {
-        Self::Id
-    }
 }
 
 impl Display for SortableCheerPracticePeriod {

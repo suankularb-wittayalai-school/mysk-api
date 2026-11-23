@@ -47,7 +47,9 @@ impl Queryable for QueryableClubRequest {
             f
         })
         .push_if_some(self.year, |mut f, year| {
-            f.push_sql("year = ").push_param(QueryParam::Int(year));
+            f.push_sql("club_id IN (SELECT id FROM clubs WHERE year = ")
+                .push_param(QueryParam::Int(year))
+                .push_sql(")");
 
             f
         });

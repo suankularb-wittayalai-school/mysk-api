@@ -1,4 +1,5 @@
 use crate::AppState;
+use actix_web::http::Method;
 use actix_web::{FromRequest, HttpRequest, dev::Payload, http::header, web::Data};
 use futures::{
     FutureExt as _,
@@ -8,6 +9,13 @@ use jsonwebtoken::{DecodingKey, Validation, decode};
 use mysk_lib::{auth::oauth::TokenClaims, models::user::User, prelude::*};
 use serde::Serialize;
 
+#[cfg(debug_assertions)]
+#[derive(Clone, Copy, Debug)]
+enum ImpersonationHeader {
+    Invalid,
+    Target(uuid::Uuid),
+}
+
 /// Extractor to allow only clients that are logged in.
 #[derive(Serialize)]
 pub struct LoggedIn(pub User);
@@ -16,11 +24,12 @@ impl FromRequest for LoggedIn {
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self>>;
 
+    #[allow(clippy::too_many_lines)]
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let app_state = req
             .app_data::<Data<AppState>>()
-            .expect("Irrecoverable error, AppState is None");
-        let conn = app_state.db.acquire();
+            .expect("Irrecoverable error, AppState is None")
+            .clone();
         let source = req.path().to_string();
         let Some(authorization_header) = req.headers().get(header::AUTHORIZATION) else {
             return future::err(Error::MissingToken(
@@ -72,15 +81,77 @@ impl FromRequest for LoggedIn {
             .boxed();
         };
 
+        #[cfg(debug_assertions)]
+        let impersonation = {
+            match req.headers().get("x-impersonate-user") {
+                None => None,
+                Some(_) if req.method() != Method::GET => Some(ImpersonationHeader::Invalid),
+                Some(value) => Some(
+                    value
+                        .to_str()
+                        .ok()
+                        .and_then(|raw| uuid::Uuid::parse_str(raw.trim()).ok())
+                        .map_or(ImpersonationHeader::Invalid, ImpersonationHeader::Target),
+                ),
+            }
+        };
+
         async move {
-            Ok(LoggedIn(
-                User::get_by_id(
-                    &mut *(conn.await?),
-                    decoded_token.claims.sub,
-                    decoded_token.claims.mta,
-                )
-                .await?,
-            ))
+            let mut conn = app_state.db.acquire().await?;
+            let actor = User::get_by_id(
+                &mut conn,
+                decoded_token.claims.sub,
+                decoded_token.claims.mta,
+            )
+            .await?;
+
+            #[cfg(debug_assertions)]
+            {
+                if let Some(impersonation) = impersonation {
+                    match impersonation {
+                        _ if !actor.is_admin => {
+                            return Err(Error::InvalidPermission(
+                                "Impersonation requires admin privileges".to_string(),
+                                source,
+                            ));
+                        }
+                        ImpersonationHeader::Invalid => {
+                            return Err(Error::InvalidRequest(
+                                "Invalid X-Impersonate-User value".to_string(),
+                                source,
+                            ));
+                        }
+                        ImpersonationHeader::Target(target_id) => {
+                            if target_id == actor.id {
+                                return Err(Error::InvalidPermission(
+                                    "Cannot impersonate yourself".to_string(),
+                                    source,
+                                ));
+                            }
+
+                            let target = User::get_by_id(&mut conn, target_id, None).await?;
+                            if target.is_admin {
+                                return Err(Error::InvalidPermission(
+                                    "Cannot impersonate another administrator".to_string(),
+                                    source,
+                                ));
+                            }
+
+                            tracing::warn!(
+                                actor_id = %actor.id,
+                                target_id = %target.id,
+                                target_role = %target.role,
+                                source = %source,
+                                "Admin impersonation active"
+                            );
+
+                            return Ok(LoggedIn(target));
+                        }
+                    }
+                }
+            }
+
+            Ok(LoggedIn(actor))
         }
         .boxed()
     }

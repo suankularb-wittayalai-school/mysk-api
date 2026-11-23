@@ -28,7 +28,7 @@ struct ModifyContactsRequest {
 }
 
 #[put("/{id}")]
-pub async fn modify_contacts(
+pub async fn modify_contact(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,

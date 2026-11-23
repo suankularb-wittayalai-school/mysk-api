@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub struct CompactClassroom {
     pub id: Uuid,
     pub number: i64,
-    pub room: Option<String>,
+    pub main_room: Option<String>,
 }
 
 impl From<DbClassroom> for CompactClassroom {
@@ -15,7 +15,7 @@ impl From<DbClassroom> for CompactClassroom {
         Self {
             id: classroom.id,
             number: classroom.number,
-            room: classroom.main_room,
+            main_room: classroom.main_room,
         }
     }
 }

@@ -21,29 +21,30 @@ pub async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Resul
 
     let current_year = get_current_academic_year(None);
 
-    // Counts new club members this year
-    let club_members = query!(
-        "SELECT COUNT(DISTINCT student_id) as count FROM club_members WHERE year = $1",
+    // Counts new club members & counts clubs with new members
+    let active = query!(
+        "\
+        SELECT \
+            COUNT(DISTINCT student_id) as club_members, \
+            COUNT(DISTINCT club_id) as active_clubs \
+        FROM club_members \
+        WHERE club_id IN (SELECT id FROM clubs WHERE year = $1)\
+        ",
         current_year,
     )
     .fetch_one(&mut *conn)
-    .await?
-    .count
-    .unwrap_or(0);
+    .await?;
+
+    let active_clubs = active.active_clubs.unwrap_or(0);
+    let club_members = active.club_members.unwrap_or(0);
 
     // Counts new club staffs this year
     let club_staffs = query!(
-        "SELECT COUNT(DISTINCT student_id) as count FROM club_staffs WHERE year = $1",
-        current_year,
-    )
-    .fetch_one(&mut *conn)
-    .await?
-    .count
-    .unwrap_or(0);
-
-    // Counts the number of active clubs by checking with the number of new club_members
-    let active_clubs = query!(
-        "SELECT COUNT(DISTINCT club_id) as count FROM club_members WHERE year = $1",
+        r#"
+        SELECT COUNT(DISTINCT student_id) as count
+        FROM club_staffs
+        WHERE club_id IN (SELECT id FROM clubs WHERE year = $1)
+        "#,
         current_year,
     )
     .fetch_one(&mut *conn)
@@ -53,7 +54,7 @@ pub async fn get_club_statistics(data: Data<AppState>, _: ApiKeyHeader) -> Resul
 
     // Total clubs this year for percentage calculation
     let total_clubs = query!(
-        "SELECT COUNT(DISTINCT club_id) as count FROM club_staffs WHERE year = $1",
+        "SELECT COUNT(DISTINCT id) as count FROM clubs_with_detail_view WHERE year = $1",
         current_year,
     )
     .fetch_one(&mut *conn)

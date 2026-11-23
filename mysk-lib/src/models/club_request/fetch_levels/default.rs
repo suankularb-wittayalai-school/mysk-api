@@ -18,7 +18,6 @@ pub struct DefaultClubRequest {
     pub created_at: Option<DateTime<Utc>>,
     pub club: Club,
     pub student: Student,
-    pub year: Option<i64>,
     pub membership_status: SubmissionStatus,
 }
 
@@ -50,7 +49,6 @@ impl FetchVariant for DefaultClubRequest {
                 authorizer,
             )
             .await?,
-            year: relation.year,
             membership_status: relation.membership_status,
         })
     }

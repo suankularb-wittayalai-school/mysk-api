@@ -27,7 +27,7 @@ struct AddClubMemberRequest {
 
 #[allow(clippy::similar_names, clippy::too_many_lines)]
 #[post("/{id}/add")]
-pub async fn add_club_members(
+pub async fn add_club_member(
     data: Data<AppState>,
     _: ApiKeyHeader,
     LoggedIn(user): LoggedIn,
@@ -94,6 +94,14 @@ pub async fn add_club_members(
         unreachable!("Club::get_by_id should always return a Detailed variant")
     };
 
+    // Check if the club's year matches the current academic year
+    if club.year != current_year {
+        return Err(Error::InvalidPermission(
+            "Club does not belong to the current academic year".to_string(),
+            format!("/clubs/{club_id}/join"),
+        ));
+    }
+
     // Check if the inviting student is a staff of the club
     if !club.staffs.iter().any(|staff| match staff {
         Student::IdOnly(staff, _) => staff.id == inviter_student_id,
@@ -118,14 +126,13 @@ pub async fn add_club_members(
 
     let club_member_id = query!(
         "\
-        INSERT INTO club_members (club_id, year, membership_status, student_id) \
-        VALUES ($1, $2, $3, $4) \
-        ON CONFLICT (club_id, year, student_id) DO UPDATE \
-            SET membership_status = $3 \
+        INSERT INTO club_members (club_id, membership_status, student_id) \
+        VALUES ($1, $2, $3) \
+        ON CONFLICT (club_id, student_id) DO UPDATE \
+            SET membership_status = $2 \
         RETURNING id\
         ",
         club.id,
-        current_year,
         SubmissionStatus::Approved as SubmissionStatus,
         invitee_student_id
     )

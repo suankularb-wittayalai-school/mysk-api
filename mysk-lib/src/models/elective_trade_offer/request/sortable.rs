@@ -3,18 +3,14 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum SortableElectiveTradeOffer {
+    #[default]
     Id,
     SenderId,
     ReceiverId,
     Status,
     CreatedAt,
-}
-
-impl Default for SortableElectiveTradeOffer {
-    fn default() -> Self {
-        Self::Id
-    }
 }
 
 impl Display for SortableElectiveTradeOffer {

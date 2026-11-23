@@ -24,6 +24,7 @@ pub struct DetailedClub {
     pub background_color: Option<String>,
     pub member_count: i64,
     pub staff_count: i64,
+    pub year: i64,
 }
 
 impl FetchVariant for DetailedClub {
@@ -88,6 +89,7 @@ impl FetchVariant for DetailedClub {
             background_color: relation.background_color,
             member_count: relation.member_count,
             staff_count: relation.staff_count,
+            year: relation.year,
         })
     }
 }

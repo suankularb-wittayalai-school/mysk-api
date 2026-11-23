@@ -11,17 +11,19 @@
 
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
   outputs =
-    inputs@{ flake-parts, ... }:
+    inputs@{
+      flake-parts,
+      git-hooks,
+      ...
+    }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
-        inputs.git-hooks.flakeModule
+        git-hooks.flakeModule
       ];
 
       systems = [
@@ -38,7 +40,10 @@
           ...
         }:
         let
-          rustToolchain = inputs'.fenix.packages.stable;
+          toolchain = inputs'.fenix.packages.fromToolchainFile {
+            file = ./rust-toolchain.toml;
+            sha256 = "sha256-+xUr6Al1wZSqX8aEsq7DpuFOK4Ve/i+qTl+K5uWQ9GM=";
+          };
         in
         {
           devShells.default = pkgs.mkShell {
@@ -51,14 +56,9 @@
               sqlx-cli
               pkg-config
 
-              (rustToolchain.withComponents [
-                "cargo"
-                "clippy"
-                "rust-src"
-                "rustc"
-                "rustfmt"
-                "rust-analyzer"
-              ])
+              # NOTE: Consider using a dedicated `rust-toolchain.toml` file
+              # https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
+              toolchain
             ];
 
             shellHook = ''
@@ -73,12 +73,12 @@
               clippy = {
                 enable = true;
                 settings.extraArgs = "--no-deps";
-                packageOverrides.cargo = rustToolchain.cargo;
-                packageOverrides.clippy = rustToolchain.clippy;
+                packageOverrides.cargo = toolchain;
+                packageOverrides.clippy = toolchain;
               };
               rustfmt = {
                 enable = true;
-                packageOverrides.rustfmt = rustToolchain.rustfmt;
+                packageOverrides.rustfmt = toolchain;
               };
             };
           };

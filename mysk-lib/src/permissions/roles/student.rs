@@ -89,7 +89,7 @@ impl Authorizable for StudentRole {
     ) -> Result<()> {
         Err(Error::InvalidPermission(
             "Insufficient permissions to perform this action".to_string(),
-            self.source.to_string(),
+            self.source.clone(),
         ))
     }
 
@@ -303,7 +303,10 @@ impl StudentRole {
             }
 
             // Students can't access contacts of other non-students
-            "teacher" | "none" => deny(&self.source),
+            // Students can read teachers' contacts
+            "teacher" => authorize_read_only(action, &self.source),
+            // Ghost contacts are not readable
+            "none" => deny(&self.source),
             _ => unreachable!(),
         }
     }
